@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el dispositivo para usarla sin internet.
 // Solo borra sus propias versiones viejas (prefijo "caldo-"), nunca cachés de otras apps.
-const VERSION = "caldo-8225419f9e";
+const VERSION = "caldo-8d041dc8eb";
 const ASSETS = ["./", "index.html", "data.js", "manifest.webmanifest", "vendor/leaflet.js", "vendor/leaflet.css", "vendor/shp.min.js", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "fonts/atkinson-hyperlegible-latin-400-italic.woff2", "fonts/atkinson-hyperlegible-latin-400-normal.woff2", "fonts/atkinson-hyperlegible-latin-700-normal.woff2", "fonts/bricolage-grotesque-latin-wght-normal.woff2", "fonts/jetbrains-mono-latin-400-normal.woff2", "fonts/jetbrains-mono-latin-600-normal.woff2"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

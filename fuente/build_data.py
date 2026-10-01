@@ -4,6 +4,7 @@ from config_rubros import RUBROS, AI_RUBROS
 from config_semaforo import NIVELES, MEDIDAS, REGLAS
 from config_inertes import FAMILIAS, FORM_FAMILIA, INERTES, IMPUREZAS, SENALES_MAL_ESTADO, PRUEBA_CALIDAD_CASERA
 from config_usos import OBJETIVOS, USOS, RESISTENCIA, PRINCIPIOS_ROTACION
+from config_carryover import CULTIVOS, GRAM, HOJA, CARRY, SELECT, MOMENTOS
 from config_reglas_extra import REGLAS_EXTRA, SEMAFORO_EXTRA, MEDIDAS_EXTRA, PROBLEMAS_EXTRA
 import re
 
@@ -109,9 +110,15 @@ DB = {
     "niveles": NIVELES, "medidas": MEDIDAS_ALL, "semaforo": REGLAS_ALL,
     "objetivos": OBJETIVOS, "resistencia": RESISTENCIA, "principios_rotacion": PRINCIPIOS_ROTACION,
     "familias": FAMILIAS, "form_familia": FORM_FAMILIA, "inertes": INERTES, "impurezas": IMPUREZAS,
+    "cultivos": CULTIVOS, "cult_gram": GRAM, "cult_hoja": HOJA, "carry": CARRY, "select": SELECT, "momentos": MOMENTOS,
     "senales_mal_estado": SENALES_MAL_ESTADO, "prueba_calidad": PRUEBA_CALIDAD_CASERA,
 }
 # chequeos
+_ids = {a['id'] for a in activos}
+assert set(CARRY) <= _ids, set(CARRY) - _ids
+assert set(SELECT) <= _ids, set(SELECT) - _ids
+_herb = {a['id'] for a in activos if a['clase'] == 'herbicida'}
+print('herbicidas sin carry-over:', sorted(_herb - set(CARRY)))
 ids_reglas = {r["id"] for r in reglas}
 assert ids_reglas == set(REGLAS_ALL), (ids_reglas ^ set(REGLAS_ALL))
 for rid, (b, piso, meds) in REGLAS_ALL.items():

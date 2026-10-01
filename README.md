@@ -15,6 +15,7 @@ App para preparar caldos fitosanitarios con los productos registrados en el SENA
 - **Campos y lotes en mapa:**
   - Se dibujan en el mapa o se importan desde QGIS, Google Earth o un GPS (GeoJSON, KML, Shapefile .zip, GPX).
   - Se exportan a GeoJSON, KML y CSV, y se puede hacer un respaldo completo.
+- **Cultivos y carry-over:** se elige el cultivo actual, el momento (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo tolera cada herbicida y cuántos días esperar para sembrar, también por residuos de aplicaciones anteriores del lote.
 - **Historial de aplicaciones por lote**, con productos, dosis, condiciones y semáforo.
 - **Rotación de modos de acción:**
   - Para qué se usa cada activo y qué grupos HRAC, IRAC y FRAC alternar para el mismo objetivo.

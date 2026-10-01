@@ -289,6 +289,13 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
               <label class="f">Superficie a aplicar (ha)<input id="sup" type="number" min="0" step="0.5"></label>
             </div>
             <div class="row" id="apLotes" style="gap:5px"></div>
+            <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+              <label class="f">Cultivo actual<select id="cuAct"></select></label>
+              <label class="f">Momento de la aplicación<select id="cuMom"></select></label>
+              <label class="f" id="cuSiAW">Siembra del cultivo actual<input id="cuSiA" type="date"></label>
+              <label class="f">Cultivo siguiente<select id="cuSig"></select></label>
+              <label class="f">Siembra del siguiente<input id="cuSiS" type="date"></label>
+            </div>
           </div>
           <div class="fields">
             <label class="f">Volumen (L/ha)<input id="vol" type="number" min="5" step="5"></label>
@@ -424,12 +431,14 @@ const FERTS = ["calcio","magnesio","fosfato","fosfito","sulfato","boro","urea","
 const RESID = [["hormonal","Hormonal (2,4-D, dicamba…)"],["sulfonilurea","Sulfonilurea"],["imidazolinona","Imidazolinona"],["hppd","HPPD (mesotriona…)"]];
 
 /* ---------- Estado ---------- */
+const fechaMas = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const EJEMPLO = {
   items:[{r:"3140",dosis:2.0},{r:"539",dosis:1.0},{r:"121",dosis:0.45},{r:"4039",dosis:0.035},{r:"4466",dosis:0.5}],
   vol:70, tanque:3000,
   agua:{pH:7.8,dureza_ppm_CaCO3:220,temperatura_C:18,turbidez:"baja",Ca:62,Mg:16,Na:35,K:4,Fe_mg_L:0.1,HCO3_mg_L:260,conductividad_uS_cm:650,cloro_mg_L:0},
   caldo:{horas_en_tanque:3,temperatura_ambiente_C:28,HR:65,viento_kmh:8,rafagas_kmh:14,viento_dir:"NE",nubosidad:"Parcial",lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null},
   sup:350, ap:{campo:"ej-campo", lotes:["ej-l1","ej-l2","ej-l3","ej-l4","ej-l5"]},
+  cult:{actual:"soja", momento:"barbecho", siembra_act:fechaMas(10), siguiente:"maiz", siembra_sig:fechaMas(150)},
   medidas:[], ejemplo:true
 };
 const MEDIDAS_EJEMPLO = ["ams","antiesp","antideriva","orden","predil","agua70","agit","inmed","vol","jarra","dosisplena","pastillas"];
@@ -438,6 +447,7 @@ function migrar(s){
   s = s || clone(EJEMPLO);
   s.caldo = Object.assign({horas_en_tanque:null,temperatura_ambiente_C:null,HR:null,viento_kmh:null,rafagas_kmh:null,viento_dir:null,nubosidad:null,lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null}, s.caldo||{});
   if(!s.ap) s.ap = {campo:null, lotes:[]};
+  s.cult = Object.assign({actual:null, momento:"barbecho", siembra_act:null, siguiente:null, siembra_sig:null}, s.cult||{});
   if(s.sup===undefined) s.sup = null;
   s.medidas = s.medidas||[]; s.items = s.items||[]; s.agua = s.agua||{};
   return s;
@@ -656,6 +666,11 @@ function fillInputs(){
   $("#agitacion").value=S.caldo.agitacion; $("#portador").value=S.caldo.portador; $("#bolsas").value=String(!!S.caldo.bolsas_hidrosolubles); $("#phfinal").value=S.caldo.pH_final??"";
   AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.value = S.agua[k] ?? ""; });
   $("#exBanner").hidden = !S.ejemplo;
+  const opts = (v, vacio) => `<option value="">${vacio}</option>` + Object.entries(D.cultivos).map(([k, n]) => `<option value="${k}"${k === v ? " selected" : ""}>${esc(n)}</option>`).join("");
+  $("#cuAct").innerHTML = opts(S.cult.actual, "— elegir —"); $("#cuSig").innerHTML = opts(S.cult.siguiente, "— elegir —");
+  $("#cuMom").innerHTML = Object.entries(D.momentos).map(([k, n]) => `<option value="${k}"${k === S.cult.momento ? " selected" : ""}>${esc(n)}</option>`).join("");
+  $("#cuSiA").value = S.cult.siembra_act || ""; $("#cuSiS").value = S.cult.siembra_sig || "";
+  $("#cuSiAW").hidden = S.cult.momento !== "barbecho";
 }
 function bindInputs(){
   const upd = ()=>{ S.ejemplo=false; save(); renderCaldo(); };
@@ -666,6 +681,7 @@ function bindInputs(){
   AMB_KEYS.forEach(k=>{ const el=$("#c_"+k); const txt = el.tagName==="SELECT" || el.type==="datetime-local";
     el.addEventListener(txt?"change":"input", e=>{ S.caldo[k] = txt ? (e.target.value||null) : numOrNull(e.target.value); upd(); }); });
   $("#btnAhora").onclick=()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); S.caldo.fecha_hora=d.toISOString().slice(0,16); fillInputs(); upd(); };
+  [["cuAct","actual"],["cuSig","siguiente"],["cuMom","momento"],["cuSiA","siembra_act"],["cuSiS","siembra_sig"]].forEach(([id,k])=>{ $("#"+id).onchange=e=>{ S.cult[k]=e.target.value||null; if(k==="momento"){ S.cult.momento=S.cult.momento||"barbecho"; $("#cuSiAW").hidden=S.cult.momento!=="barbecho"; } upd(); }; });
   $("#apCampo").onchange=e=>{ S.ap={campo:e.target.value||null, lotes:[]}; S.supManual=false; upd(); };
   $("#agitacion").onchange=e=>{S.caldo.agitacion=e.target.value;upd()};
   $("#portador").onchange=e=>{S.caldo.portador=e.target.value;upd()};
@@ -793,6 +809,7 @@ function renderResult(){
     ${ev.pending.length?`<details class="box" style="margin-top:12px"><summary>A verificar (${ev.pending.length}): faltan datos de agua o del caldo</summary><div class="in alerts">${ev.pending.map(f=>alertHTML(f,ev,true)).join("")}</div></details>`:""}
   </div>
   <div class="panel" id="pRot">${rotacionHTML(ev)}</div>
+  <div class="panel" id="pCarry">${carryHTML(ev)}</div>
   <div class="panel" id="pDosis">${dosisHTML(ev)}</div>
   <div class="panel" id="pProblemas">
     <div class="panel-h"><h3>Los ${D.catalogo_problemas.length} problemas del caldo</h3><span class="note">Color de cada problema con las medidas aplicadas</span></div>
@@ -810,13 +827,16 @@ function renderResult(){
     </div>
   </div>
   <div class="panel" id="pJarra">
-    <div class="panel-h"><h3>Prueba de jarra</h3><span class="note">Frasco de 1 L con el agua real</span></div>
-    ${jarTable(ev)}
+    <div class="panel-h"><h3>Prueba de jarra</h3><span class="note">Recipiente transparente con el agua real</span></div>
+    <div class="row" style="gap:6px;margin-bottom:10px"><span class="note">Tamaño del recipiente:</span>
+      ${JAR_PRESETS.map(([v,t])=>`<button class="chip jarp" data-v="${v}" aria-pressed="${jarML()===v}" style="font-size:.8rem;padding:3px 10px">${t}</button>`).join("")}
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">Otro<input id="jarOtro" type="number" min="50" step="50" value="${JAR_PRESETS.some(([v])=>v===jarML())?"":jarML()}" placeholder="mL" style="width:90px"><span class="note">mL</span></label></div>
+    <div id="jarBody">${jarTable(ev)}</div>
     <p class="note" style="margin-top:8px">${esc(D.prueba_jarra.interpretacion)}</p>
   </div>`;
   el.querySelectorAll(".med").forEach(b=>b.onclick=()=>{ const m=b.dataset.m; const i=S.medidas.indexOf(m); if(i>=0) S.medidas.splice(i,1); else S.medidas.push(m); S.ejemplo=false; save(); renderCaldo(); });
   el.querySelectorAll(".pg").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
-  bindDosis(ev); bindRotacion();
+  bindDosis(ev); bindRotacion(); bindJarra(ev);
 }
 function orderTable(ev){
   const rows = orderPlan(ev);
@@ -833,10 +853,33 @@ function orderTable(ev){
   steps.push(`<tr><td class="step">11</td><td colspan="3"><b>Completar y verificar</b> — ${esc(ORDEN[11].descripcion)}</td></tr>`);
   return `<div class="tw"><table><thead><tr><th>Paso</th><th>Producto</th><th>Presentación y cómo cargar</th><th style="text-align:right">Por tanque de ${fmt(S.tanque,0)} L</th></tr></thead><tbody>${steps.join("")}</tbody></table></div>`;
 }
+const JAR_PRESETS = [[250,"250 mL"],[500,"500 mL"],[1000,"1 L"],[2000,"2 L"],[5000,"5 L"],[20000,"Balde 20 L"]];
+const jarML = () => (S.jarra_mL > 0 ? S.jarra_mL : 1000);
+function cantJar(v, u){ // v en mL o g; pasa a L/kg si es grande
+  if(v >= 1000) return fmt(v/1000, 2) + " " + (u==="g" ? "kg" : "L");
+  return fmt(v, v < 1 ? 2 : 1) + " " + u;
+}
 function jarTable(ev){
   const vol = ev.inp.vol; if(!vol) return `<p class="note">Cargá el volumen por hectárea.</p>`;
-  const rows = orderPlan(ev).filter(r=>r.x.dosis>0).map(({x})=>{ const u = unitOf(x)==="kg"?"g":"mL"; return `<tr><td>${esc(x.n)}</td><td class="n">${fmt(x.dosis*1000/vol,2)} ${u}</td></tr>`; });
-  return `<div class="tw"><table><thead><tr><th>Producto (en orden)</th><th style="text-align:right">Por litro de caldo</th></tr></thead><tbody>${rows.join("")||`<tr><td colspan="2" class="note">Cargá las dosis.</td></tr>`}</tbody></table></div>`;
+  const ml = jarML(), litros = ml/1000;
+  const filas = []; let chico = false;
+  orderPlan(ev).forEach(({x})=>{
+    let porL = null, u = "mL", nota = "";
+    if(x.dosis>0){ u = unitOf(x)==="kg" ? "g" : "mL"; porL = x.dosis*1000/vol; }
+    else if(x.virt==="ams"){ const k = amsKg1000(ev.inp.agua); if(k!=null){ porL = k; u = "g"; nota = "mínimo por análisis de agua"; } }
+    else if(x.virt==="antiesp"){ porL = 0.15; nota = "15 mL/100 L"; }
+    if(porL==null) return;
+    const enJar = porL*litros; if(enJar < 0.5) chico = true;
+    filas.push(`<tr><td>${esc(x.n)}${nota?`<br><span class="note">${esc(nota)}</span>`:""}</td><td class="n">${fmt(porL,2)} ${u}</td><td class="n"><b>${cantJar(enJar,u)}</b></td></tr>`);
+  });
+  const agua = `${cantJar(ml*0.5,"mL")} a ${cantJar(ml*0.7,"mL")}`;
+  return `<p class="note" style="margin-bottom:8px">1) Poné ${agua} de agua (50-70 % del recipiente). 2) Agregá cada producto en este orden, mezclando 30 s entre uno y otro. 3) Completá hasta ${cantJar(ml,"mL")}, tapá, invertí 10 veces y observá 15-30 min.</p>
+  <div class="tw"><table><thead><tr><th>Producto (en orden)</th><th style="text-align:right">Por litro</th><th style="text-align:right">En ${cantJar(ml,"mL")}</th></tr></thead><tbody>${filas.join("")||`<tr><td colspan="3" class="note">Cargá las dosis.</td></tr>`}</tbody></table></div>
+  ${chico?`<p class="note" style="margin-top:6px">Hay cantidades menores a 0,5 mL o 0,5 g: medilas con jeringa de 1 mL o usá un recipiente más grande para que la prueba sea exacta.</p>`:""}`;
+}
+function bindJarra(ev){
+  document.querySelectorAll("#pJarra .jarp").forEach(b=>b.onclick=()=>{ S.jarra_mL = +b.dataset.v; save(); document.querySelectorAll("#pJarra .jarp").forEach(c=>c.setAttribute("aria-pressed", String(+c.dataset.v===S.jarra_mL))); const o=$("#jarOtro"); if(o) o.value=""; $("#jarBody").innerHTML = jarTable(ev); });
+  const o = $("#jarOtro"); if(o) o.oninput = e => { const v = +e.target.value; if(v >= 50){ S.jarra_mL = v; save(); document.querySelectorAll("#pJarra .jarp").forEach(c=>c.setAttribute("aria-pressed", String(+c.dataset.v===v))); $("#jarBody").innerHTML = jarTable(ev); } };
 }
 
 /* ---------- Ventana de detalle ---------- */
@@ -1126,13 +1169,13 @@ function itemSnap(r, dosis){
 function crearEjemplo(){
   const lat0 = -25.79, lon0 = -55.105, H = 800, gap = 30;
   const mLat = m => m / 111320, mLon = m => m / (111320 * Math.cos(lat0 * Math.PI / 180));
-  const defs = [["Lote 1", 80, "Soja"], ["Lote 2", 70, "Soja"], ["Lote 3", 65, "Soja"], ["Lote 4", 60, "Soja"], ["Lote 5", 75, "Soja"], ["Lote 6", 50, "Maíz"], ["Lote 7", 55, "Maíz"], ["Lote 8", 45, "Pastura (Brachiaria)"]];
+  const defs = [["Lote 1", 80, "Soja", "maiz", 150], ["Lote 2", 70, "Soja", "maiz", 150], ["Lote 3", 65, "Soja", "maiz", 150], ["Lote 4", 60, "Soja", "maiz", 150], ["Lote 5", 75, "Soja", "maiz", 150], ["Lote 6", 50, "Maíz", "soja", 20], ["Lote 7", 55, "Maíz", "soja", 20], ["Lote 8", 45, "Pastura (Brachiaria)", "soja", 30]];
   const lotes = []; let x = 0, row = 0;
   defs.forEach((d, i) => {
     if(i === 4){ x = 0; row = 1; }
     const w = d[1] * 10000 / H, y0 = -row * (H + gap);
     const ring = [[x, y0], [x + w, y0], [x + w, y0 - H], [x, y0 - H], [x, y0]].map(([mx, my]) => [+(lon0 + mLon(mx)).toFixed(6), +(lat0 + mLat(my)).toFixed(6)]);
-    lotes.push({id: "ej-l" + (i + 1), nombre: d[0], cultivo: d[2], geom: {type: "Polygon", coordinates: [ring]}, ha: d[1]});
+    lotes.push({id: "ej-l" + (i + 1), nombre: d[0], cultivo: d[2], cultivo_sig: d[3], siembra_sig: fechaMas(d[4]), geom: {type: "Polygon", coordinates: [ring]}, ha: d[1]});
     x += w + gap;
   });
   const campo = {id: "ej-campo", nombre: "Estancia Ejemplo (Santa Rita, Alto Paraná)", ubicacion: "Santa Rita, Alto Paraná · datos hipotéticos", ejemplo: true, lotes};
@@ -1198,6 +1241,8 @@ function renderAplicarEn(){
     if(id === "*") S.ap.lotes = S.ap.lotes.length === c.lotes.length ? [] : c.lotes.map(l => l.id);
     else { const i = S.ap.lotes.indexOf(id); if(i >= 0) S.ap.lotes.splice(i, 1); else S.ap.lotes.push(id); }
     if(!S.supManual) S.sup = Math.round(S.ap.lotes.reduce((s, x) => s + loteHa(findLote(c, x)), 0) * 10) / 10 || null;
+    const l0 = findLote(c, S.ap.lotes[0]);
+    if(l0){ const ca = cultCode(l0.cultivo); if(ca && !S.cult.actual) S.cult.actual = ca; if(l0.cultivo_sig && !S.cult.siguiente) S.cult.siguiente = l0.cultivo_sig; if(l0.siembra_sig && !S.cult.siembra_sig) S.cult.siembra_sig = l0.siembra_sig; fillInputs(); }
     $("#sup").value = S.sup ?? ""; S.ejemplo = false; save(); renderCaldo();
   });
 }
@@ -1352,6 +1397,93 @@ function bindRotacion(){
   document.querySelectorAll("[data-buscar]").forEach(b => b.onclick = () => { setView("productos"); $("#pq").value = b.dataset.buscar; PLIM = 80; renderProductos(); });
 }
 
+/* ---------- Carry-over y cultivos ---------- */
+const sinTildes = s => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+function cultCode(txt){
+  const s = sinTildes(txt); if(!s) return null;
+  if(D.cultivos[s]) return s;
+  const M = [["soja","soja"],["maiz","maiz"],["trigo","trigo"],["avena","trigo"],["cebada","trigo"],["arroz","arroz"],["sorgo","sorgo"],["girasol","girasol"],["canola","canola"],["colza","canola"],["algodon","algodon"],["poroto","poroto"],["frijol","poroto"],["sesamo","sesamo"],["chia","chia"],["cana","cana"],["mandioca","mandioca"],["hortal","hortalizas"],["tomate","hortalizas"],["papa","hortalizas"],["alfalfa","pastura_leg"],["legumin","pastura_leg"],["pastur","pastura_gram"],["brachiaria","pastura_gram"],["panicum","pastura_gram"],["eucal","eucalipto"],["pino","eucalipto"]];
+  const m = M.find(([k]) => s.includes(k)); return m ? m[1] : null;
+}
+const nomCult = k => k ? D.cultivos[k] || k : "—";
+function carryDias(aiId, crop){
+  const c = D.carry[aiId]; if(!c) return null;
+  let d = c[crop];
+  if(d === undefined) d = D.cult_gram.includes(crop) ? c.g : D.cult_hoja.includes(crop) ? c.h : null;
+  return {d, conf: c.c, n: c.n};
+}
+const sumaDias = (f, d) => { const x = new Date(f); x.setDate(x.getDate() + d); return x; };
+const aFecha = s => s ? new Date(s + (s.length === 10 ? "T12:00" : "")) : null;
+function chequeoSiembra(aiId, crop, aplic, siembra){
+  if(!crop) return {level: null, txt: "Elegí el cultivo"};
+  const k = carryDias(aiId, crop);
+  if(!k) return {level: 0, txt: "Sin efecto residual"};
+  if(k.d == null) return {level: 1, txt: "Sin dato: ver la etiqueta", k};
+  if(k.d === 0) return {level: 0, txt: "Sin restricción", k};
+  const desde = sumaDias(aplic, k.d), sem = aFecha(siembra);
+  const plazo = k.d >= 60 ? Math.round(k.d / 30) + " meses" : k.d + " días";
+  if(!sem) return {level: 1, txt: `Sembrar desde el ${fmtFecha(desde)} (${plazo})`, k, desde};
+  if(sem < desde) return {level: 2, txt: `Siembra prevista ${fmtFecha(sem)}: antes de tiempo. Esperar al ${fmtFecha(desde)} (${plazo})`, k, desde};
+  const margen = (sem - desde) / 864e5;
+  return {level: margen < 15 || k.conf === "baja" ? 1 : 0, txt: `OK: siembra ${fmtFecha(sem)}, mínimo ${fmtFecha(desde)} (${plazo})${margen < 15 ? ", con poco margen" : ""}`, k, desde};
+}
+function chequeoSelect(aiId, crop, momento){
+  if(!crop) return {level: null, txt: "Elegí el cultivo"};
+  if(momento === "desecacion") return {level: 0, txt: "Desecación: respetar el intervalo hasta cosecha de la etiqueta"};
+  const s = D.select[aiId];
+  if(!s) return {level: 1, txt: "Sin dato de selectividad: ver la etiqueta"};
+  const lista = s[momento];
+  if(lista === "*") return {level: 0, txt: momento === "pre" ? "Desecante: aplicar antes de que emerja el cultivo" : "OK"};
+  if((lista || []).includes(crop)) return {level: 0, txt: `${nomCult(crop)} tolera la aplicación ${momento === "pre" ? "preemergente" : "sobre el cultivo"}`};
+  if(s.tec && s.tec[crop]) return {level: 1, txt: `Solo en cultivares con tecnología ${s.tec[crop]}`};
+  return {level: 3, txt: `${nomCult(crop)} no tolera esta aplicación ${momento === "pre" ? "preemergente" : "sobre el cultivo"}${s.n ? ". " + s.n : ""}`};
+}
+function herbCaldo(ev){ return aisCaldo(ev).filter(a => a.o.clase === "herbicida"); }
+function residuosHist(loteIds, crop, siembra){
+  if(!crop || !loteIds.length) return [];
+  const out = [], hoy = new Date(), sem = aFecha(siembra);
+  histLotes(loteIds, 1095).forEach(h => h.items.forEach(it => it.ais.forEach(a => {
+    if(a.clase !== "herbicida") return;
+    const k = carryDias(a.id, crop); if(!k || !k.d) return;
+    const desde = sumaDias(h.fecha, k.d);
+    if(sem ? desde <= sem : desde <= hoy) return;
+    out.push({a, it, h, desde, level: sem ? 2 : 1});
+  })));
+  return out.sort((x, y) => y.desde - x.desde);
+}
+function carryHTML(ev){
+  const herbs = herbCaldo(ev), cu = S.cult, aplic = S.caldo.fecha_hora ? new Date(S.caldo.fecha_hora) : new Date();
+  const lotes = S.ap.lotes || [];
+  const rows = herbs.map(a => {
+    const act = cu.momento === "barbecho" ? chequeoSiembra(a.id, cu.actual, aplic, cu.siembra_act) : chequeoSelect(a.id, cu.actual, cu.momento);
+    const sig = chequeoSiembra(a.id, cu.siguiente, aplic, cu.siembra_sig);
+    const k = D.carry[a.id] || {};
+    return {a, act, sig, k, level: Math.max(act.level ?? -1, sig.level ?? -1)};
+  });
+  const resAct = (cu.momento === "barbecho" || cu.momento === "pre") ? residuosHist(lotes, cu.actual, cu.siembra_act) : [];
+  const resSig = residuosHist(lotes, cu.siguiente, cu.siembra_sig);
+  const lv = Math.max(-1, ...rows.map(r => r.level), ...resAct.map(r => r.level), ...resSig.map(r => r.level));
+  const cell = c => `${pill(c.level, ["OK", "Verificar", "Riesgo", "No aplicar"][c.level] || "—")}<br><span class="note">${esc(c.txt)}</span>`;
+  const resList = (arr, crop) => arr.length ? `<ul class="clean note">${arr.slice(0, 12).map(r => `<li>${pill(r.level, r.level === 2 ? "Riesgo" : "Atención")} <b>${esc(r.a.nombre)}</b> (${esc(r.it.n)}) aplicado el ${fmtFecha(r.h.fecha)} en ${esc(r.h.loteNombres.join(", "))}: ${esc(nomCult(crop))} desde el ${fmtFecha(r.desde)}</li>`).join("")}</ul>` : "";
+  return `<div class="panel-h"><h3>Cultivos y carry-over</h3><span class="row" style="gap:6px">${lv >= 0 ? pill(lv, ["Sin restricciones", "Verificar", "Riesgo de carry-over", "El cultivo no tolera"][lv]) : ""}<span class="note">${esc(nomCult(cu.actual))} → ${esc(nomCult(cu.siguiente))}</span></span></div>
+    ${!cu.actual && !cu.siguiente ? `<p class="note">Elegí el cultivo actual y el siguiente en “2 · Aplicación” para revisar la selectividad y el efecto residual de los herbicidas.</p>` : ""}
+    ${herbs.length ? `<div class="tw"><table><thead><tr><th>Herbicida</th><th>Cultivo actual · ${esc(D.momentos[cu.momento] || "")}</th><th>Cultivo siguiente</th><th>Nota</th></tr></thead><tbody>${rows.map(r => `<tr><td><b>${esc(r.a.o.nombre)}</b><br><span class="note">${esc(r.a.prod)}</span></td><td>${cell(r.act)}</td><td>${cell(r.sig)}</td><td class="note">${esc(r.k.n || "")}${r.k.c ? `<br>Confianza del dato: ${esc(r.k.c)}` : ""}</td></tr>`).join("")}</tbody></table></div>` : `<p class="note">La mezcla no tiene herbicidas: insecticidas y fungicidas no suelen dejar restricciones de siembra (verificar la etiqueta).</p>`}
+    ${resAct.length || resSig.length ? `<h4 style="margin-top:12px">Residuos de aplicaciones anteriores en los lotes elegidos</h4>${resList(resAct, cu.actual)}${resList(resSig, cu.siguiente)}` : (lotes.length && (cu.actual || cu.siguiente) ? `<p class="note" style="margin-top:8px">Las aplicaciones anteriores de estos lotes no dejan restricciones para los cultivos elegidos.</p>` : "")}
+    <p class="note" style="margin-top:8px">Plazos orientativos según etiquetas y ensayos de la región; cambian con la dosis, la lluvia, el tipo de suelo y el pH. Con poca lluvia los plazos se alargan. Ante la duda, hacé un bioensayo con tierra del lote. La etiqueta prevalece.</p>`;
+}
+function carryLote(l){
+  const items = [];
+  let desde = null, level = -1;
+  if(l.cultivo_sig){ residuosHist([l.id], l.cultivo_sig, l.siembra_sig).forEach(r => { items.push(r); if(!desde || r.desde > desde) desde = r.desde; level = Math.max(level, r.level); }); }
+  return {items, desde, level};
+}
+function carryLoteHTML(l){
+  if(!l.cultivo_sig) return `<div class="panel"><h4>Cultivo siguiente</h4><p class="note">Cargá el cultivo siguiente y su fecha de siembra (Editar) para ver si alguna aplicación anterior deja residuos.</p></div>`;
+  const k = carryLote(l);
+  return `<div class="panel"><h4>Carry-over para ${esc(nomCult(l.cultivo_sig))}${l.siembra_sig ? " · siembra " + fmtFecha(l.siembra_sig) : ""}</h4>
+    ${k.items.length ? `<ul class="clean note" style="margin-top:6px">${k.items.map(r => `<li>${pill(r.level, r.level === 2 ? "Riesgo" : "Atención")} <b>${esc(r.a.nombre)}</b> (${esc(r.it.n)}) del ${fmtFecha(r.h.fecha)}: sembrar desde el ${fmtFecha(r.desde)}</li>`).join("")}</ul>` : `<p class="note" style="margin-top:6px">Ninguna aplicación registrada deja restricciones para este cultivo.</p>`}</div>`;
+}
+
 /* ---------- Registrar aplicación ---------- */
 function openRegistrar(){
   const ev = evaluate(S);
@@ -1390,8 +1522,9 @@ function openRegistrar(){
     const amb = {temperatura_ambiente_C: S.caldo.temperatura_ambiente_C, HR: S.caldo.HR, viento_kmh: S.caldo.viento_kmh, rafagas_kmh: S.caldo.rafagas_kmh, viento_dir: S.caldo.viento_dir, nubosidad: S.caldo.nubosidad, lluvia_h: S.caldo.lluvia_h, delta_T: a.dT, fuera_ley: a.ley};
     const rec = {id: uid("h"), fecha: $("#rFecha").value, campoId: c ? c.id : null, campoNombre: c ? c.nombre : "", loteIds, loteNombres: loteIds.map(id => findLote(c, id).nombre),
       ha: c ? Math.round(loteIds.reduce((s, id) => s + loteHa(findLote(c, id)), 0) * 10) / 10 : S.sup, objetivo: $("#rObj").value, operador: $("#rOper").value, obs: $("#rObs").value,
-      vol: ev.inp.vol, tanque: S.tanque, items: reales.map(x => itemSnap(x.p.r, x.dosis)), medidas: [...ev.act], semaforo: ev.overall, alertas: ev.fired.map(f => f.r.id), amb};
+      vol: ev.inp.vol, tanque: S.tanque, items: reales.map(x => itemSnap(x.p.r, x.dosis)), medidas: [...ev.act], semaforo: ev.overall, alertas: ev.fired.map(f => f.r.id), amb, cult: clone(S.cult)};
     HIST.unshift(rec); saveHist();
+    if(c){ loteIds.forEach(id => { const l = findLote(c, id); if(!l) return; if(S.cult.actual) l.cultivo = D.cultivos[S.cult.actual]; if(S.cult.siguiente) l.cultivo_sig = S.cult.siguiente; if(S.cult.siembra_sig) l.siembra_sig = S.cult.siembra_sig; }); saveCampos(); }
     openDrawer(`<div class="stack"><h2>Aplicación registrada</h2><p>${esc(fmtFH(rec.fecha))} · ${esc(rec.campoNombre)} ${esc(rec.loteNombres.join(", "))} · ${fmt(rec.ha, 1)} ha</p>
       <div class="row"><button class="btn pri" id="goHist">Ver historial</button><button class="btn" id="goCampo">Ver en el mapa</button><button class="btn" id="goSeguir">Seguir en el armador</button></div></div>`);
     $("#goHist").onclick = () => { closeDrawer(); setView("historial"); };
@@ -1422,7 +1555,8 @@ function resumenLote(c, l){
   const rot = rotLote(l.id);
   return {campo: c.nombre, lote: l.nombre, lote_id: l.id, ha: loteHa(l), cultivo: l.cultivo || "", aplic_12m: hs.length,
     ult_fecha: u ? u.fecha : "", ult_productos: u ? u.items.map(i => i.n).join(" + ") : "", ult_grupos: u ? [...new Set(u.items.flatMap(i => i.ais.map(a => a.grupo)).filter(Boolean))].join(", ") : "",
-    rotacion: ["verde", "amarillo", "naranja", "rojo"][rot.level] || "", grupos_repetidos: rot.rep.join(", ")};
+    rotacion: ["verde", "amarillo", "naranja", "rojo"][rot.level] || "", grupos_repetidos: rot.rep.join(", "),
+    cultivo_siguiente: l.cultivo_sig ? D.cultivos[l.cultivo_sig] : "", siembra_siguiente: l.siembra_sig || "", sembrar_siguiente_desde: (() => { const r = carryLote(l); return r.desde ? r.desde.toISOString().slice(0, 10) : ""; })()};
 }
 function lotesFC(campos){
   const features = [];
@@ -1437,7 +1571,8 @@ function histFilas(hs){
         productos: h.items.map(it => `${it.n} ${it.dosis ?? ""} ${it.u}/ha`).join(" + "), activos: [...new Set(h.items.flatMap(it => it.ais.map(a => a.nombre)))].join(", "),
         grupos: [...new Set(h.items.flatMap(it => it.ais.map(a => a.grupo)).filter(Boolean))].join(", "), vol_L_ha: h.vol ?? "",
         temp_C: h.amb?.temperatura_ambiente_C ?? "", HR: h.amb?.HR ?? "", viento_kmh: h.amb?.viento_kmh ?? "", viento_dir: h.amb?.viento_dir ?? "", delta_T: h.amb?.delta_T ?? "",
-        ley_3742: h.amb?.fuera_ley === true ? "fuera" : h.amb?.fuera_ley === false ? "ok" : "", semaforo: h.semaforo == null ? "" : NIV[h.semaforo].nombre, operador: h.operador || "", obs: h.obs || ""}}); }); });
+        ley_3742: h.amb?.fuera_ley === true ? "fuera" : h.amb?.fuera_ley === false ? "ok" : "", semaforo: h.semaforo == null ? "" : NIV[h.semaforo].nombre, operador: h.operador || "", obs: h.obs || "",
+        cultivo_actual: h.cult && h.cult.actual ? D.cultivos[h.cult.actual] : "", momento: h.cult && h.cult.momento ? D.momentos[h.cult.momento] : "", cultivo_siguiente: h.cult && h.cult.siguiente ? D.cultivos[h.cult.siguiente] : ""}}); }); });
   return out;
 }
 function csv(rows){
@@ -1616,7 +1751,8 @@ function renderCampos(force){
   $("#cAddEj") && ($("#cAddEj").onclick = () => { cargarEjemplo(); CAMPO_SEL = "ej-campo"; renderCampos(); refreshMap(true); toast("Ejemplo cargado"); });
   $("#cList").innerHTML = c ? c.lotes.map(l => { const r = rotLote(l.id), u = histLotes([l.id])[0];
     return `<button class="lote-card" data-l="${esc(l.id)}"><span class="row" style="justify-content:space-between;gap:6px"><b>${esc(l.nombre)}</b>${r.level == null ? pill(null, "Sin aplicaciones") : pill(r.level, r.level === 2 ? "Rotar" : r.level === 1 ? "Atención" : "Rotación OK")}</span>
-      <span class="note">${fmt(loteHa(l), 1)} ha · ${esc(l.cultivo || "sin cultivo")}${l.geom ? "" : " · sin mapa"}</span>
+      <span class="note">${fmt(loteHa(l), 1)} ha · ${esc(l.cultivo || "sin cultivo")}${l.cultivo_sig ? " → " + esc(D.cultivos[l.cultivo_sig]) : ""}${l.geom ? "" : " · sin mapa"}</span>
+      ${(() => { const k = carryLote(l); return k.items.length ? `<span class="row" style="gap:6px">${pill(k.level, k.level >= 2 ? "Carry-over: siembra antes de tiempo" : "Carry-over")}<span class="note">${l.cultivo_sig ? esc(D.cultivos[l.cultivo_sig]) + " desde " + fmtFecha(k.desde) : ""}</span></span>` : ""; })()}
       <span class="note">${u ? `Última: ${fmtFecha(u.fecha)} · ${esc(u.items.map(i => i.n).join(" + "))}` : "Sin aplicaciones en 12 meses"}</span>
       ${r.rep.length ? `<span class="note">Grupos repetidos: ${esc(r.rep.join(", "))}</span>` : ""}</button>`; }).join("") || `<p class="note">Este campo no tiene lotes: dibujalos en el mapa o importalos.</p>` : "";
   $("#cList").querySelectorAll(".lote-card").forEach(b => b.onclick = () => abrirLote(c, findLote(c, b.dataset.l)));
@@ -1701,9 +1837,11 @@ function editarLote(c, l, geom){
     <label class="f">Cultivo<input id="flCult" value="${esc(l ? l.cultivo || "" : "")}" list="dlCult"></label>
     <datalist id="dlCult">${["Soja", "Maíz", "Trigo", "Girasol", "Canola", "Arroz", "Algodón", "Caña de azúcar", "Sésamo", "Chía", "Pastura", "Eucalipto", "Pino", "Hortalizas", "Frutales", "Barbecho"].map(x => `<option value="${x}">`).join("")}</datalist>
     <label class="f">Superficie (ha)${(geom || (l && l.geom)) ? " · calculada del mapa" : ""}<input id="flHa" type="number" step="0.1" min="0" value="${ha}"></label>
+    <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"><label class="f">Cultivo siguiente<select id="flSig"><option value="">—</option>${Object.entries(D.cultivos).map(([k, n]) => `<option value="${k}"${l && l.cultivo_sig === k ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+    <label class="f">Siembra del siguiente<input id="flSiS" type="date" value="${esc(l ? l.siembra_sig || "" : "")}"></label></div>
     <div class="row"><button class="btn pri" type="submit">Guardar</button></div></form></div>`);
   $("#fLote").onsubmit = e => { e.preventDefault();
-    const d = {nombre: $("#flNom").value, cultivo: $("#flCult").value, ha: numOrNull($("#flHa").value)};
+    const d = {nombre: $("#flNom").value, cultivo: $("#flCult").value, ha: numOrNull($("#flHa").value), cultivo_sig: $("#flSig").value || null, siembra_sig: $("#flSiS").value || null};
     if(l) Object.assign(l, d); else c.lotes.push(Object.assign({id: uid("l"), geom: geom || null}, d));
     saveCampos(); closeDrawer(); renderCampos(); refreshMap(false); };
 }
@@ -1714,6 +1852,7 @@ function abrirLote(c, l){
   openDrawer(`<div class="stack"><span class="eyebrow">${esc(c.nombre)}</span><h2>${esc(l.nombre)}</h2>
     <div class="row">${pill(r.level, r.level == null ? "Sin aplicaciones" : r.level === 2 ? "Necesita rotar" : r.level === 1 ? "Atención: grupo repetido" : "Rotación OK")}<span class="note">${fmt(loteHa(l), 1)} ha · ${esc(l.cultivo || "sin cultivo")}</span></div>
     <div class="row"><button class="btn pri" id="lUsar">Usar en el caldo</button><button class="btn" id="lEdit">Editar</button><button class="btn" id="lRedraw">${l.geom ? "Redibujar" : "Dibujar"} en el mapa</button><button class="btn" id="lDel">Borrar lote</button></div>
+    ${carryLoteHTML(l)}
     <div class="panel"><h4>Modos de acción usados en 12 meses</h4>${Object.keys(porClase).length ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Clase</th><th>Grupo</th><th style="text-align:right">Aplicaciones</th></tr></thead><tbody>${Object.entries(porClase).flatMap(([k, gs]) => Object.entries(gs).sort((a, b) => b[1].size - a[1].size).map(([g, s]) => `<tr><td>${esc(CLASES[k] || k)}</td><td><span class="mono">${esc(g)}</span> <span class="note">${esc(GRUPO_DESC[g] || "")}</span></td><td class="n">${s.size >= 3 ? pill(2, s.size + "") : s.size === 2 ? pill(1, s.size + "") : s.size}</td></tr>`)).join("")}</tbody></table></div>` : `<p class="note">Sin aplicaciones registradas.</p>`}</div>
     <h3>Historial del lote</h3>
     ${hs.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Productos</th><th>Objetivo</th><th>Condiciones</th></tr></thead><tbody>${hs.map(h => `<tr><td class="mono">${esc(fmtFecha(h.fecha))}</td><td>${h.items.map(i => `${esc(i.n)} <span class="note">${fmt(i.dosis, 3)} ${i.u}/ha</span>`).join("<br>")}</td><td>${esc(h.objetivo || "")}</td><td class="note">${ambTxt(h.amb)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="note">Todavía no hay aplicaciones. Registralas desde “Armar caldo”.</p>`}</div>`);
@@ -1817,7 +1956,7 @@ function helpHTML(){
     <li><div><b>Completá la aplicación, el agua y las condiciones ambientales</b>: volumen por hectárea, tanque, cuánto tiempo va a esperar el caldo, el análisis de agua y la temperatura, humedad y viento del momento. La app calcula el Delta T y controla la Ley 3742/09. Lo que falte queda “a verificar”.</div></li>
     <li><div><b>Leé el semáforo</b> y bajá el riesgo: cada alerta muestra las medidas que la corrigen. Al tocar una medida (por ejemplo “Antiespumante” o “Agitación constante”) se aplica y el color se recalcula. Al lado de la flecha ves el color que quedaría antes de tocarla.</div></li>
     <li><div><b>Revisá dosis y cantidades</b>: cargá la dosis de etiqueta (queda guardada) y la dosis a aplicar, o la cantidad que ponés en cada tanque. La app te da el total para la superficie, los tanques y el último tanque parcial.</div></li>
-    <li><div><b>Prepará y registrá</b>: seguí el “Orden de carga”, hacé la prueba de jarra y, después de aplicar, tocá “Registrar aplicación”. Queda en el historial del lote, se ve en el mapa y se puede exportar a QGIS.</div></li>
+    <li><div><b>Prepará y registrá</b>: seguí el “Orden de carga”, hacé la prueba de jarra (elegí el tamaño del recipiente y la app calcula las cantidades) y, después de aplicar, tocá “Registrar aplicación”. Queda en el historial del lote, se ve en el mapa y se puede exportar a QGIS.</div></li>
   </ol></div>
 
   <div class="panel"><h3>El semáforo</h3>
@@ -1848,6 +1987,7 @@ function helpHTML(){
       <dt>Productos</dt><dd>El listado del SENAVE filtrado por rubro, clase, presentación y empresa. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
       <dt>Formulaciones e inertes</dt><dd>Qué lleva cada tipo de formulación además del activo, qué parámetros de calidad debe cumplir, qué problemas da una formulación de mala calidad y cómo hacer una prueba casera.</dd>
       <dt>Diagnóstico</dt><dd>Si ya preparaste el caldo y ves algo raro (grumos, cristales, espuma, capas, calor), elegí el síntoma: la app muestra las causas probables y qué hacer.</dd>
+      <dt>Cultivos y carry-over</dt><dd>En “2 · Aplicación” elegí el cultivo actual, el momento de la aplicación (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo actual tolera cada herbicida y cuántos días hay que esperar para sembrar, también por aplicaciones anteriores registradas en los lotes.</dd>
       <dt>Problemas y reglas</dt><dd>Los 31 problemas posibles del caldo, con su explicación, y las reglas del semáforo con su color de partida, su piso y las medidas que lo bajan.</dd>
     </dl>
   </div>
@@ -1889,11 +2029,13 @@ const TOUR = [
   {v:"caldo", sel:"#pSemaforo", t:"El semáforo de la mezcla", d:"Verde: problema leve. Amarillo: precaución. Naranja: riesgo alto, solo con correcciones. Rojo: no mezclar. El color general es el de la peor alerta."},
   {v:"caldo", sel:"#pAlertas .al", t:"Cada alerta", d:"Explica qué problema puede aparecer, por qué pasa y qué hacer. El color de la izquierda es el riesgo actual."},
   {v:"caldo", sel:"#pAlertas .meds", t:"Medidas para bajar el color", d:"Tocá una medida para aplicarla. Después de la flecha ves cómo quedaría la alerta; si la medida activa otra regla, también lo avisa."},
+  {v:"caldo", sel:"#cuAct", up:true, t:"Cultivo actual y siguiente", d:"Elegí el cultivo actual, el momento de la aplicación y el cultivo siguiente con su fecha de siembra. Con eso la app revisa selectividad y carry-over."},
+  {v:"caldo", sel:"#pCarry", t:"Cultivos y carry-over", d:"Si el cultivo actual tolera cada herbicida, cuántos días esperar para sembrar el siguiente y qué residuos dejan las aplicaciones anteriores del lote."},
   {v:"caldo", sel:"#pRot", t:"Rotación de modos de acción", d:"Cada activo con su grupo (HRAC, IRAC o FRAC). Si ese grupo ya se usó en los lotes elegidos, avisa y propone alternativas con otro modo de acción."},
   {v:"caldo", sel:"#pDosis", t:"Dosis y cantidades", d:"Dosis de etiqueta y dosis a aplicar, total para la superficie, cantidad por tanque y último tanque parcial."},
   {v:"caldo", sel:"#pProblemas", t:"Los 31 problemas", d:"El estado de cada problema posible del caldo (queso, cristales, espuma, antagonismo, fitotoxicidad…). Tocá uno para ver cómo se ve, cómo se previene y qué hacer si ya ocurrió."},
   {v:"caldo", sel:"#pOrden", t:"Orden de carga", d:"El orden en que van los productos según su presentación, cómo cargar cada uno y cuánto va por tanque."},
-  {v:"caldo", sel:"#pJarra", t:"Prueba de jarra", d:"Cantidad de cada producto por litro de caldo para probar la mezcla en un frasco antes de cargar el tanque."},
+  {v:"caldo", sel:"#pJarra", t:"Prueba de jarra", d:"Elegí el tamaño del recipiente (de 250 mL a un balde de 20 L, u otro) y la app calcula cuánto poner de cada producto, en orden, para probar la mezcla antes de cargar el tanque."},
   {v:"caldo", sel:"#btnRegistrar", t:"Registrar la aplicación", d:"Después de aplicar, guardá fecha, lotes, productos, dosis y condiciones en el historial. “Guardar este caldo” guarda solo la receta para reusarla."},
   {v:"campos", sel:"#map", t:"Campos y lotes en el mapa", d:"Dibujá o importá tus lotes (QGIS, Google Earth, GPS). El color muestra el estado de rotación o la última aplicación; tocá un lote para ver su historial."},
   {v:"campos", sel:"#cTop", t:"Campo de ejemplo", d:"El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan."},
@@ -1912,7 +2054,7 @@ function showTour(){
   document.querySelectorAll(".tour-spot,.tour-card,.tour-block").forEach(e=>e.remove());
   const st = TOUR[TI]; if(!st){ endTour(); return; }
   if(VIEW!==st.v) setView(st.v);
-  const el = document.querySelector(st.sel); if(!el){ TI++; showTour(); return; }
+  let el = document.querySelector(st.sel); if(el && st.up) el = el.closest(".fields") || el; if(!el){ TI++; showTour(); return; }
   el.scrollIntoView({block:"center", behavior:"instant"});
   const block=document.createElement("div"); block.className="tour-block"; block.onclick=endTour;
   const spot=document.createElement("div"); spot.className="tour-spot";
