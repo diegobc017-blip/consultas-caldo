@@ -1,0 +1,4 @@
+fuente/__pycache__/
+fuente/data.js
+fuente/artifact.html
+*.pyc

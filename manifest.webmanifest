@@ -1,0 +1,31 @@
+{
+ "name": "Consultas de Caldo",
+ "short_name": "Caldo",
+ "lang": "es",
+ "id": "./",
+ "description": "Productos SENAVE por rubro, armador de caldos con semáforo de compatibilidad, campos, historial y rotación.",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#F2F4F1",
+ "theme_color": "#18221D",
+ "icons": [
+  {
+   "src": "icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "icons/icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

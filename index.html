@@ -1,0 +1,2005 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Productos SENAVE por rubro, armador de caldos con semáforo de compatibilidad, campos y lotes, historial y rotación de modos de acción.">
+<meta name="theme-color" content="#18221D">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Caldo">
+<title>Consultas de Caldo</title>
+<style>@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:200 800;font-display:swap;src:url(fonts/bricolage-grotesque-latin-wght-normal.woff2) format('woff2')}@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jetbrains-mono-latin-600-normal.woff2) format('woff2')}</style>
+<style></style>
+<style>
+/* Layout: herramienta de campo — encabezado con rubro y pestañas; armador en dos columnas (carga | resultado), una columna en celular. */
+:root{
+  --paper:#F2F4F1; --panel:#FFFFFF; --sunk:#E8ECE7; --ink:#18221D; --muted:#56635C; --line:#D3D9D3;
+  --accent:#28598A; --accent-ink:#FFFFFF; --accent-soft:#DFE8F2;
+  --s0:#2F8545; --s1:#C99A00; --s2:#DB6514; --s3:#C02E2E;
+  --s0-bg:#E3F1E6; --s1-bg:#FBF1CF; --s2-bg:#FCE6D6; --s3-bg:#F8DEDE;
+  --s-off:#C9D0CA; --lamp-case:#26302B;
+  --f-sol:#2B7A9E; --f-sol-bg:#DCEEF5; --f-sol2:#7A5A2B; --f-sol2-bg:#F3E8D6; --f-sus:#5A5FA8; --f-sus-bg:#E5E6F5; --f-ole:#9A6A00; --f-ole-bg:#F7EDCC; --f-no:#6A6F6C; --f-no-bg:#E6E8E6;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111714; --panel:#19211D; --sunk:#141B17; --ink:#E4EBE6; --muted:#9AA8A0; --line:#2C3832;
+  --accent:#7EAAD8; --accent-ink:#0F1A24; --accent-soft:#1E2C3A;
+  --s0:#5CC274; --s1:#E8C03A; --s2:#F08A45; --s3:#F06464;
+  --s0-bg:#17301F; --s1-bg:#33290A; --s2-bg:#3A2312; --s3-bg:#3A1818;
+  --s-off:#2F3934; --lamp-case:#0A0E0C;
+  --f-sol:#6FC0E0; --f-sol-bg:#16303A; --f-sol2:#D9B27A; --f-sol2-bg:#33291A; --f-sus:#A9ADF0; --f-sus-bg:#24264A; --f-ole:#E8C35A; --f-ole-bg:#3A3012; --f-no:#B3B8B5; --f-no-bg:#2A302D;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111714; --panel:#19211D; --sunk:#141B17; --ink:#E4EBE6; --muted:#9AA8A0; --line:#2C3832;
+  --accent:#7EAAD8; --accent-ink:#0F1A24; --accent-soft:#1E2C3A;
+  --s0:#5CC274; --s1:#E8C03A; --s2:#F08A45; --s3:#F06464;
+  --s0-bg:#17301F; --s1-bg:#33290A; --s2-bg:#3A2312; --s3-bg:#3A1818;
+  --s-off:#2F3934; --lamp-case:#0A0E0C;
+  --f-sol:#6FC0E0; --f-sol-bg:#16303A; --f-sol2:#D9B27A; --f-sol2-bg:#33291A; --f-sus:#A9ADF0; --f-sus-bg:#24264A; --f-ole:#E8C35A; --f-ole-bg:#3A3012; --f-no:#B3B8B5; --f-no-bg:#2A302D;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:1.45rem;font-weight:700}
+h3{font-size:1.12rem;font-weight:700}
+h4{font-size:.98rem;font-weight:700}
+p{margin:0}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-in{max-width:1280px;margin:0 auto;padding:10px 16px 0;display:flex;flex-direction:column;gap:8px}
+.brand-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{display:grid;grid-template-rows:repeat(4,8px);gap:3px;background:var(--lamp-case);padding:4px;border-radius:6px}
+.brand-mark i{width:8px;height:8px;border-radius:50%;display:block}
+.brand h1{font-size:1.25rem;font-weight:800;letter-spacing:-.01em}
+.brand small{display:block;color:var(--muted);font-size:.78rem;font-family:var(--body);font-weight:400;letter-spacing:0}
+.rubros{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rubros .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:2px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font-size:.86rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -4px}
+.tabs button{border:0;background:none;padding:9px 12px 11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;font-size:.92rem}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+main{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:18px 60px}
+.view{display:flex;flex-direction:column;gap:18px}
+.lead{color:var(--muted);max-width:72ch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.panel-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:start}
+@media (max-width:920px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:700;font-size:.88rem}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:3px 8px;font-size:.8rem;font-weight:400}
+.note{font-size:.84rem;color:var(--muted)}
+.tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.ex-banner{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:8px;padding:8px 12px;font-size:.88rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+
+/* Familias de presentación */
+.fam{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
+.fam::before{content:"";width:8px;height:8px;border-radius:2px;background:currentColor}
+.fam-soluble{color:var(--f-sol);background:var(--f-sol-bg)}
+.fam-solido{color:var(--f-sol2);background:var(--f-sol2-bg)}
+.fam-suspension{color:var(--f-sus);background:var(--f-sus-bg)}
+.fam-oleoso{color:var(--f-ole);background:var(--f-ole-bg)}
+.fam-no_caldo{color:var(--f-no);background:var(--f-no-bg)}
+
+/* Formularios */
+label.f{display:flex;flex-direction:column;gap:3px;font-size:.8rem;color:var(--muted);min-width:0}
+label.f input,label.f select{border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:6px 8px;font-size:.92rem;color:var(--ink);width:100%;min-width:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+details.box{border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+details.box>summary{cursor:pointer;padding:10px 12px;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:8px;align-items:center}
+details.box>summary::-webkit-details-marker{display:none}
+details.box>summary::after{content:"+";font-family:var(--mono);color:var(--muted)}
+details.box[open]>summary::after{content:"–"}
+details.box>.in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+
+/* Buscador */
+.search{position:relative}
+.search input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--paper);font-size:.95rem}
+.sugg{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);max-height:340px;overflow:auto;z-index:15}
+.sugg button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 10px;text-align:left;cursor:pointer}
+.sugg button:hover,.sugg button:focus-visible{background:var(--sunk)}
+.sugg .t{font-weight:700}
+.sugg .s{font-size:.78rem;color:var(--muted)}
+
+/* Mezcla */
+.mix{display:flex;flex-direction:column;gap:8px}
+.mi{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel)}
+.mi.virt{border-style:dashed;background:var(--sunk)}
+.mi .nm{font-weight:700;min-width:0;overflow-wrap:anywhere}
+.mi .sub{grid-column:1/-1;font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mi .dose{display:flex;align-items:center;gap:4px}
+.mi .dose input{width:76px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--paper);font-family:var(--mono);text-align:right}
+.mi .x{border:0;background:none;cursor:pointer;color:var(--muted);font-size:1.1rem;padding:2px 6px}
+
+/* Semáforo */
+.verdict{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}
+.lamp{background:var(--lamp-case);border-radius:14px;padding:9px;display:grid;gap:7px;width:56px}
+.lamp i{width:38px;height:38px;border-radius:50%;background:var(--s-off);display:block;opacity:.5;transition:opacity .25s, box-shadow .25s}
+.lamp i.on{opacity:1}
+.lamp i.on.l0{background:var(--s0);box-shadow:0 0 18px var(--s0)}
+.lamp i.on.l1{background:var(--s1);box-shadow:0 0 18px var(--s1)}
+.lamp i.on.l2{background:var(--s2);box-shadow:0 0 18px var(--s2)}
+.lamp i.on.l3{background:var(--s3);box-shadow:0 0 18px var(--s3)}
+.lamp.sm{width:30px;padding:5px;gap:4px;border-radius:8px}
+.lamp.sm i{width:20px;height:20px}
+.vt{font-family:var(--display);font-size:1.5rem;font-weight:800}
+.c0{color:var(--s0)}.c1{color:var(--s1)}.c2{color:var(--s2)}.c3{color:var(--s3)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.p0{color:var(--s0);background:var(--s0-bg)}.p1{color:var(--s1);background:var(--s1-bg)}.p2{color:var(--s2);background:var(--s2-bg)}.p3{color:var(--s3);background:var(--s3-bg)}
+.pn{color:var(--muted);background:var(--sunk)}
+.arrow{color:var(--muted);font-family:var(--mono);font-size:.8rem}
+.counts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+
+.alerts{display:flex;flex-direction:column;gap:10px}
+.al{border:1px solid var(--line);border-left:6px solid var(--s-off);border-radius:8px;background:var(--panel);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.al.l0{border-left-color:var(--s0)}.al.l1{border-left-color:var(--s1)}.al.l2{border-left-color:var(--s2)}.al.l3{border-left-color:var(--s3)}
+.al-h{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between}
+.al-h h4{flex:1 1 220px;min-width:0}
+.al .why{font-size:.86rem;color:var(--muted)}
+.al .rec{font-size:.9rem}
+.meds{display:flex;flex-wrap:wrap;gap:6px}
+.med{border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:4px 9px;font-size:.8rem;cursor:pointer;display:inline-flex;gap:6px;align-items:center;text-align:left}
+.med .k{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.med[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.med .ok{font-weight:700}
+.med .warn{color:var(--s2);font-size:.72rem}
+.floor{font-size:.78rem;color:var(--muted)}
+
+.probgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+.pg{display:flex;gap:8px;align-items:center;font-size:.84rem;padding:6px 8px;border-radius:6px;background:var(--sunk);border:0;text-align:left;cursor:pointer;min-width:0}
+.pg .dot{width:12px;height:12px;border-radius:50%;flex:none;background:var(--s-off)}
+.pg .dot.l0{background:var(--s0)}.pg .dot.l1{background:var(--s1)}.pg .dot.l2{background:var(--s2)}.pg .dot.l3{background:var(--s3)}
+.pg span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Tablas */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--sunk);font-weight:700}
+tr:last-child td{border-bottom:0}
+td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.step{font-family:var(--mono);font-weight:600;color:var(--accent)}
+
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.kv div{background:var(--sunk);border-radius:8px;padding:8px 10px}
+.kv b{display:block;font-family:var(--mono);font-size:1.05rem}
+.kv span{font-size:.76rem;color:var(--muted)}
+
+ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+
+/* Productos */
+.plist{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.prow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) auto;gap:4px 12px;align-items:center;padding:9px 12px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;width:100%}
+.prow:hover{background:var(--sunk)}
+.prow .t{font-weight:700;overflow-wrap:anywhere}
+.prow .s{font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}
+@media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr) auto}.prow .pa{grid-column:1/-1;order:3}}
+.rb{display:inline-flex;gap:3px}
+.rb i{font-style:normal;font-size:.66rem;font-weight:700;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--muted)}
+.rb i.on{color:var(--accent);border-color:var(--accent)}
+
+.drawer{position:fixed;inset:0;z-index:40;background:rgba(10,15,12,.45);display:flex;justify-content:flex-end}
+.drawer-in{background:var(--paper);width:min(720px,100%);height:100%;overflow:auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px;padding-top:calc(18px + env(safe-area-inset-top,0px))}
+.drawer-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+
+/* Caso práctico */
+.case-step{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px}
+.case-step .cn{font-family:var(--display);font-weight:800;font-size:1.6rem;color:var(--accent);line-height:1}
+.story{max-width:78ch;display:flex;flex-direction:column;gap:10px}
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+
+
+
+/* Campos, historial, rotación */
+.map{height:min(62vh,520px);border-radius:8px;border:1px solid var(--line);background:var(--sunk);z-index:0}
+.lote-tip{background:rgba(255,255,255,.85);border:0;box-shadow:none;font-weight:700;font-size:.72rem;color:#18221D;padding:1px 5px}
+.lote-tip::before{display:none}
+.lote-card{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:10px 12px;cursor:pointer;width:100%}
+.lote-card:hover{background:var(--sunk)}
+.rot{border:1px solid var(--line);border-left:6px solid var(--s-off);border-radius:8px;padding:9px 12px;background:var(--panel);display:flex;flex-direction:column;gap:5px}
+.rot.l0{border-left-color:var(--s0)}.rot.l1{border-left-color:var(--s1)}.rot.l2{border-left-color:var(--s2)}.rot.ln{border-left-color:var(--accent)}
+.rot details summary{cursor:pointer;font-size:.84rem;color:var(--accent);font-weight:700}
+.rnote{font-size:.84rem;background:var(--s2-bg);color:var(--ink);border-radius:6px;padding:6px 9px}
+.linkbtn{border:0;background:none;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0;font:inherit}
+.chk{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:4px 9px;background:var(--panel);font-size:.86rem}
+.dtab .din{width:72px;border:1px solid var(--line);border-radius:6px;padding:3px 5px;background:var(--paper);font-family:var(--mono);text-align:right}
+textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:6px 8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;z-index:80;font-size:.9rem;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.leaflet-container{font-family:var(--body)}
+/* Ayuda y recorrido */
+.top-actions{display:flex;gap:8px;align-items:center}
+.btn-help{display:inline-flex;align-items:center;gap:6px}
+.btn-help .q{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:800;font-size:.8rem}
+.help-steps{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;counter-reset:hs}
+.help-steps li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;counter-increment:hs}
+.help-steps li::before{content:counter(hs);font-family:var(--display);font-weight:800;font-size:1.3rem;color:var(--accent);line-height:1.2}
+.faq dt{font-weight:700;margin-top:10px}
+.faq dd{margin:2px 0 0;color:var(--muted)}
+.tour-spot{position:fixed;z-index:60;border-radius:10px;box-shadow:0 0 0 3px var(--accent),0 0 0 9999px rgba(8,12,10,.62);pointer-events:none;transition:all .25s}
+.tour-card{position:fixed;z-index:61;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:14px;width:min(360px,calc(100vw - 32px));box-shadow:0 12px 40px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:8px}
+.tour-bar{height:4px;background:var(--sunk);border-radius:4px;overflow:hidden}
+.tour-bar i{display:block;height:100%;background:var(--accent)}
+.tour-block{position:fixed;inset:0;z-index:59}
+.saved{display:flex;flex-direction:column;gap:8px}
+.saved .it{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel)}
+.inline-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.inline-form input{flex:1 1 200px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:var(--paper);min-width:0}
+@media (max-width:640px){.top{position:static}.brand small{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand-row">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><i style="background:var(--s3)"></i><i style="background:var(--s2)"></i><i style="background:var(--s1)"></i><i style="background:var(--s0)"></i></div>
+        <h1>Consultas de Caldo<small>Productos SENAVE · compatibilidad de mezclas · semáforo de riesgo</small></h1>
+      </div>
+      <div class="rubros" id="rubros" role="group" aria-label="Rubro"><span class="lbl">Rubro</span></div>
+      <div class="top-actions"><button class="btn" id="btnInstall" hidden>Instalar app</button><button class="btn btn-help" id="btnHelp"><span class="q">?</span>Ayuda</button></div>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-v="caldo" aria-selected="true">Armar caldo</button>
+      <button role="tab" data-v="campos" aria-selected="false">Campos y lotes</button>
+      <button role="tab" data-v="historial" aria-selected="false">Historial</button>
+      <button role="tab" data-v="rotacion" aria-selected="false">Rotación</button>
+      <button role="tab" data-v="caso" aria-selected="false">Caso práctico</button>
+      <button role="tab" data-v="productos" aria-selected="false">Productos</button>
+      <button role="tab" data-v="inertes" aria-selected="false">Formulaciones e inertes</button>
+      <button role="tab" data-v="diag" aria-selected="false">Diagnóstico</button>
+      <button role="tab" data-v="problemas" aria-selected="false">Problemas y reglas</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ARMAR CALDO -->
+  <section class="view" id="v-caldo">
+    <div class="ex-banner" id="exBanner"><span><b>Ejemplo cargado:</b> barbecho químico pre-siembra de soja (caso práctico). Reemplazá los productos, dosis y datos de agua por los tuyos.</span><span class="row"><button class="btn sm" id="btnTourBanner">Ver cómo funciona</button><button class="btn sm" id="btnVaciar">Empezar de cero</button></span></div>
+    <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn pri sm" id="btnRegistrar">Registrar aplicación</button><button class="btn sm" id="btnGuardar">Guardar este caldo</button><button class="btn sm" id="btnMisCaldos">Mis caldos</button></div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="panel" id="pProductos">
+          <div class="panel-h"><h3>1 · Productos del caldo</h3><span class="note" id="rubroNote"></span></div>
+          <div class="search">
+            <input id="q" type="search" placeholder="Buscar producto, activo o empresa…" autocomplete="off" aria-label="Buscar producto para agregar">
+            <div class="sugg" id="sugg" hidden></div>
+          </div>
+          <div class="mix" id="mix" style="margin-top:12px"></div>
+          <div class="row" style="margin-top:10px">
+            <span class="note">Fertilizantes foliares:</span>
+            <div class="row" id="fertChips" style="gap:5px"></div>
+          </div>
+        </div>
+        <div class="panel" id="pAplic">
+          <div class="panel-h"><h3>2 · Aplicación</h3></div>
+          <div class="stack" style="gap:8px;margin-bottom:10px">
+            <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+              <label class="f">Aplicar en el campo<select id="apCampo"></select></label>
+              <label class="f">Superficie a aplicar (ha)<input id="sup" type="number" min="0" step="0.5"></label>
+            </div>
+            <div class="row" id="apLotes" style="gap:5px"></div>
+          </div>
+          <div class="fields">
+            <label class="f">Volumen (L/ha)<input id="vol" type="number" min="5" step="5"></label>
+            <label class="f">Tanque (L)<input id="tanque" type="number" min="10" step="100"></label>
+            <label class="f">Horas en el tanque<input id="horas" type="number" min="0" step="0.5"></label>
+            <label class="f">Agitación<select id="agitacion"><option value="normal">Moderada</option><option value="excesiva">Excesiva</option></select></label>
+            <label class="f">Portador<select id="portador"><option value="agua">Agua</option><option value="fertilizante_liquido">Fertilizante líquido</option></select></label>
+            <label class="f">Bolsas hidrosolubles<select id="bolsas"><option value="false">No</option><option value="true">Sí</option></select></label>
+            <label class="f">pH final medido<input id="phfinal" type="number" step="0.1" placeholder="—"></label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <span class="note">Residuo de la aplicación anterior:</span>
+            <div class="row" id="resChips" style="gap:5px"></div>
+          </div>
+        </div>
+        <div class="panel" id="pAgua">
+          <div class="panel-h"><h3>3 · Agua</h3><span class="note">Lo que falte queda “a verificar”.</span></div>
+          <div class="fields">
+            <label class="f">pH<input id="a_pH" type="number" step="0.1"></label>
+            <label class="f">Dureza (ppm CaCO₃)<input id="a_dureza_ppm_CaCO3" type="number" step="1"></label>
+            <label class="f">Temperatura (°C)<input id="a_temperatura_C" type="number" step="1"></label>
+            <label class="f">Turbidez<select id="a_turbidez"><option value="">—</option><option value="baja">Baja (limpia)</option><option value="media">Media</option><option value="alta">Alta (turbia)</option></select></label>
+            <label class="f">Calcio (mg/L)<input id="a_Ca" type="number" step="1"></label>
+            <label class="f">Magnesio (mg/L)<input id="a_Mg" type="number" step="1"></label>
+            <label class="f">Sodio (mg/L)<input id="a_Na" type="number" step="1"></label>
+            <label class="f">Potasio (mg/L)<input id="a_K" type="number" step="1"></label>
+            <label class="f">Hierro (mg/L)<input id="a_Fe_mg_L" type="number" step="0.05"></label>
+            <label class="f">Bicarbonatos (mg/L)<input id="a_HCO3_mg_L" type="number" step="1"></label>
+            <label class="f">Conductividad (µS/cm)<input id="a_conductividad_uS_cm" type="number" step="10"></label>
+            <label class="f">Cloro (mg/L)<input id="a_cloro_mg_L" type="number" step="0.1"></label>
+          </div>
+        </div>
+        <div class="panel" id="pAmb">
+          <div class="panel-h"><h3>4 · Condiciones ambientales</h3><span class="row" style="gap:6px"><span id="ambEstado"></span><button class="btn sm" id="btnAhora">Ahora</button></span></div>
+          <div class="fields">
+            <label class="f" style="grid-column:span 2">Fecha y hora<input id="c_fecha_hora" type="datetime-local"></label>
+            <label class="f">Temperatura (°C)<input id="c_temperatura_ambiente_C" type="number" step="0.5"></label>
+            <label class="f">Humedad relativa (%)<input id="c_HR" type="number" min="0" max="100" step="1"></label>
+            <label class="f">Viento (km/h)<input id="c_viento_kmh" type="number" min="0" step="0.5"></label>
+            <label class="f">Ráfagas (km/h)<input id="c_rafagas_kmh" type="number" min="0" step="0.5"></label>
+            <label class="f">Dirección del viento<select id="c_viento_dir"><option value="">—</option><option>N</option><option>NE</option><option>E</option><option>SE</option><option>S</option><option>SO</option><option>O</option><option>NO</option></select></label>
+            <label class="f">Nubosidad<select id="c_nubosidad"><option value="">—</option><option>Despejado</option><option>Parcial</option><option>Nublado</option></select></label>
+            <label class="f">Lluvia prevista en (h)<input id="c_lluvia_h" type="number" min="0" step="1" placeholder="sin lluvia"></label>
+          </div>
+          <div class="kv" id="ambKv" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="stack" id="result"></div>
+    </div>
+  </section>
+
+  <!-- CAMPOS -->
+  <section class="view" id="v-campos" hidden></section>
+  <!-- HISTORIAL -->
+  <section class="view" id="v-historial" hidden></section>
+  <!-- ROTACIÓN -->
+  <section class="view" id="v-rotacion" hidden></section>
+  <!-- CASO PRÁCTICO -->
+  <section class="view" id="v-caso" hidden></section>
+
+  <!-- PRODUCTOS -->
+  <section class="view" id="v-productos" hidden>
+    <div class="stack">
+      <div><h2>Productos registrados</h2><p class="lead" id="prodLead"></p></div>
+      <div class="panel">
+        <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">
+          <label class="f" style="grid-column:span 2">Buscar<input id="pq" type="search" placeholder="Nombre, activo, empresa o registro"></label>
+          <label class="f">Clase<select id="pclase"><option value="">Todas</option><option>HERBICIDA</option><option>INSECTICIDA</option><option>FUNGICIDA</option><option>ACARICIDA</option><option>NEMATICIDA</option><option>COADYUVANTE</option><option>REGULADOR</option><option>MICROBIOL</option><option>SEMILLA</option></select></label>
+          <label class="f">Presentación<select id="pfam"><option value="">Todas</option></select></label>
+          <label class="f">Empresa<select id="pemp"><option value="">Todas</option></select></label>
+          <label class="f">Mantenimiento<select id="pmant"><option value="0">Vigente</option><option value="">Todos</option><option value="1">Vencido (verificar)</option></select></label>
+        </div>
+      </div>
+      <p class="note" id="pcount"></p>
+      <div class="plist" id="plist"></div>
+      <div class="row"><button class="btn" id="pmore">Ver más</button></div>
+    </div>
+  </section>
+
+  <!-- INERTES -->
+  <section class="view" id="v-inertes" hidden></section>
+  <!-- DIAGNÓSTICO -->
+  <section class="view" id="v-diag" hidden></section>
+  <!-- PROBLEMAS -->
+  <section class="view" id="v-problemas" hidden></section>
+</main>
+
+<div class="drawer" id="drawer" hidden><div class="drawer-in" id="drawerIn" role="dialog" aria-modal="true"></div></div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/shp.min.js"></script>
+<script src="data.js"></script>
+<script>
+"use strict";
+const D = window.DB;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = (x, d=2) => x==null||isNaN(x) ? "—" : Number(x).toLocaleString("es-PY",{maximumFractionDigits:d});
+const NIV = D.niveles, MED = D.medidas, SEM = D.semaforo;
+const SEV = {baja:0, media:1, alta:2, critica:3};
+const byId = (arr,k="id") => Object.fromEntries(arr.map(x=>[x[k],x]));
+const AI = byId(D.activos), ADY = byId(D.coadyuvantes), BIO = byId(D.biologicos), BOT = byId(D.botanicos);
+const FORM = byId(D.formulaciones,"codigo");
+const PROB = byId(D.catalogo_problemas);
+const RULE = byId(D.reglas);
+const PROD = Object.fromEntries(D.productos.map(p=>[p.r,p]));
+const ORDEN = Object.fromEntries(D.orden_carga.map(o=>[o.paso,o]));
+const SOLIDOS = new Set(["WG","WP","WS","SG","SP","TB","DS","GR","GB","DP"]);
+const famOf = f => D.form_familia[f] || "no_caldo";
+const famChip = f => `<span class="fam fam-${famOf(f)}" title="${esc(D.familias[famOf(f)].nombre)}">${esc(f)} · ${esc(D.familias[famOf(f)].corto)}</span>`;
+const pill = (l, txt) => l==null ? `<span class="pill pn">${esc(txt||"Sin alerta")}</span>` : `<span class="pill p${l}">${esc(txt||NIV[l].nombre)}</span>`;
+const compObj = (t,id) => t==="ai"?AI[id]:t==="ady"?ADY[id]:t==="bio"?BIO[id]:t==="bot"?BOT[id]:null;
+const compName = (t,id,orig) => (compObj(t,id)||{}).nombre || orig || id;
+const RUBK = Object.keys(D.rubros);
+function store(k,v){try{localStorage.setItem("caldo_"+k,JSON.stringify(v))}catch(e){}}
+function load(k,def){try{const v=localStorage.getItem("caldo_"+k);return v?JSON.parse(v):def}catch(e){return def}}
+
+/* ---------- Productos virtuales (estabilizadores y fertilizantes) ---------- */
+const VIRT = {
+  antiesp:{n:"Antiespumante siliconado",f:"AL",k:[["ady","ady_antiespumante"]],d:{paso_orden_carga:2,tendencia_espuma:"baja",oleoso:false,aporta_electrolitos:false,tiempo_max_caldo_h:24}},
+  ams:{n:"Sulfato de amonio (AMS)",f:"SG",k:[["ady","ady_ams"]],d:{paso_orden_carga:2,tendencia_espuma:"baja",aporta_electrolitos:true,oleoso:false,tiempo_max_caldo_h:24}},
+  secu:{n:"Secuestrante de dureza",f:"SL",k:[["ady","ady_secuestrante"]],d:{paso_orden_carga:2,aporta_electrolitos:false,oleoso:false,tiempo_max_caldo_h:24}},
+  buffer:{n:"Regulador de pH (buffer)",f:"SL",k:[["ady","ady_acidificante"]],d:{paso_orden_carga:2,efecto_pH:"baja",oleoso:false,tiempo_max_caldo_h:24}},
+  compat:{n:"Compatibilizador / antiaglomerante",f:"SL",k:[["ady","ady_compat"]],d:{paso_orden_carga:2,oleoso:false,tiempo_max_caldo_h:24}},
+  antideriva:{n:"Antideriva",f:"AL",k:[["ady","ady_antideriva"]],d:{paso_orden_carga:9,oleoso:false,tiempo_max_caldo_h:24}},
+  adherente:{n:"Adherente",f:"AL",k:[["ady","ady_adherente"]],d:{paso_orden_carga:9,oleoso:false,tiempo_max_caldo_h:24}},
+  antievap:{n:"Antievaporante",f:"AL",k:[["ady","ady_antievap"]],d:{paso_orden_carga:9,oleoso:false,tiempo_max_caldo_h:24}},
+};
+const PROD_MEDIDAS = Object.keys(MED).filter(k=>MED[k].tipo==="producto" && VIRT[k]);
+const FERTS = ["calcio","magnesio","fosfato","fosfito","sulfato","boro","urea","UAN","nitrato","potasio","manganeso","zinc","hierro","cobre","molibdeno"];
+const RESID = [["hormonal","Hormonal (2,4-D, dicamba…)"],["sulfonilurea","Sulfonilurea"],["imidazolinona","Imidazolinona"],["hppd","HPPD (mesotriona…)"]];
+
+/* ---------- Estado ---------- */
+const EJEMPLO = {
+  items:[{r:"3140",dosis:2.0},{r:"539",dosis:1.0},{r:"121",dosis:0.45},{r:"4039",dosis:0.035},{r:"4466",dosis:0.5}],
+  vol:70, tanque:3000,
+  agua:{pH:7.8,dureza_ppm_CaCO3:220,temperatura_C:18,turbidez:"baja",Ca:62,Mg:16,Na:35,K:4,Fe_mg_L:0.1,HCO3_mg_L:260,conductividad_uS_cm:650,cloro_mg_L:0},
+  caldo:{horas_en_tanque:3,temperatura_ambiente_C:28,HR:65,viento_kmh:8,rafagas_kmh:14,viento_dir:"NE",nubosidad:"Parcial",lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null},
+  sup:350, ap:{campo:"ej-campo", lotes:["ej-l1","ej-l2","ej-l3","ej-l4","ej-l5"]},
+  medidas:[], ejemplo:true
+};
+const MEDIDAS_EJEMPLO = ["ams","antiesp","antideriva","orden","predil","agua70","agit","inmed","vol","jarra","dosisplena","pastillas"];
+const clone = o => JSON.parse(JSON.stringify(o));
+function migrar(s){
+  s = s || clone(EJEMPLO);
+  s.caldo = Object.assign({horas_en_tanque:null,temperatura_ambiente_C:null,HR:null,viento_kmh:null,rafagas_kmh:null,viento_dir:null,nubosidad:null,lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null}, s.caldo||{});
+  if(!s.ap) s.ap = {campo:null, lotes:[]};
+  if(s.sup===undefined) s.sup = null;
+  s.medidas = s.medidas||[]; s.items = s.items||[]; s.agua = s.agua||{};
+  return s;
+}
+let S = migrar(load("estado", null));
+let RUBRO = load("rubro","AG");
+
+/* ---------- Motor ---------- */
+function expandItem(it){
+  if(it.v){ const v=VIRT[it.v]; return {key:"v:"+it.v, virt:it.v, n:v.n, f:v.f, e:"Estabilizador sugerido por la app", k:v.k.map(([t,id])=>({t,id,forma:null,o:compObj(t,id)})), d:v.d, dosis:it.dosis, item:it}; }
+  if(it.fert){ const k=[{t:"ady",id:"ady_nutriente",forma:null,o:ADY.ady_nutriente}]; if(S.caldo.fertilizantes.includes("boro")) k.push({t:"ady",id:"ady_boro",forma:null,o:ADY.ady_boro});
+    return {key:"fert", virt:"fert", n:"Fertilizante foliar ("+S.caldo.fertilizantes.join(", ")+")", f:"SL", e:"Agregado por el usuario", k, d:{paso_orden_carga:10,aporta_electrolitos:true,oleoso:false,tiempo_max_caldo_h:24}, dosis:null, item:it}; }
+  const p = PROD[it.r]; if(!p) return null;
+  return {key:"r:"+p.r, p, n:p.n, f:p.f, e:p.e, k:p.k.map(([t,id,forma,conc,orig])=>({t,id,forma,conc,orig,o:compObj(t,id)})), d:p.d||{}, dosis:it.dosis, item:it};
+}
+function activeMedidas(state){
+  const set = new Set(state.medidas);
+  return set;
+}
+function virtualItems(state){
+  const out=[];
+  for(const m of PROD_MEDIDAS) if(state.medidas.includes(m)) out.push({v:m,dosis:null});
+  if(state.caldo.fertilizantes.length) out.push({fert:true});
+  return out;
+}
+function effInputs(state){
+  const agua = {...state.agua}, caldo = {...state.caldo}; let vol = state.vol;
+  const m = new Set(state.medidas);
+  if(m.has("vol")) vol = Math.max(vol||0,100);
+  if(m.has("inmed") && caldo.horas_en_tanque!=null) caldo.horas_en_tanque = Math.min(caldo.horas_en_tanque,0.5);
+  if(m.has("aguatemp") && agua.temperatura_C!=null && (agua.temperatura_C<15||agua.temperatura_C>25)) agua.temperatura_C = 20;
+  if(m.has("agualimpia") && agua.turbidez) agua.turbidez = "baja";
+  if(m.has("declor") && agua.cloro_mg_L!=null) agua.cloro_mg_L = 0;
+  if(m.has("horario") && caldo.temperatura_ambiente_C!=null) caldo.temperatura_ambiente_C = Math.min(caldo.temperatura_ambiente_C,25);
+  if(m.has("agitmod")) caldo.agitacion = "normal";
+  if(agua.dureza_ppm_CaCO3==null && agua.Ca!=null) agua.dureza_ppm_CaCO3 = 2.497*agua.Ca + 4.118*(agua.Mg||0);
+  return {agua,caldo,vol};
+}
+const PROPMAP = {efecto_pH:"efecto_pH_caldo"};
+function propVals(x, key){ // valores de una propiedad en el producto y sus componentes
+  const out=[]; const dv = x.d[key]; if(dv!=null) (Array.isArray(dv)?dv:[dv]).forEach(v=>out.push(v));
+  for(const c of x.k){ if(!c.o) continue; const v = c.o[PROPMAP[key]||key] ?? c.o[key]; if(v!=null) (Array.isArray(v)?v:[v]).forEach(z=>out.push(z)); }
+  return out;
+}
+function matchSel(sel, x){
+  for(const key of Object.keys(sel)){
+    if(key==="forma") continue;
+    const val = sel[key];
+    let ok=false;
+    switch(key){
+      case "ai": ok = x.k.some(c=>c.t==="ai" && val.includes(c.id) && (!sel.forma || sel.forma.includes(c.forma ?? null))); break;
+      case "adyuvante": ok = x.k.some(c=>c.t==="ady" && val.includes(c.id)); break;
+      case "bio": ok = x.k.some(c=>c.t==="bio" && val.includes(c.id)); break;
+      case "cualquier_bio": ok = val===true && x.k.some(c=>c.t==="bio"); break;
+      case "formulacion": ok = val.includes(x.f); break;
+      case "grupo_quimico": ok = x.k.some(c=>c.t==="ai" && c.o && val.includes(c.o.grupo_quimico)); break;
+      case "moa_contiene": ok = x.k.some(c=>c.t==="ai" && c.o && (c.o.modo_accion||"").includes(val)); break;
+      case "clase": ok = x.k.some(c=>c.t==="ai" && c.o && val.includes(c.o.clase)); break;
+      case "fotolabil": case "volatil": case "aporta_electrolitos": ok = propVals(x,key).includes(val); break;
+      default: { const vs = propVals(x,key); ok = Array.isArray(val) ? vs.some(v=>val.includes(v)) : vs.includes(val); }
+    }
+    if(ok) return true;
+  }
+  return false;
+}
+function assign(sels, xs, used=new Set(), i=0){
+  if(i>=sels.length) return true;
+  for(let j=0;j<xs.length;j++){ if(used.has(j)) continue; if(matchSel(sels[i],xs[j])){ used.add(j); if(assign(sels,xs,used,i+1)) return true; used.delete(j);} }
+  return false;
+}
+function cond(op, a, b){
+  switch(op){
+    case ">": return a>b; case "<": return a<b; case ">=": return a>=b; case "<=": return a<=b; case "==": return a===b;
+    case "en": return b.includes(a);
+    case "incluye_alguno": return (a||[]).some(v=>b.includes(v));
+    case "incluye_todos": return b.every(v=>(a||[]).includes(v));
+    case "fuera_de": return a<b[0]||a>b[1];
+  }
+  return false;
+}
+function caldoDerived(xs, inp){
+  const ais = {}, adys = {};
+  const ADYCLASES = ["ady_mso","ady_aceite_mineral","ady_aceite_vegetal","ady_terpeno","ady_no_ionico","ady_anionico","ady_cationico","ady_organosiliconado","ady_lecitina"];
+  xs.forEach((x,i)=>{ x.k.forEach(c=>{ if(c.t==="ai"){(ais[c.id]=ais[c.id]||new Set()).add(i)} if(c.t==="ady"&&ADYCLASES.includes(c.id)){(adys[c.id]=adys[c.id]||new Set()).add(i)} }); });
+  const reales = xs.filter(x=>!x.virt || x.virt==="fert");
+  let suma=0; xs.forEach(x=>{ if(x.dosis>0) suma+=x.dosis; });
+  const ranges = xs.map(x=>x.d.pH_optimo).filter(Boolean);
+  let lo=-Infinity, hi=Infinity; ranges.forEach(([a,b])=>{lo=Math.max(lo,a);hi=Math.min(hi,b)});
+  return {
+    ...inp.caldo, volumen_L_ha: inp.vol,
+    n_productos: reales.length,
+    n_oleosos: xs.filter(x=>x.d.oleoso && !x.virt).length,
+    activo_duplicado: Object.values(ais).some(s=>s.size>1),
+    adyuvante_duplicado: Object.values(adys).some(s=>s.size>1),
+    interseccion_pH_vacia: ranges.length>1 && lo>hi,
+    concentracion_formulados_pct: inp.vol>0 ? suma/inp.vol*100 : null,
+    pH_rango: ranges.length ? [lo,hi] : null,
+    duplicados: Object.entries(ais).filter(([k,s])=>s.size>1).map(([k])=>k),
+    delta_T: deltaT(inp.caldo.temperatura_ambiente_C, inp.caldo.HR),
+    fuera_ley: fueraLey(inp.caldo),
+  };
+}
+/* Delta T = T - temperatura de bulbo húmedo (fórmula de Stull, 2011) */
+function deltaT(T, HR){
+  if(T==null || HR==null || HR<=0) return null;
+  const tw = T*Math.atan(0.151977*Math.sqrt(HR+8.313659)) + Math.atan(T+HR) - Math.atan(HR-1.676331) + 0.00391838*Math.pow(HR,1.5)*Math.atan(0.023101*HR) - 4.686035;
+  return Math.round((T-tw)*10)/10;
+}
+/* Ley 3742/09, art. 63: no aplicar con T > 32 °C, HR < 60 % o viento > 10 km/h */
+function fueraLey(c){
+  const T=c.temperatura_ambiente_C, H=c.HR, V=c.viento_kmh;
+  if((T!=null&&T>32)||(H!=null&&H<60)||(V!=null&&V>10)) return true;
+  if(T!=null&&H!=null&&V!=null) return false;
+  return null;
+}
+const DATO_NOMBRE = {pH:"pH del agua",dureza_ppm_CaCO3:"dureza",temperatura_C:"temperatura del agua",turbidez:"turbidez",Fe_mg_L:"hierro",HCO3_mg_L:"bicarbonatos",conductividad_uS_cm:"conductividad",cloro_mg_L:"cloro",horas_en_tanque:"horas en el tanque",temperatura_ambiente_C:"temperatura ambiente",pH_final:"pH final del caldo",volumen_L_ha:"volumen",viento_kmh:"viento",HR:"humedad relativa",delta_T:"temperatura y humedad (Delta T)",lluvia_h:"lluvia prevista",fuera_ley:"temperatura, humedad y viento"};
+function levelOf(rid, act){
+  const cfg = SEM[rid] || [null,0,{}]; const r = RULE[rid];
+  const base = cfg[0]!=null ? cfg[0] : SEV[r.severidad];
+  const piso = Math.min(cfg[1], base);
+  let red = 0; const meds = Object.entries(cfg[2]).map(([m,st])=>{ const on = act.has(m); if(on) red+=st; return {m,st,on}; });
+  return {base, piso, level: Math.max(piso, base-red), meds};
+}
+function evaluate(state){
+  const items = state.items.concat(virtualItems(state));
+  const xs = items.map(expandItem).filter(Boolean);
+  const inp = effInputs(state);
+  const cal = caldoDerived(xs, inp);
+  const act = activeMedidas(state);
+  // estabilizadores presentes en productos reales también cuentan como medida activa
+  xs.forEach(x=>{ if(x.virt) return; x.k.forEach(c=>{ for(const [m,def] of Object.entries(MED)) if(def.comp && def.comp===c.id) act.add(m); }); });
+  const fired=[], pending=[];
+  for(const r of D.reglas){
+    const sels = r.condiciones.presentes||[];
+    if(sels.length && !assign(sels, xs)) continue;
+    const missing=[]; let ok=true;
+    for(const [src,obj] of [["agua",inp.agua],["caldo",cal]]){
+      for(const [k,ops] of Object.entries(r.condiciones[src]||{})){
+        const v = obj[k];
+        if(v==null || v===""){ if(k==="lluvia_h") ok=false; else missing.push(k); continue; }
+        for(const [op,b] of Object.entries(ops)) if(!cond(op,v,b)) ok=false;
+      }
+    }
+    if(!ok) continue;
+    const lv = levelOf(r.id, act);
+    const res = {r, ...lv, missing};
+    (missing.length ? pending : fired).push(res);
+  }
+  fired.sort((a,b)=>b.level-a.level || b.base-a.base);
+  const overall = fired.length ? Math.max(...fired.map(f=>f.level)) : null;
+  // estado por problema
+  const probs = {};
+  for(const f of fired){ const ids = new Set([...(f.r.problemas||[]), ...D.catalogo_problemas.filter(p=>p.reglas_relacionadas.includes(f.r.id)).map(p=>p.id)]);
+    ids.forEach(id=>{ (probs[id]=probs[id]||[]).push(f) }); }
+  return {xs, inp, cal, act, fired, pending, overall, probs};
+}
+function overallAfter(state, m){
+  const s2 = clone(state); const i = s2.medidas.indexOf(m);
+  if(i>=0) s2.medidas.splice(i,1); else s2.medidas.push(m);
+  return evaluate(s2);
+}
+
+/* ---------- Cálculos auxiliares ---------- */
+function unitOf(x){ return SOLIDOS.has(x.f) ? "kg" : "L"; }
+function amsKg1000(agua){
+  const {Na,K,Ca,Mg,Fe_mg_L} = agua;
+  if(Ca!=null || Mg!=null) return 1.198*(0.005*(Na||0)+0.002*(K||0)+0.009*(Ca||0)+0.014*(Mg||0)+0.042*(Fe_mg_L||0));
+  if(agua.dureza_ppm_CaCO3!=null) return 1.198*0.009*(agua.dureza_ppm_CaCO3/2.497);
+  return null;
+}
+function orderPlan(ev){
+  const rows = ev.xs.filter(x=>x.d.paso_orden_carga!=null || x.virt).map(x=>({x, paso: x.d.paso_orden_carga ?? 9}));
+  rows.sort((a,b)=>a.paso-b.paso || (b.x.dosis||0)-(a.x.dosis||0));
+  return rows;
+}
+function perTank(x, ev, state){
+  const vol = ev.inp.vol, tq = state.tanque;
+  if(!vol || !tq) return null;
+  const ha = tq/vol;
+  if(x.virt==="ams"){ const k = amsKg1000(ev.inp.agua); return k==null?null:{v:k*tq/1000,u:"kg",ha,nota:"mínimo por análisis de agua"}; }
+  if(x.virt==="antiesp") return {v:tq*0.15,u:"mL",ha,nota:"15 mL/100 L (rango 5-30)"};
+  if(x.dosis>0) { const u=unitOf(x); return {v:x.dosis*ha,u,ha}; }
+  return null;
+}
+function phTarget(ev){
+  const r = ev.cal.pH_rango; if(!r) return null;
+  if(r[0]>r[1]) return {txt:"6,0–6,5 (compromiso)",conflict:true};
+  return {txt:`${fmt(r[0],1)}–${fmt(r[1],1)}`,conflict:false};
+}
+function maxTime(ev){ const t = ev.xs.map(x=>x.d.tiempo_max_caldo_h).filter(v=>v!=null); return t.length?Math.min(...t):null; }
+</script>
+<script>
+/* ---------- UI: rubros y pestañas ---------- */
+function renderRubros(){
+  const el = $("#rubros"); el.querySelectorAll(".chip").forEach(c=>c.remove());
+  for(const k of RUBK){ const b=document.createElement("button"); b.className="chip"; b.textContent=D.rubros[k].nombre; b.title=D.rubros[k].detalle; b.setAttribute("aria-pressed", String(k===RUBRO));
+    b.onclick=()=>{RUBRO=k; store("rubro",k); renderRubros(); renderAll();}; el.appendChild(b); }
+}
+let VIEW = "caldo";
+function setView(v){
+  VIEW=v; document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.v===v)));
+  document.querySelectorAll("main>.view").forEach(s=>s.hidden = s.id!=="v-"+v);
+  renderAll(); window.scrollTo({top:0});
+}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
+const inRubro = p => p.s.includes(RUBRO);
+const rubBadges = s => `<span class="rb">${RUBK.map(k=>`<i class="${s.includes(k)?"on":""}" title="${esc(D.rubros[k].nombre)}">${k}</i>`).join("")}</span>`;
+
+/* ---------- Armador: entradas ---------- */
+const AMB_KEYS = ["fecha_hora","temperatura_ambiente_C","HR","viento_kmh","rafagas_kmh","viento_dir","nubosidad","lluvia_h"];
+const AGUA_KEYS = ["pH","dureza_ppm_CaCO3","temperatura_C","turbidez","Ca","Mg","Na","K","Fe_mg_L","HCO3_mg_L","conductividad_uS_cm","cloro_mg_L"];
+function numOrNull(v){ return v===""||v==null ? null : Number(v); }
+function fillInputs(){
+  $("#vol").value=S.vol??""; $("#tanque").value=S.tanque??""; $("#horas").value=S.caldo.horas_en_tanque??""; $("#sup").value=S.sup??"";
+  AMB_KEYS.forEach(k=>{ const el=$("#c_"+k); el.value = S.caldo[k] ?? ""; });
+  $("#agitacion").value=S.caldo.agitacion; $("#portador").value=S.caldo.portador; $("#bolsas").value=String(!!S.caldo.bolsas_hidrosolubles); $("#phfinal").value=S.caldo.pH_final??"";
+  AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.value = S.agua[k] ?? ""; });
+  $("#exBanner").hidden = !S.ejemplo;
+}
+function bindInputs(){
+  const upd = ()=>{ S.ejemplo=false; save(); renderCaldo(); };
+  $("#vol").oninput=e=>{S.vol=numOrNull(e.target.value);upd()};
+  $("#tanque").oninput=e=>{S.tanque=numOrNull(e.target.value);upd()};
+  $("#horas").oninput=e=>{S.caldo.horas_en_tanque=numOrNull(e.target.value);upd()};
+  $("#sup").oninput=e=>{S.sup=numOrNull(e.target.value);S.supManual=true;upd()};
+  AMB_KEYS.forEach(k=>{ const el=$("#c_"+k); const txt = el.tagName==="SELECT" || el.type==="datetime-local";
+    el.addEventListener(txt?"change":"input", e=>{ S.caldo[k] = txt ? (e.target.value||null) : numOrNull(e.target.value); upd(); }); });
+  $("#btnAhora").onclick=()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); S.caldo.fecha_hora=d.toISOString().slice(0,16); fillInputs(); upd(); };
+  $("#apCampo").onchange=e=>{ S.ap={campo:e.target.value||null, lotes:[]}; S.supManual=false; upd(); };
+  $("#agitacion").onchange=e=>{S.caldo.agitacion=e.target.value;upd()};
+  $("#portador").onchange=e=>{S.caldo.portador=e.target.value;upd()};
+  $("#bolsas").onchange=e=>{S.caldo.bolsas_hidrosolubles=e.target.value==="true";upd()};
+  $("#phfinal").oninput=e=>{S.caldo.pH_final=numOrNull(e.target.value);upd()};
+  AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.addEventListener(el.tagName==="SELECT"?"change":"input", e=>{ S.agua[k] = k==="turbidez" ? (e.target.value||null) : numOrNull(e.target.value); upd(); }); });
+  $("#btnVaciar").onclick=()=>{ S=migrar({items:[],vol:100,tanque:2000,agua:{},caldo:{},medidas:[],ejemplo:false}); save(); fillInputs(); renderCaldo(); };
+}
+function save(){ store("estado", S); }
+function chipsRow(el, opts, arr){
+  el.innerHTML = opts.map(([v,t])=>`<button class="chip" data-v="${esc(v)}" aria-pressed="${arr.includes(v)}" style="font-size:.78rem;padding:2px 9px">${esc(t)}</button>`).join("");
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const v=b.dataset.v; const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); S.ejemplo=false; save(); renderCaldo(); });
+}
+
+/* buscador */
+function searchProducts(q, limit=12, onlyRubro=true){
+  q = q.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  if(q.length<2) return [];
+  const out=[];
+  for(const p of D.productos){
+    if(onlyRubro && !inRubro(p)) continue;
+    const hay = (p.n+" "+p.pa+" "+p.e+" "+p.r).toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+    if(hay.includes(q)){ out.push(p); if(out.length>=limit) break; }
+  }
+  return out;
+}
+function bindSearch(){
+  const inp=$("#q"), box=$("#sugg");
+  inp.oninput=()=>{
+    const res = searchProducts(inp.value, 14);
+    if(!res.length){ box.hidden = inp.value.trim().length<2; box.innerHTML = inp.value.trim().length<2?"":`<div class="note" style="padding:10px">Sin resultados en el rubro ${esc(D.rubros[RUBRO].nombre)}.</div>`; return; }
+    box.innerHTML = res.map(p=>`<button data-r="${esc(p.r)}"><span class="t">${esc(p.n)} ${famChip(p.f)}</span><span class="s">${esc(p.pa)} · ${esc(p.e)}${p.u!=="pulverizacion"?" · "+(p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"):""}</span></button>`).join("");
+    box.hidden=false;
+    box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ S.items.push({r:b.dataset.r,dosis:null}); S.ejemplo=false; inp.value=""; box.hidden=true; save(); renderCaldo(); });
+  };
+  document.addEventListener("click",e=>{ if(!e.target.closest(".search")) box.hidden=true; });
+}
+
+/* ---------- Armador: resultado ---------- */
+function lampHTML(level, sm){ return `<div class="lamp${sm?" sm":""}" aria-hidden="true">${[3,2,1,0].map(l=>`<i class="l${l}${level===l?" on":""}"></i>`).join("")}</div>`; }
+function medChip(m, f, ev){
+  const def = MED[m]; const on = ev.act.has(m);
+  const fromProduct = on && !S.medidas.includes(m);
+  let after = "";
+  if(!on){ const ev2 = overallAfter(S,m); const f2 = ev2.fired.find(z=>z.r.id===f.r.id); const nl = f2?f2.level:null;
+    const nuevos = ev2.fired.filter(z=>!ev.fired.some(y=>y.r.id===z.r.id)).map(z=>z.r.id);
+    after = `<span class="arrow">→</span>${nl==null?`<span class="ok c0">sin alerta</span>`:`<span class="ok c${nl}">${NIV[nl].nombre}</span>`}${nuevos.length?` <span class="warn">activa ${nuevos.join(", ")}</span>`:""}`;
+  }
+  return `<button class="med" data-m="${m}" aria-pressed="${on}" ${fromProduct?"disabled title='Ya lo aporta un producto de la mezcla'":""} title="${esc(def.detalle)}"><span class="k">${on?"✓":"＋"} −${f.meds.find(z=>z.m===m).st}</span>${esc(def.nombre)}${after}</button>`;
+}
+function alertHTML(f, ev, pending){
+  const r=f.r;
+  const probs = [...new Set(r.problemas)].map(id=>PROB[id]?PROB[id].nombre.split(" (")[0]:id);
+  const meds = f.meds.length ? `<div class="meds">${f.meds.map(z=>medChip(z.m,f,ev)).join("")}</div>` : "";
+  const floorTxt = f.piso>0 ? `<span class="floor">No baja de ${NIV[f.piso].nombre.toLowerCase()} con medidas de manejo${f.piso===3?": separar las aplicaciones":""}.</span>` : "";
+  return `<article class="al l${f.level}">
+    <div class="al-h"><h4>${esc(r.titulo)}</h4><span class="row" style="gap:6px">${f.level!==f.base?`${pill(f.base)}<span class="arrow">→</span>`:""}${pill(f.level)}<span class="tag mono">${esc(r.id)}</span></span></div>
+    <p class="why">${esc(probs.join(" · "))} — ${esc(r.mecanismo)}</p>
+    <p class="rec"><b>Qué hacer:</b> ${esc(r.recomendacion)}</p>
+    ${pending?`<p class="note">Falta el dato: <b>${f.missing.map(k=>DATO_NOMBRE[k]||k).join(", ")}</b>. Si se cumple la condición, quedaría en ${NIV[f.level].nombre.toLowerCase()}.</p>`:""}
+    ${meds}${floorTxt}
+  </article>`;
+}
+function renderCaldo(){
+  // lista de productos
+  const ev = evaluate(S);
+  const mix=$("#mix");
+  if(!S.items.length && !virtualItems(S).length){ mix.innerHTML=`<p class="note">Agregá productos con el buscador. Se listan los del rubro ${esc(D.rubros[RUBRO].nombre)}.</p>`; }
+  else mix.innerHTML = ev.xs.map((x,i)=>{
+    const isV = !!x.virt;
+    const u = unitOf(x);
+    const offR = x.p && !inRubro(x.p) ? `<span class="tag">fuera del rubro</span>` : "";
+    const warn = x.p && x.p.u!=="pulverizacion" ? `<span class="tag" style="color:var(--s3)">${x.p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"}</span>`:"";
+    const mant = x.p && x.p.m ? `<span class="tag">mantenimiento vencido</span>`:"";
+    const dose = isV ? `<span class="note">${x.virt==="ams"||x.virt==="antiesp"?"ver orden de carga":"según etiqueta"}</span>` : `<span class="dose"><input type="number" step="0.005" min="0" value="${x.dosis??""}" data-i="${i}" aria-label="Dosis de ${esc(x.n)}"><span class="note">${u}/ha</span></span>`;
+    return `<div class="mi${isV?" virt":""}"><span class="nm">${esc(x.n)}</span>${dose}<button class="x" data-i="${i}" data-virt="${x.virt||""}" aria-label="Quitar ${esc(x.n)}">×</button>
+      <span class="sub">${famChip(x.f)}<span>Paso ${x.d.paso_orden_carga??"—"}</span>${x.p?`<span>${esc(x.p.pa)}</span><span>· ${esc(x.e)}</span>`:`<span>${esc(x.e)}</span>`}${offR}${warn}${mant}</span></div>`;
+  }).join("");
+  mix.querySelectorAll(".dose input").forEach(inp=>inp.oninput=e=>{ const x=ev.xs[+e.target.dataset.i]; x.item.dosis=numOrNull(e.target.value); S.ejemplo=false; save(); renderResult(); });
+  mix.querySelectorAll(".x").forEach(b=>b.onclick=()=>{ const x=ev.xs[+b.dataset.i];
+    if(x.virt==="fert"){ S.caldo.fertilizantes=[]; } else if(x.virt){ S.medidas=S.medidas.filter(m=>m!==x.virt); } else { S.items.splice(S.items.indexOf(x.item),1); }
+    S.ejemplo=false; save(); renderCaldo(); });
+  chipsRow($("#fertChips"), FERTS.map(f=>[f,f]), S.caldo.fertilizantes);
+  chipsRow($("#resChips"), RESID, S.caldo.residuo_previo);
+  $("#rubroNote").textContent = "Rubro: "+D.rubros[RUBRO].nombre;
+  $("#exBanner").hidden = !S.ejemplo;
+  renderAplicarEn(); renderAmb();
+  renderResult();
+}
+function renderResult(){
+  const ev = evaluate(S);
+  const el = $("#result");
+  const o = ev.overall;
+  const cnt = [0,1,2,3].map(l=>ev.fired.filter(f=>f.level===l).length);
+  const verdict = o==null ? {t:"Sin alertas",d:"No se activó ninguna regla con los datos cargados. Igual hacé la prueba de jarra si es una mezcla nueva.",cls:"c0"} : {t:`${NIV[o].nombre} · ${NIV[o].lema}`,d:NIV[o].texto,cls:"c"+o};
+  const worst = ev.fired.filter(f=>f.level===o);
+  const ph = phTarget(ev), tmax = maxTime(ev), ams = amsKg1000(ev.inp.agua);
+  const allMeds = Object.entries(MED);
+  const pract = allMeds.filter(([k,v])=>v.tipo!=="producto");
+  const prodM = allMeds.filter(([k,v])=>v.tipo==="producto");
+  el.innerHTML = `
+  <div class="panel" id="pSemaforo">
+    <div class="verdict">${lampHTML(o==null?0:o)}<div class="stack" style="gap:4px">
+      <span class="eyebrow">Semáforo de la mezcla</span>
+      <div class="vt ${verdict.cls}">${esc(verdict.t)}</div>
+      <p>${esc(verdict.d)}</p>
+      ${o!=null&&o>=2?`<p class="note">Lo define: ${worst.map(f=>`<b>${esc(f.r.titulo)}</b>`).join("; ")}.</p>`:""}
+      <div class="counts">${[3,2,1,0].map(l=>cnt[l]?pill(l,`${cnt[l]} ${NIV[l].nombre.toLowerCase()}`):"").join("")}${ev.pending.length?`<span class="pill pn">${ev.pending.length} a verificar</span>`:""}</div>
+    </div></div>
+  </div>
+  <div class="panel" id="pDatos">
+    <div class="panel-h"><h3>Datos del caldo</h3></div>
+    <div class="kv">
+      <div><b>${ph?esc(ph.txt):"—"}</b><span>pH objetivo${ph&&ph.conflict?" (los productos piden pH opuestos)":""}</span></div>
+      <div><b>${tmax!=null?fmt(tmax,1)+" h":"—"}</b><span>Tiempo máximo en el tanque</span></div>
+      <div><b>${ev.cal.concentracion_formulados_pct!=null?fmt(ev.cal.concentracion_formulados_pct,1)+" %":"—"}</b><span>Formulados en el caldo (alerta > 5 %)</span></div>
+      <div><b>${ev.inp.vol?fmt(ev.inp.vol,0)+" L/ha":"—"}</b><span>Volumen${S.medidas.includes("vol")&&S.vol<100?" (ajustado)":""}</span></div>
+      <div><b>${S.tanque&&ev.inp.vol?fmt(S.tanque/ev.inp.vol,1)+" ha":"—"}</b><span>Hectáreas por tanque</span></div>
+      <div><b>${ams!=null?fmt(ams,2)+" kg":"—"}</b><span>AMS mínimo por 1000 L (por cationes)</span></div>
+    </div>
+  </div>
+  <div class="panel" id="pAlertas">
+    <div class="panel-h"><h3>Alertas y cómo bajarlas</h3><span class="note">Tocá una medida para aplicarla; al lado se ve el color que queda.</span></div>
+    <div class="alerts">${ev.fired.length?ev.fired.map(f=>alertHTML(f,ev,false)).join(""):`<p class="note">Sin alertas activas.</p>`}</div>
+    ${ev.pending.length?`<details class="box" style="margin-top:12px"><summary>A verificar (${ev.pending.length}): faltan datos de agua o del caldo</summary><div class="in alerts">${ev.pending.map(f=>alertHTML(f,ev,true)).join("")}</div></details>`:""}
+  </div>
+  <div class="panel" id="pRot">${rotacionHTML(ev)}</div>
+  <div class="panel" id="pDosis">${dosisHTML(ev)}</div>
+  <div class="panel" id="pProblemas">
+    <div class="panel-h"><h3>Los ${D.catalogo_problemas.length} problemas del caldo</h3><span class="note">Color de cada problema con las medidas aplicadas</span></div>
+    <div class="probgrid">${D.catalogo_problemas.map(p=>{ const fs=ev.probs[p.id]; const l=fs?Math.max(...fs.map(f=>f.level)):null; return `<button class="pg" data-p="${p.id}" title="${esc(p.nombre)}"><i class="dot ${l!=null?"l"+l:""}"></i><span>${esc(p.nombre.split(" (")[0])}</span></button>`; }).join("")}</div>
+  </div>
+  <div class="panel" id="pOrden">
+    <div class="panel-h"><h3>Orden de carga</h3><span class="note">Por presentación: sólidos → suspensiones → oleosos → solubles → adyuvantes</span></div>
+    ${orderTable(ev)}
+  </div>
+  <div class="panel" id="pMedidas">
+    <div class="panel-h"><h3>Medidas aplicadas</h3><span class="note">También se pueden marcar acá</span></div>
+    <div class="stack" style="gap:10px">
+      <div><span class="eyebrow">Estabilizadores que entran al tanque</span><div class="meds" style="margin-top:6px">${prodM.map(([k,v])=>`<button class="med" data-m="${k}" aria-pressed="${ev.act.has(k)}" ${ev.act.has(k)&&!S.medidas.includes(k)?"disabled":""} title="${esc(v.detalle)}"><span class="k">${ev.act.has(k)?"✓":"＋"}</span>${esc(v.nombre)}</button>`).join("")}</div></div>
+      <div><span class="eyebrow">Prácticas y ajustes</span><div class="meds" style="margin-top:6px">${pract.map(([k,v])=>`<button class="med" data-m="${k}" aria-pressed="${ev.act.has(k)}" title="${esc(v.detalle)}"><span class="k">${ev.act.has(k)?"✓":"＋"}</span>${esc(v.nombre)}</button>`).join("")}</div></div>
+    </div>
+  </div>
+  <div class="panel" id="pJarra">
+    <div class="panel-h"><h3>Prueba de jarra</h3><span class="note">Frasco de 1 L con el agua real</span></div>
+    ${jarTable(ev)}
+    <p class="note" style="margin-top:8px">${esc(D.prueba_jarra.interpretacion)}</p>
+  </div>`;
+  el.querySelectorAll(".med").forEach(b=>b.onclick=()=>{ const m=b.dataset.m; const i=S.medidas.indexOf(m); if(i>=0) S.medidas.splice(i,1); else S.medidas.push(m); S.ejemplo=false; save(); renderCaldo(); });
+  el.querySelectorAll(".pg").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
+  bindDosis(ev); bindRotacion();
+}
+function orderTable(ev){
+  const rows = orderPlan(ev);
+  const steps = [];
+  steps.push(`<tr><td class="step">1</td><td colspan="3"><b>Agua</b> — ${esc(ORDEN[1].descripcion)}</td></tr>`);
+  let last=null;
+  rows.forEach(({x,paso})=>{
+    const pt = perTank(x, ev, S);
+    const fam = D.familias[famOf(x.f)];
+    const fnote = FORM[x.f] && FORM[x.f].notas && FORM[x.f].notas[0] ? FORM[x.f].notas[0] : "";
+    steps.push(`<tr><td class="step">${paso}</td><td><b>${esc(x.n)}</b><br><span class="note">${esc(ORDEN[paso]?ORDEN[paso].grupo.replace(/_/g," ").toLowerCase():"")}</span></td><td>${famChip(x.f)}<br><span class="note">${esc(paso===last?"Mismo paso: esperar que se integre el anterior.":(ORDEN[paso]||{}).descripcion||"")}${fnote?" "+esc(fnote):""}</span></td><td class="n">${pt?fmt(pt.v, pt.u==="mL"?0:2)+" "+pt.u+(pt.nota?`<br><span class="note">${esc(pt.nota)}</span>`:""):"según etiqueta"}</td></tr>`);
+    last=paso;
+  });
+  steps.push(`<tr><td class="step">11</td><td colspan="3"><b>Completar y verificar</b> — ${esc(ORDEN[11].descripcion)}</td></tr>`);
+  return `<div class="tw"><table><thead><tr><th>Paso</th><th>Producto</th><th>Presentación y cómo cargar</th><th style="text-align:right">Por tanque de ${fmt(S.tanque,0)} L</th></tr></thead><tbody>${steps.join("")}</tbody></table></div>`;
+}
+function jarTable(ev){
+  const vol = ev.inp.vol; if(!vol) return `<p class="note">Cargá el volumen por hectárea.</p>`;
+  const rows = orderPlan(ev).filter(r=>r.x.dosis>0).map(({x})=>{ const u = unitOf(x)==="kg"?"g":"mL"; return `<tr><td>${esc(x.n)}</td><td class="n">${fmt(x.dosis*1000/vol,2)} ${u}</td></tr>`; });
+  return `<div class="tw"><table><thead><tr><th>Producto (en orden)</th><th style="text-align:right">Por litro de caldo</th></tr></thead><tbody>${rows.join("")||`<tr><td colspan="2" class="note">Cargá las dosis.</td></tr>`}</tbody></table></div>`;
+}
+
+/* ---------- Ventana de detalle ---------- */
+function openDrawer(html){ const d=$("#drawer"); $("#drawerIn").innerHTML = `<div class="drawer-h"><span></span><button class="btn" id="dClose">Cerrar</button></div>`+html; d.hidden=false; $("#dClose").onclick=closeDrawer; $("#dClose").focus(); }
+function closeDrawer(){ $("#drawer").hidden=true; }
+$("#drawer").addEventListener("click",e=>{ if(e.target.id==="drawer") closeDrawer(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
+
+function problemHTML(p, ev){
+  const fs = ev && ev.probs[p.id];
+  const rules = [...new Set([...p.reglas_relacionadas, ...D.reglas.filter(r=>r.problemas.includes(p.id)).map(r=>r.id)])];
+  return `<div class="stack">
+    <span class="eyebrow">${esc(D.categorias_problemas[p.categoria]?p.categoria.replace("_"," / "):"")} · ${esc(p.id)}</span>
+    <h2>${esc(p.nombre)}</h2>
+    ${fs?`<div class="row">${pill(Math.max(...fs.map(f=>f.level)),"En tu mezcla: "+NIV[Math.max(...fs.map(f=>f.level))].nombre)}<span class="note">${fs.map(f=>esc(f.r.id)).join(", ")}</span></div>`:ev?`<div>${pill(null,"Sin alerta en tu mezcla")}</div>`:""}
+    <p>${esc(p.que_es)}</p>
+    <div class="panel"><h4>Por qué pasa</h4><p class="note" style="margin-top:4px">${esc(p.mecanismo)}</p></div>
+    <div class="cols">
+      <div><h4>Cómo se ve</h4><ul class="clean">${p.como_se_ve.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div><h4>Causas frecuentes</h4><ul class="clean">${p.causas.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div><h4>Prevención</h4><ul class="clean">${p.prevencion.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div><h4>Si ya ocurrió</h4><ul class="clean">${p.que_hacer_si_ocurre.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+    </div>
+    <p class="note"><b>Productos y condiciones de riesgo:</b> ${esc(p.productos_y_condiciones_de_riesgo)}</p>
+    <h4>Reglas del semáforo</h4>
+    ${ruleTable(rules)}
+  </div>`;
+}
+function ruleTable(ids){
+  return `<div class="tw"><table><thead><tr><th>Regla</th><th>Base</th><th>Piso</th><th>Medidas que la bajan</th></tr></thead><tbody>${ids.filter(id=>RULE[id]).map(id=>{ const r=RULE[id]; const lv=levelOf(id,new Set()); const m=Object.entries(SEM[id][2]);
+    return `<tr><td><span class="mono">${esc(id)}</span> ${esc(r.titulo)}</td><td>${pill(lv.base)}</td><td>${pill(lv.piso)}</td><td>${m.length?m.map(([k,s])=>`${esc(MED[k].nombre)} <span class="mono note">−${s}</span>`).join("<br>"):`<span class="note">No se corrige con manejo</span>`}</td></tr>`; }).join("")}</tbody></table></div>`;
+}
+function openProblem(id, ev){ openDrawer(problemHTML(PROB[id], ev)); }
+
+function aiCard(c){
+  const o=c.o; if(!o) return `<div class="panel"><h4>${esc(c.orig||c.id)}</h4><p class="note">Sin ficha química.</p></div>`;
+  const rows = c.t==="ai" ? [["Clase",o.clase],["Grupo químico",o.grupo_quimico],["Modo de acción",o.modo_accion],["Naturaleza iónica",o.naturaleza_ionica],["Solubilidad (mg/L)",o.solubilidad_agua_mg_L],["log Kow",o.log_Kow],["Hidrólisis alcalina / ácida",`${o.hidrolisis_alcalina??"—"} / ${o.hidrolisis_acida??"—"}`],["pH óptimo del caldo",o.pH_optimo_caldo?o.pH_optimo_caldo.join("–"):"—"],["Sensibilidad a dureza / turbidez",`${o.sensibilidad_dureza??"—"} / ${o.sensibilidad_turbidez??"—"}`],["Tiempo máx. en caldo",o.tiempo_max_caldo_h!=null?o.tiempo_max_caldo_h+" h":"—"],["Confianza de los datos",o.confianza_datos]] : [["Función",o.funcion||o.tipo],["pH óptimo",o.pH_optimo_caldo?o.pH_optimo_caldo.join("–"):"—"]];
+  return `<div class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><h4>${esc(o.nombre)}${c.conc!=null?` <span class="note mono">${fmt(c.conc,1)} %</span>`:""}${c.forma?` <span class="tag">${esc(c.forma.replace("_"," "))}</span>`:""}</h4>${D.ai_rubros[c.id]?rubBadges(D.ai_rubros[c.id].split(" ").join("")):""}</div>
+    <div class="tw"><table><tbody>${rows.map(([k,v])=>`<tr><th style="width:42%">${esc(k)}</th><td>${esc(v??"—")}</td></tr>`).join("")}</tbody></table></div>
+    ${o.notas&&o.notas.length?`<ul class="clean note">${o.notas.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}
+    ${o.incompatible_con?`<p class="note"><b>Incompatible con:</b> ${esc(o.incompatible_con.join(", "))}</p>`:""}
+    ${D.impurezas[c.id]?`<p class="note"><b>Impurezas relevantes (calidad del técnico):</b> ${esc(D.impurezas[c.id])}</p>`:""}
+  </div>`;
+}
+function formBlock(code){
+  const F=FORM[code], I=D.inertes[code], fam=D.familias[famOf(code)];
+  return `<div class="stack" style="gap:10px">
+    <div class="row">${famChip(code)}<b>${esc(F?F.nombre:code)}</b>${F&&F.paso_orden_carga?`<span class="tag">Paso ${F.paso_orden_carga} de carga</span>`:""}</div>
+    <p class="note">${esc(fam.como)}</p>
+    ${F&&F.paso_orden_carga?`<div class="kv"><div><b>${esc(F.riesgo_queso)}</b><span>Riesgo de “queso”</span></div><div><b>${esc(F.tendencia_espuma)}</b><span>Espuma</span></div><div><b>${esc(F.sensibilidad_electrolitos)}</b><span>Sensibilidad a sales</span></div><div><b>${esc(F.sensibilidad_agua_fria)}</b><span>Sensibilidad al agua fría</span></div></div>`:""}
+    ${F&&F.notas&&F.notas.length?`<ul class="clean note">${F.notas.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}
+    ${I?`<div class="cols">
+      <div><h4>Inertes típicos</h4><ul class="clean">${I.inertes.map(([a,b])=>`<li><b>${esc(a)}:</b> ${esc(b)}</li>`).join("")}</ul></div>
+      <div><h4>Calidad (especificación FAO / método CIPAC)</h4><ul class="clean">${I.calidad.map(([a,b])=>`<li><b>${esc(a)}:</b> ${esc(b)}</li>`).join("")}</ul></div>
+      <div><h4>Problemas de calidad y en el caldo</h4><ul class="clean">${I.problemas.map(([a,b])=>`<li><b>${esc(a)}:</b> ${esc(b)}</li>`).join("")}</ul></div>
+    </div>`:""}
+  </div>`;
+}
+function productHTML(p){
+  const k = p.k.map(([t,id,forma,conc,orig])=>({t,id,forma,conc,orig,o:compObj(t,id)}));
+  const sig = p.k.filter(c=>c[0]!=="ady").map(c=>c[1]).sort().join("+");
+  const eq = sig ? D.productos.filter(q=>q.r!==p.r && !q.m && q.k.filter(c=>c[0]!=="ady").map(c=>c[1]).sort().join("+")===sig) : [];
+  const d=p.d||{};
+  return `<div class="stack">
+    <span class="eyebrow">Registro SENAVE N° ${esc(p.r)} · ${esc(p.c)}</span>
+    <h2>${esc(p.n)}</h2>
+    <div class="row">${famChip(p.f)}${rubBadges(p.s)}${p.m?`<span class="tag">Mantenimiento vencido: verificar si está en el mercado</span>`:""}${p.u!=="pulverizacion"?`<span class="tag">${p.u==="tratamiento_semillas"?"Tratamiento de semillas":"No va en caldo"}</span>`:""}</div>
+    <div class="row"><button class="btn pri" id="addFromDrawer">Agregar al caldo</button></div>
+    <div class="tw"><table><tbody>
+      <tr><th style="width:34%">Principio activo (SENAVE)</th><td>${esc(p.pa)}</td></tr>
+      <tr><th>Registrante</th><td>${esc(p.e)}</td></tr>
+      <tr><th>Fabricante / origen</th><td>${esc(p.fa)} · ${esc(p.po)}</td></tr>
+      <tr><th>Formulación (SENAVE)</th><td>${esc(p.fs)}</td></tr>
+      <tr><th>Toxicología</th><td>${esc(p.t)}</td></tr>
+      <tr><th>Vencimiento registro / mantenimiento</th><td class="mono">${esc(p.v||"—")} / ${esc(p.mh||"—")}</td></tr>
+    </tbody></table></div>
+    <h3>En el caldo</h3>
+    <div class="kv">
+      <div><b>${d.paso_orden_carga??"—"}</b><span>Paso de carga</span></div>
+      <div><b>${d.pH_optimo?d.pH_optimo.join("–"):"—"}</b><span>pH óptimo</span></div>
+      <div><b>${d.tiempo_max_caldo_h!=null?d.tiempo_max_caldo_h+" h":"—"}</b><span>Tiempo máx. en el tanque</span></div>
+      <div><b>${esc(d.tendencia_espuma??"—")}</b><span>Espuma</span></div>
+      <div><b>${esc(d.sensibilidad_dureza??"—")}</b><span>Sensible a dureza</span></div>
+      <div><b>${esc(d.hidrolisis_alcalina??"—")}</b><span>Hidrólisis alcalina</span></div>
+      <div><b>${d.aporta_electrolitos?"sí":"no"}</b><span>Aporta sales</span></div>
+      <div><b>${d.oleoso?"sí":"no"}</b><span>Oleoso</span></div>
+    </div>
+    <h3>Componentes declarados</h3>
+    ${k.map(aiCard).join("")}
+    <h3>Formulación, inertes y calidad</h3>
+    <div class="panel">${formBlock(p.f)}</div>
+    <p class="note">La composición exacta de los inertes de este producto no es pública: se declara al SENAVE en el registro. Los solventes y componentes peligrosos figuran en su hoja de seguridad.</p>
+    ${eq.length?`<h3>Mismo activo, otras marcas (${eq.length})</h3><div class="tw"><table><thead><tr><th>Producto</th><th>Registrante</th><th>Formulación</th></tr></thead><tbody>${eq.slice(0,40).map(q=>`<tr><td>${esc(q.n)}</td><td>${esc(q.e)}</td><td>${famChip(q.f)}</td></tr>`).join("")}</tbody></table></div>${eq.length>40?`<p class="note">Y ${eq.length-40} más.</p>`:""}`:""}
+  </div>`;
+}
+function openProduct(r){ const p=PROD[r]; openDrawer(productHTML(p)); $("#addFromDrawer").onclick=()=>{ S.items.push({r:p.r,dosis:null}); S.ejemplo=false; save(); closeDrawer(); setView("caldo"); }; }
+</script>
+<script>
+/* ---------- Productos ---------- */
+let PLIM = 80;
+function initProductFilters(){
+  $("#pfam").innerHTML = `<option value="">Todas</option>`+Object.entries(D.familias).map(([k,v])=>`<option value="${k}">${esc(v.nombre)}</option>`).join("");
+  const emps = [...new Set(D.productos.map(p=>p.e))].sort((a,b)=>a.localeCompare(b));
+  $("#pemp").innerHTML = `<option value="">Todas (${emps.length})</option>`+emps.map(e=>`<option>${esc(e)}</option>`).join("");
+  ["#pq","#pclase","#pfam","#pemp","#pmant"].forEach(s=>$(s).addEventListener(s==="#pq"?"input":"change",()=>{PLIM=80;renderProductos()}));
+  $("#pmore").onclick=()=>{PLIM+=120;renderProductos()};
+}
+function renderProductos(){
+  const q=$("#pq").value.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,""), cl=$("#pclase").value, fam=$("#pfam").value, emp=$("#pemp").value, mant=$("#pmant").value;
+  const list = D.productos.filter(p=>inRubro(p) && (!cl||(p.c||"").toUpperCase().includes(cl)) && (!fam||famOf(p.f)===fam) && (!emp||p.e===emp) && (mant===""||String(p.m)===mant) &&
+    (!q || (p.n+" "+p.pa+" "+p.e+" "+p.r).toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").includes(q)));
+  list.sort((a,b)=>a.n.localeCompare(b.n));
+  $("#prodLead").textContent = `${D.rubros[RUBRO].nombre}: ${D.rubros[RUBRO].detalle}. Listado SENAVE con corte al ${D.meta.fecha_generacion.split("-").reverse().join("/")}. El rubro es orientativo según el principio activo; los cultivos autorizados están en la etiqueta.`;
+  $("#pcount").textContent = `${list.length.toLocaleString("es-PY")} productos`;
+  $("#plist").innerHTML = list.slice(0,PLIM).map(p=>`<button class="prow" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)}</span></span><span class="pa s">${esc(p.pa)}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s)}</span></button>`).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros.</p>`;
+  $("#plist").querySelectorAll(".prow").forEach(b=>b.onclick=()=>openProduct(b.dataset.r));
+  $("#pmore").hidden = list.length<=PLIM;
+}
+
+/* ---------- Formulaciones e inertes ---------- */
+function renderInertes(){
+  const el=$("#v-inertes"); if(el.dataset.done) return; el.dataset.done=1;
+  const famCount = {}; D.productos.filter(p=>!p.m).forEach(p=>{ famCount[famOf(p.f)]=(famCount[famOf(p.f)]||0)+1; });
+  const byFam = {}; D.formulaciones.forEach(f=>{ (byFam[famOf(f.codigo)]=byFam[famOf(f.codigo)]||[]).push(f); });
+  el.innerHTML = `
+  <div><h2>Formulaciones, inertes y calidad</h2><p class="lead">La presentación del producto define cómo se carga y con qué choca en el tanque. Los inertes (solventes, emulsionantes, dispersantes, cargas, espesantes) son la mayor parte del bidón y explican por qué dos marcas del mismo activo se comportan distinto con el mismo agua.</p></div>
+  <div class="cols">${Object.entries(D.familias).map(([k,v])=>`<div class="panel stack" style="gap:6px"><span class="fam fam-${k}" style="align-self:flex-start">${esc(v.nombre)}</span><p class="note">${esc(v.como)}</p><p class="note"><b>${(famCount[k]||0).toLocaleString("es-PY")}</b> productos vigentes · ${ (byFam[k]||[]).map(f=>f.codigo).join(", ")}</p></div>`).join("")}</div>
+  <div class="panel"><div class="panel-h"><h3>Orden de carga por presentación</h3></div>
+    <div class="tw"><table><thead><tr><th>Paso</th><th>Qué va</th><th>Cómo</th></tr></thead><tbody>${D.orden_carga.map(o=>`<tr><td class="step">${o.paso}</td><td><b>${esc(o.grupo.replace(/_/g," ").toLowerCase())}</b></td><td>${esc(o.descripcion)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="note" style="margin-top:8px">Regla práctica: lo que necesita mojarse (sólidos) entra antes que lo que lo recubre (aceites y solventes), y las sales concentradas (solubles) entran cuando ya hay mucha agua.</p>
+  </div>
+  <div class="stack"><h3>Cada formulación</h3>
+  ${D.formulaciones.slice().sort((a,b)=>(a.paso_orden_carga??99)-(b.paso_orden_carga??99)).map(f=>`<details class="box"><summary><span class="row" style="gap:8px">${famChip(f.codigo)}<span>${esc(f.nombre)}</span></span><span class="note">${f.n_productos_actuales} productos</span></summary><div class="in">${formBlock(f.codigo)}</div></details>`).join("")}
+  </div>
+  <div class="panel"><div class="panel-h"><h3>Señales de un producto en mal estado o de mala calidad</h3></div>
+    <div class="tw"><table><thead><tr><th>Qué se ve</th><th>Formulaciones</th><th>Qué hacer</th></tr></thead><tbody>${D.senales_mal_estado.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>
+  </div>
+  <div class="cols">
+    <div class="panel"><h3>Prueba de calidad en el campo</h3><ul class="clean" style="margin-top:8px">${D.prueba_calidad.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+    <div class="panel"><h3>Impurezas relevantes del activo</h3><p class="note" style="margin:6px 0">Las controla la especificación FAO del grado técnico. Un técnico de mala calidad o un producto mal almacenado puede superar los límites.</p>
+      <div class="tw"><table><tbody>${Object.entries(D.impurezas).map(([k,v])=>`<tr><th style="width:34%">${esc((AI[k]||{}).nombre||k)}</th><td>${esc(v)}</td></tr>`).join("")}</tbody></table></div></div>
+  </div>
+  <div class="panel"><h3>De dónde sale esta información</h3>
+    <ul class="clean note" style="margin-top:8px">
+      <li>Límites de calidad: Manual FAO/OMS de especificaciones de plaguicidas (JMPS) y métodos CIPAC (MT 36, 39, 46, 47, 53, 148, 160, 171, 174, 178, 179, 180, 184, 185). Son los valores habituales; cada producto tiene su propia especificación.</li>
+      <li>Inertes típicos: guías de formulación de CropLife y literatura técnica de coformulantes. La composición real de cada marca es confidencial y se declara al SENAVE en el registro.</li>
+      <li>El laboratorio de control de calidad del SENAVE analiza el contenido de principio activo, pH y densidad de los formulados.</li>
+      <li>Comportamiento en el tanque: base química de compatibilidad (v${esc(D.meta.version)}), Purdue PPP-1221, UNL G2350 y guías de extensión citadas en la base.</li>
+    </ul>
+  </div>`;
+}
+
+/* ---------- Diagnóstico ---------- */
+let DIAG = null;
+function renderDiag(){
+  const el=$("#v-diag"); const ev = evaluate(S);
+  el.innerHTML = `<div><h2>¿Qué estás viendo en el tanque?</h2><p class="lead">Elegí el síntoma. La app muestra los problemas probables y marca los que la mezcla cargada en “Armar caldo” ya tiene en alerta.</p></div>
+  <div class="row" style="gap:6px">${D.diagnostico.map((s,i)=>`<button class="chip" data-i="${i}" aria-pressed="${DIAG===i}">${esc(s.sintoma)}</button>`).join("")}</div>
+  <div class="stack" id="diagOut"></div>`;
+  el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{ DIAG=+b.dataset.i; renderDiag(); });
+  if(DIAG==null){ $("#diagOut").innerHTML = `<p class="note">Elegí un síntoma para ver las causas probables.</p>`; return; }
+  const s = D.diagnostico[DIAG];
+  const ps = s.problemas.map(id=>PROB[id]).sort((a,b)=>(ev.probs[b.id]?1:0)-(ev.probs[a.id]?1:0));
+  $("#diagOut").innerHTML = ps.map(p=>{ const fs=ev.probs[p.id]; const l=fs?Math.max(...fs.map(f=>f.level)):null;
+    return `<div class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><h3>${esc(p.nombre)}</h3>${fs?pill(l,"En tu mezcla: "+NIV[l].nombre):pill(null,"No aparece en tu mezcla")}</div>
+    ${fs?`<p class="note">Reglas activas: ${fs.map(f=>`<b>${esc(f.r.id)}</b> ${esc(f.r.titulo)}`).join("; ")}</p>`:""}
+    <p>${esc(p.que_es)}</p>
+    <div class="cols"><div><h4>Si ya ocurrió</h4><ul class="clean">${p.que_hacer_si_ocurre.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div><div><h4>Para la próxima</h4><ul class="clean">${p.prevencion.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div>
+    <div><button class="btn sm" data-p="${p.id}">Ver detalle del problema</button></div></div>`; }).join("");
+  $("#diagOut").querySelectorAll("button[data-p]").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
+}
+
+/* ---------- Problemas y reglas ---------- */
+function renderProblemas(){
+  const el=$("#v-problemas"); const ev=evaluate(S);
+  const cats = Object.keys(D.categorias_problemas);
+  el.innerHTML = `<div><h2>Problemas del caldo y reglas del semáforo</h2><p class="lead">Cada problema tiene reglas que se activan según los productos, el agua y la preparación. Cada regla arranca en un color según su gravedad y baja con las medidas indicadas, hasta su piso.</p></div>
+  <div class="panel"><div class="panel-h"><h3>Cómo leer el semáforo</h3></div>
+    <div class="cols">${NIV.map(n=>`<div class="row" style="align-items:flex-start;gap:10px;flex-wrap:nowrap">${lampHTML(n.n,true)}<div><b class="c${n.n}">${esc(n.nombre)} · ${esc(n.lema)}</b><p class="note">${esc(n.texto)}</p></div></div>`).join("")}</div>
+    <p class="note" style="margin-top:10px">Nivel de partida: gravedad de la regla (baja = verde, media = amarillo, alta = naranja, crítica = rojo); las reglas cuya recomendación es “no mezclar” arrancan en rojo. Cada medida resta niveles (−1 o −2). El <b>piso</b> es el color mínimo: un antagonismo puede quedar en amarillo aunque se corrija, y una reacción peligrosa queda siempre en rojo.</p>
+  </div>
+  ${cats.map(c=>`<div class="stack"><h3>${esc(c==="equipo_seguridad"?"Equipo, manejo y seguridad":c==="fisico"?"Físicos":c==="quimico"?"Químicos":"Biológicos")}</h3><p class="note">${esc(D.categorias_problemas[c])}</p>
+    <div class="cols">${D.catalogo_problemas.filter(p=>p.categoria===c).map(p=>{ const fs=ev.probs[p.id]; const l=fs?Math.max(...fs.map(f=>f.level)):null; return `<button class="panel stack" data-p="${p.id}" style="gap:6px;text-align:left;cursor:pointer"><span class="row" style="justify-content:space-between"><span class="mono note">${p.id}</span>${pill(l, l==null?"Sin alerta":NIV[l].nombre)}</span><b>${esc(p.nombre)}</b><span class="note">${esc(p.que_es)}</span></button>`; }).join("")}</div></div>`).join("")}`;
+  el.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
+}
+
+/* ---------- Caso práctico ---------- */
+function renderCaso(){
+  const el=$("#v-caso");
+  const base = clone(EJEMPLO); base.medidas=[];
+  const fin = clone(EJEMPLO); fin.medidas=MEDIDAS_EJEMPLO.slice();
+  const e0 = evaluate(base), e1 = evaluate(fin);
+  const tq = base.tanque, ha = tq/base.vol;
+  const listAl = ev => ev.fired.map(f=>`<tr><td><span class="mono note">${esc(f.r.id)}</span> ${esc(f.r.titulo)}</td><td>${pill(f.level)}</td></tr>`).join("");
+  const changes = e0.fired.map(f=>{ const g=e1.fired.find(z=>z.r.id===f.r.id); const usadas = f.meds.filter(m=>fin.medidas.includes(m.m)||e1.act.has(m.m)).map(m=>MED[m.m].nombre);
+    return `<tr><td><span class="mono note">${esc(f.r.id)}</span> ${esc(f.r.titulo)}</td><td>${pill(f.level)}</td><td>${usadas.length?esc(usadas.join(" + ")):(g?(g.level===0?`<span class="note">Sin cambios: ya es leve</span>`:`<span class="note">No se corrige con manejo</span>`):`<span class="note">Deja de aplicar al cambiar el dato</span>`)}</td><td>${g?pill(g.level):pill(null,"Resuelto")}</td></tr>`; }).join("");
+  const nuevos = e1.fired.filter(f=>!e0.fired.some(z=>z.r.id===f.r.id));
+  const a01 = e1.fired.find(f=>f.r.id==="A01");
+  el.innerHTML = `
+  <div class="story"><span class="eyebrow">Caso práctico · rubro agrícola</span><h2>Barbecho químico antes de sembrar soja</h2>
+  <p class="lead">Lote en Alto Paraná, fines de agosto. Hay buva (<i>Conyza</i>) de hasta 15 cm, capim amargoso (<i>Digitaria insularis</i>) resistente a glifosato y hoja ancha nacida. Pulverizadora de ${fmt(tq,0)} L a ${base.vol} L/ha, con agua de pozo. El plan del contratista: preparar una carga, esperar que baje el viento (unas 3 h) y salir.</p></div>
+
+  <div class="case-step"><span class="cn">1</span><div class="stack">
+    <h3>La mezcla principal</h3>
+    <div class="tw"><table><thead><tr><th>Producto (ejemplo del listado SENAVE)</th><th>Activo</th><th>Presentación</th><th style="text-align:right">Dosis/ha</th><th style="text-align:right">Por tanque</th></tr></thead><tbody>
+    ${base.items.map(it=>{ const p=PROD[it.r]; const u=SOLIDOS.has(p.f)?"kg":"L"; return `<tr><td><b>${esc(p.n)}</b><br><span class="note">${esc(p.e)}</span></td><td>${esc(p.pa)}</td><td>${famChip(p.f)}</td><td class="n">${fmt(it.dosis,3)} ${u}</td><td class="n">${fmt(it.dosis*ha,2)} ${u}</td></tr>`; }).join("")}
+    </tbody></table></div>
+    <p class="note">Sirve igual para cualquier marca con el mismo activo y formulación. Agua: pH ${base.agua.pH}, dureza ${base.agua.dureza_ppm_CaCO3} ppm CaCO₃ (dura), bicarbonatos ${base.agua.HCO3_mg_L} mg/L, ${base.agua.temperatura_C} °C, limpia. Temperatura ambiente ${base.caldo.temperatura_ambiente_C} °C.</p>
+    <p>Hay cuatro presentaciones distintas en el mismo tanque: un <b>sólido dispersable</b> (saflufenacil WG), un <b>emulsionable</b> (cletodim EC), un <b>aceite</b> (MSO) y dos <b>solubles salinos</b> (glifosato potásico y 2,4-D amina) que aportan mucha sal. Esa combinación, a ${base.vol} L/ha y con agua dura, es la que genera los problemas.</p>
+  </div></div>
+
+  <div class="case-step"><span class="cn">2</span><div class="stack">
+    <h3>Semáforo tal como se planeó</h3>
+    <div class="verdict">${lampHTML(e0.overall)}<div><div class="vt c${e0.overall}">${NIV[e0.overall].nombre} · ${NIV[e0.overall].lema}</div><p class="note">${e0.fired.length} alertas · formulados al ${fmt(e0.cal.concentracion_formulados_pct,1)} % del caldo · tiempo máximo ${fmt(maxTime(e0),1)} h y la carga iba a esperar ${base.caldo.horas_en_tanque} h</p></div></div>
+    <div class="tw"><table><thead><tr><th>Problema detectado</th><th>Color</th></tr></thead><tbody>${listAl(e0)}</tbody></table></div>
+  </div></div>
+
+  <div class="case-step"><span class="cn">3</span><div class="stack">
+    <h3>Correcciones: qué baja cada color</h3>
+    <p>Se agregan tres extras al tanque: sulfato de amonio por la dureza, antiespumante por la espuma del glifosato y antideriva por el 2,4-D con viento de 8 km/h. Además se sube el volumen a 100 L/ha, se usan pastillas de gota gruesa, se carga en el orden de la app con cada producto pre-diluido y el tanque al 70 %, se mantiene la agitación, se aplica enseguida en lugar de esperar 3 h, se usa la dosis alta de cletodim y se hace la prueba de jarra antes.</p>
+    <div class="tw"><table><thead><tr><th>Problema</th><th>Antes</th><th>Medidas</th><th>Después</th></tr></thead><tbody>${changes}</tbody></table></div>
+    ${nuevos.length?`<p class="note">Al agregar los estabilizadores aparecen alertas nuevas que también se evalúan: ${nuevos.map(f=>`<b>${esc(f.r.id)}</b> ${esc(f.r.titulo)} (${NIV[f.level].nombre.toLowerCase()})`).join("; ")}.</p>`:""}
+  </div></div>
+
+  <div class="case-step"><span class="cn">4</span><div class="stack">
+    <h3>Resultado</h3>
+    <div class="verdict">${lampHTML(e1.overall)}<div><div class="vt c${e1.overall}">${NIV[e1.overall].nombre} · ${NIV[e1.overall].lema}</div><p>${esc(NIV[e1.overall].texto)}</p></div></div>
+    ${a01?`<div class="panel"><p><b>El antagonismo graminicida + latifolicida no baja de amarillo.</b> El 2,4-D y el saflufenacil reducen la absorción y translocación del cletodim; con dosis plena y AMS el control del capim amargoso mejora, pero si el capim está grande o macollado conviene aplicar el cletodim con aceite y AMS solo, 1 a 3 días antes, o 7 días después del resto. Es el problema que, para este caso, conviene resolver separando aplicaciones.</p></div>`:""}
+    ${e1.fired.some(f=>f.r.id==="DR02")?`<div class="panel"><p><b>La deriva del 2,4-D también queda en amarillo.</b> Con antideriva y gota gruesa el riesgo baja, pero el 2,4-D daña cultivos sensibles con muy poco producto: aplicar con viento de 3 a 10 km/h que se aleje de algodón, hortalizas o soja no tolerante, y nunca con calor o calma.</p></div>`:""}
+    <div class="panel"><p><b>Rotación.</b> En el campo de ejemplo, los lotes 1 a 5 ya recibieron glifosato (HRAC 9) tres veces en los últimos 12 meses y hay capim amargoso resistente: el armador lo marca en naranja y propone alternativas con otro modo de acción (por ejemplo, glufosinato, HRAC 10, o paraquat/diquat, HRAC 22, para desecación). Ver “Rotación de modos de acción” en el armador.</p></div>
+  </div></div>
+
+  <div class="case-step"><span class="cn">5</span><div class="stack">
+    <h3>Orden de carga final (tanque de ${fmt(fin.tanque,0)} L a 100 L/ha)</h3>
+    ${(()=>{ const sv=S; S=fin; const h=orderTable(e1); S=sv; return h; })()}
+    <p class="note">El saflufenacil (sólido) entra antes que el cletodim y el aceite para que no se forme “queso”; las sales de glifosato y 2,4-D entran cuando el tanque ya tiene mucha agua y la emulsión está formada, y el aceite va al final. pH objetivo del caldo: ${esc((phTarget(e1)||{}).txt||"—")}; el agua (pH ${base.agua.pH}) está algo por encima, pero ningún activo de esta mezcla tiene hidrólisis alcalina alta, así que alcanza con aplicar enseguida.</p>
+    <div class="row"><button class="btn pri" id="openCase">Abrir este caso en el armador</button></div>
+  </div></div>`;
+  $("#openCase").onclick=()=>{ S=clone(fin); S.ejemplo=true; save(); fillInputs(); setView("caldo"); };
+}
+
+
+/* ====================================================================
+   Campos, lotes, historial, rotación, dosis, condiciones y SIG
+   ==================================================================== */
+let CAMPOS = load("campos", null);
+let HIST = load("historial", null);
+let ETQ = load("etiquetas", {});
+const saveCampos = () => store("campos", CAMPOS);
+const saveHist = () => store("historial", HIST);
+const saveEtq = () => store("etiquetas", ETQ);
+const uid = p => p + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const findCampo = id => (CAMPOS || []).find(c => c.id === id);
+const findLote = (c, id) => c && c.lotes.find(l => l.id === id);
+const fmtFecha = s => s ? new Date(s).toLocaleDateString("es-PY") : "—";
+const fmtFH = s => s ? new Date(s).toLocaleString("es-PY", {dateStyle: "short", timeStyle: "short"}) : "—";
+function isoLocal(d){ const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 16); }
+function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+const CLASES = {herbicida: "Herbicida", insecticida: "Insecticida", fungicida: "Fungicida"};
+
+/* ---------- Geometría ---------- */
+const R_T = 6378137;
+function ringArea(ring){
+  let a = 0;
+  for(let i = 0; i < ring.length - 1; i++){
+    const [x1, y1] = ring[i], [x2, y2] = ring[i + 1];
+    a += (x2 - x1) * Math.PI / 180 * (2 + Math.sin(y1 * Math.PI / 180) + Math.sin(y2 * Math.PI / 180));
+  }
+  return Math.abs(a * R_T * R_T / 2);
+}
+function polysOf(g){ return !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []; }
+function geomHa(g){
+  let a = 0;
+  polysOf(g).forEach(p => { const close = r => (r.length && (r[0][0] !== r[r.length-1][0] || r[0][1] !== r[r.length-1][1])) ? r.concat([r[0]]) : r;
+    a += ringArea(close(p[0])); for(let i = 1; i < p.length; i++) a -= ringArea(close(p[i])); });
+  return a / 10000;
+}
+const loteHa = l => l.ha != null ? l.ha : (l.geom ? Math.round(geomHa(l.geom) * 10) / 10 : 0);
+const campoHa = c => c.lotes.reduce((s, l) => s + (loteHa(l) || 0), 0);
+
+/* ---------- Ejemplo ---------- */
+function itemSnap(r, dosis){
+  const p = PROD[r]; if(!p) return null;
+  return {r, n: p.n, dosis, u: SOLIDOS.has(p.f) ? "kg" : "L", pa: p.pa, f: p.f,
+    ais: p.k.filter(c => c[0] === "ai" || c[0] === "bio").map(c => { const o = compObj(c[0], c[1]) || {}; return {id: c[1], nombre: o.nombre || c[4] || c[1], grupo: o.grupo || null, clase: o.clase || (c[0] === "bio" ? "biologico" : null)}; })};
+}
+function crearEjemplo(){
+  const lat0 = -25.79, lon0 = -55.105, H = 800, gap = 30;
+  const mLat = m => m / 111320, mLon = m => m / (111320 * Math.cos(lat0 * Math.PI / 180));
+  const defs = [["Lote 1", 80, "Soja"], ["Lote 2", 70, "Soja"], ["Lote 3", 65, "Soja"], ["Lote 4", 60, "Soja"], ["Lote 5", 75, "Soja"], ["Lote 6", 50, "Maíz"], ["Lote 7", 55, "Maíz"], ["Lote 8", 45, "Pastura (Brachiaria)"]];
+  const lotes = []; let x = 0, row = 0;
+  defs.forEach((d, i) => {
+    if(i === 4){ x = 0; row = 1; }
+    const w = d[1] * 10000 / H, y0 = -row * (H + gap);
+    const ring = [[x, y0], [x + w, y0], [x + w, y0 - H], [x, y0 - H], [x, y0]].map(([mx, my]) => [+(lon0 + mLon(mx)).toFixed(6), +(lat0 + mLat(my)).toFixed(6)]);
+    lotes.push({id: "ej-l" + (i + 1), nombre: d[0], cultivo: d[2], geom: {type: "Polygon", coordinates: [ring]}, ha: d[1]});
+    x += w + gap;
+  });
+  const campo = {id: "ej-campo", nombre: "Estancia Ejemplo (Santa Rita, Alto Paraná)", ubicacion: "Santa Rita, Alto Paraná · datos hipotéticos", ejemplo: true, lotes};
+  const hace = (d, h = 8) => { const t = new Date(); t.setDate(t.getDate() - d); t.setHours(h, 0, 0, 0); return isoLocal(t); };
+  const L = (...n) => n.map(i => "ej-l" + i);
+  const amb = (T, HR, V, dir) => ({temperatura_ambiente_C: T, HR, viento_kmh: V, viento_dir: dir, delta_T: deltaT(T, HR), fuera_ley: fueraLey({temperatura_ambiente_C: T, HR, viento_kmh: V})});
+  const reg = (dias, lotesIds, items, objetivo, extra = {}) => {
+    const ha = lotesIds.reduce((s, id) => s + loteHa(findLote(campo, id)), 0);
+    return Object.assign({id: uid("ej-h"), ejemplo: true, fecha: hace(dias, extra.hora || 8), campoId: campo.id, campoNombre: campo.nombre, loteIds: lotesIds,
+      loteNombres: lotesIds.map(id => findLote(campo, id).nombre), ha, objetivo, operador: "Juan (ejemplo)", obs: extra.obs || "",
+      vol: extra.vol || 80, tanque: 3000, items: items.map(([r, d]) => itemSnap(r, d)).filter(Boolean), medidas: extra.medidas || ["orden", "agit", "inmed"],
+      semaforo: extra.sem ?? 1, amb: extra.amb || amb(24, 70, 7, "NE")}, {});
+  };
+  const hist = [
+    reg(330, L(1,2,3,4,5), [["3140", 2.0], ["539", 1.0], ["4039", 0.035]], "Buva y hoja ancha (barbecho)", {amb: amb(22, 72, 6, "N")}),
+    reg(290, L(1,2,3,4,5), [["3140", 2.0], ["121", 0.45], ["4466", 0.5]], "Capim amargoso y gramíneas", {amb: amb(27, 66, 8, "NE")}),
+    reg(260, L(1,2,3,4,5), [["3294", 0.2]], "Chinches", {amb: amb(29, 62, 5, "E"), hora: 17}),
+    reg(250, L(1,2,3), [["4265", 0.4], ["2618", 1.5]], "Roya asiática (preventivo)", {amb: amb(26, 75, 6, "SE")}),
+    reg(230, L(1,2,3), [["4265", 0.4]], "Roya asiática", {amb: amb(30, 61, 9, "N"), obs: "Sin multisitio por falta de stock."}),
+    reg(210, L(1,2,3), [["3198", 0.3]], "Roya asiática", {amb: amb(33, 55, 12, "N"), sem: 3, obs: "Se aplicó con calor y viento: fuera de la Ley 3742/09."}),
+    reg(280, L(6,7), [["490", 1.5], ["3256", 1.2]], "Preemergente de maíz", {amb: amb(25, 70, 5, "S")}),
+    reg(250, L(6,7), [["4266", 0.1]], "Lagarta del cogollo (Spodoptera)", {amb: amb(28, 68, 7, "NE")}),
+    reg(235, L(6,7), [["4266", 0.1]], "Lagarta del cogollo (Spodoptera)", {amb: amb(27, 70, 6, "E")}),
+    reg(200, L(8), [["311", 2.0]], "Leñosas y hoja ancha en pastura", {vol: 150, amb: amb(24, 74, 5, "SE")}),
+    reg(60, L(1,2,3,4,5), [["3140", 2.0], ["539", 1.0]], "Barbecho de invierno", {amb: amb(18, 80, 7, "S")}),
+  ];
+  const etq = {"3140": {min: 1.5, max: 3.5, ej: true}, "539": {min: 0.8, max: 1.5, ej: true}, "121": {min: 0.35, max: 0.45, ej: true}, "4039": {min: 0.025, max: 0.05, ej: true}, "4466": {min: 0.5, max: 1.0, ej: true}};
+  return {campo, hist, etq};
+}
+function cargarEjemplo(){
+  eliminarEjemplo(true);
+  const e = crearEjemplo();
+  CAMPOS.unshift(e.campo); HIST = e.hist.concat(HIST);
+  Object.entries(e.etq).forEach(([r, v]) => { if(!ETQ[r]) ETQ[r] = v; });
+  saveCampos(); saveHist(); saveEtq(); store("ejemplo_borrado", false);
+}
+function eliminarEjemplo(silencioso){
+  CAMPOS = (CAMPOS || []).filter(c => !c.ejemplo);
+  HIST = (HIST || []).filter(h => !h.ejemplo);
+  Object.keys(ETQ).forEach(r => { if(ETQ[r] && ETQ[r].ej) delete ETQ[r]; });
+  if(!silencioso && S.ap && S.ap.campo === "ej-campo"){ S.ap = {campo: null, lotes: []}; S.sup = null; save(); }
+  saveCampos(); saveHist(); saveEtq();
+  if(!silencioso){ store("ejemplo_borrado", true); toast("Ejemplo eliminado"); }
+}
+function initDatos(){
+  if(CAMPOS === null || HIST === null){ CAMPOS = CAMPOS || []; HIST = HIST || []; if(!load("ejemplo_borrado", false)) cargarEjemplo(); else { saveCampos(); saveHist(); } }
+}
+initDatos();
+const hayEjemplo = () => (CAMPOS || []).some(c => c.ejemplo) || (HIST || []).some(h => h.ejemplo);
+
+/* ---------- Aplicar en (campo y lotes) ---------- */
+function renderAplicarEn(){
+  const sel = $("#apCampo");
+  sel.innerHTML = `<option value="">— Sin campo —</option>` + CAMPOS.map(c => `<option value="${esc(c.id)}"${S.ap.campo === c.id ? " selected" : ""}>${esc(c.nombre)}</option>`).join("");
+  const c = findCampo(S.ap.campo);
+  const box = $("#apLotes");
+  if(!c){ box.innerHTML = `<span class="note">${CAMPOS.length ? "Elegí un campo para marcar los lotes y comparar con su historial." : "Cargá tus campos y lotes en la pestaña “Campos y lotes”."}</span>`; return; }
+  S.ap.lotes = S.ap.lotes.filter(id => findLote(c, id));
+  box.innerHTML = `<span class="note">Lotes:</span>` + c.lotes.map(l => `<button class="chip" data-l="${esc(l.id)}" aria-pressed="${S.ap.lotes.includes(l.id)}" style="font-size:.78rem;padding:2px 9px">${esc(l.nombre)} · ${fmt(loteHa(l), 1)} ha</button>`).join("") +
+    `<button class="chip" data-l="*" style="font-size:.78rem;padding:2px 9px">${S.ap.lotes.length === c.lotes.length ? "Ninguno" : "Todos"}</button>`;
+  box.querySelectorAll("button").forEach(b => b.onclick = () => {
+    const id = b.dataset.l;
+    if(id === "*") S.ap.lotes = S.ap.lotes.length === c.lotes.length ? [] : c.lotes.map(l => l.id);
+    else { const i = S.ap.lotes.indexOf(id); if(i >= 0) S.ap.lotes.splice(i, 1); else S.ap.lotes.push(id); }
+    if(!S.supManual) S.sup = Math.round(S.ap.lotes.reduce((s, x) => s + loteHa(findLote(c, x)), 0) * 10) / 10 || null;
+    $("#sup").value = S.sup ?? ""; S.ejemplo = false; save(); renderCaldo();
+  });
+}
+
+/* ---------- Condiciones ambientales ---------- */
+function ambEval(c){
+  const dT = deltaT(c.temperatura_ambiente_C, c.HR), ley = fueraLey(c);
+  let dTc = null;
+  if(dT != null) dTc = dT < 2 ? [1, "Bajo (< 2): gotas persistentes, riesgo de inversión"] : dT <= 8 ? [0, "Ideal (2 a 8)"] : dT <= 10 ? [1, "Alto (8 a 10): evaporación"] : [3, "Muy alto (> 10): no aplicar"];
+  const V = c.viento_kmh;
+  let vc = null;
+  if(V != null) vc = V < 3 ? [2, "Calma: posible inversión térmica"] : V <= 6 ? [0, "Adecuado (3 a 6)"] : V <= 10 ? [1, "Moderado (6 a 10): cuidar la deriva"] : [3, "Fuerte (> 10): fuera de la ley"];
+  return {dT, dTc, ley, vc};
+}
+function renderAmb(){
+  const a = ambEval(S.caldo);
+  $("#ambEstado").innerHTML = a.ley === true ? pill(3, "Fuera de la Ley 3742/09") : a.ley === false ? pill(0, "Dentro de la Ley 3742/09") : pill(null, "Faltan datos");
+  $("#ambKv").innerHTML = `
+    <div><b>${a.dT != null ? fmt(a.dT, 1) : "—"}</b><span>Delta T ${a.dTc ? "· " + esc(a.dTc[1]) : "(temperatura y humedad)"}</span></div>
+    <div><b>${S.caldo.viento_kmh != null ? fmt(S.caldo.viento_kmh, 1) + " km/h" : "—"}</b><span>${a.vc ? esc(a.vc[1]) : "Viento"}</span></div>
+    <div><b>${a.ley === true ? "No aplicar" : a.ley === false ? "Permitido" : "—"}</b><span>Ley 3742/09, art. 63: T ≤ 32 °C, HR ≥ 60 %, viento ≤ 10 km/h</span></div>`;
+}
+
+/* ---------- Dosis y cantidades ---------- */
+function haPorTanque(ev){ return ev.inp.vol > 0 && S.tanque > 0 ? S.tanque / ev.inp.vol : null; }
+function dosisHTML(ev){
+  const reales = ev.xs.filter(x => x.p);
+  const sup = S.sup, vol = ev.inp.vol, tq = S.tanque, hat = haPorTanque(ev);
+  const totalCaldo = sup && vol ? sup * vol : null;
+  const nT = totalCaldo && tq ? Math.ceil(totalCaldo / tq - 1e-9) : null;
+  const ultimo = nT ? totalCaldo - (nT - 1) * tq : null;
+  const rows = reales.map((x, i) => {
+    const u = unitOf(x), e = ETQ[x.p.r] || {}, d = x.dosis;
+    let est = pill(null, "Cargá la dosis de etiqueta");
+    if(d == null) est = pill(null, "Falta la dosis");
+    else if(e.min != null || e.max != null){
+      if(e.max != null && d > e.max + 1e-9) est = pill(3, "Supera la etiqueta");
+      else if(e.min != null && d < e.min - 1e-9) est = pill(1, "Debajo de etiqueta");
+      else est = pill(0, "Dentro de etiqueta");
+    }
+    const ia = d != null ? x.k.filter(c => c.t === "ai" && c.conc).map(c => `${esc((c.o || {}).nombre || c.id)} ≈ ${fmt(d * c.conc * 10, 0)} g`).join("<br>") : "—";
+    const pt = d != null && hat ? d * hat : null;
+    const tot = d != null && sup ? d * sup : null;
+    const ult = d != null && ultimo && vol ? d * ultimo / vol : null;
+    return `<tr><td><b>${esc(x.n)}</b>${e.ej ? ` <span class="tag">etiqueta de ejemplo</span>` : ""}</td>
+      <td><span class="row" style="gap:4px;flex-wrap:nowrap"><input class="din" type="number" step="0.005" min="0" data-r="${esc(x.p.r)}" data-k="min" value="${e.min ?? ""}" aria-label="Dosis mínima de etiqueta">–<input class="din" type="number" step="0.005" min="0" data-r="${esc(x.p.r)}" data-k="max" value="${e.max ?? ""}" aria-label="Dosis máxima de etiqueta"></span></td>
+      <td><input class="din" type="number" step="0.005" min="0" data-i="${ev.xs.indexOf(x)}" data-k="dosis" value="${d ?? ""}" aria-label="Dosis a aplicar"> <span class="note">${u}/ha</span></td>
+      <td>${est}</td><td class="note">${ia}</td>
+      <td><input class="din" type="number" step="0.01" min="0" data-i="${ev.xs.indexOf(x)}" data-k="tanque" value="${pt != null ? +pt.toFixed(3) : ""}" aria-label="Cantidad por tanque"> <span class="note">${u}</span></td>
+      <td class="n">${tot != null ? fmt(tot, 2) + " " + u : "—"}${ult != null && nT > 1 && Math.abs(ultimo - tq) > 1 ? `<br><span class="note">último tanque: ${fmt(ult, 2)} ${u}</span>` : ""}</td></tr>`;
+  }).join("");
+  return `<div class="panel-h"><h3>Dosis y cantidades</h3><span class="note">La dosis de etiqueta se guarda por producto en este dispositivo</span></div>
+    <div class="kv" style="margin-bottom:10px">
+      <div><b>${sup ? fmt(sup, 1) + " ha" : "—"}</b><span>Superficie a aplicar</span></div>
+      <div><b>${totalCaldo ? fmt(totalCaldo, 0) + " L" : "—"}</b><span>Caldo total</span></div>
+      <div><b>${nT ? (nT === 1 ? "1 tanque" : (Math.abs(ultimo - tq) < 1 ? nT + " tanques llenos" : (nT - 1) + " llenos + 1 de " + fmt(ultimo, 0) + " L")) : "—"}</b><span>Tanques de ${fmt(tq, 0)} L</span></div>
+      <div><b>${hat ? fmt(hat, 1) + " ha" : "—"}</b><span>Hectáreas por tanque</span></div>
+    </div>
+    ${reales.length ? `<div class="tw"><table class="dtab"><thead><tr><th>Producto</th><th>Etiqueta (mín–máx)</th><th>Dosis a aplicar</th><th>Estado</th><th>Activo por ha</th><th>Por tanque</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note" style="margin-top:6px">Podés cargar la dosis por hectárea o la cantidad que vas a poner en cada tanque: la otra se calcula sola. El activo por hectárea es aproximado (concentración declarada × dosis).</p>` : `<p class="note">Agregá productos para calcular las cantidades.</p>`}`;
+}
+function bindDosis(ev){
+  document.querySelectorAll("#pDosis .din").forEach(inp => inp.addEventListener("change", e => {
+    const el = e.target, v = numOrNull(el.value), k = el.dataset.k;
+    if(k === "min" || k === "max"){ const r = el.dataset.r; ETQ[r] = Object.assign({}, ETQ[r] || {}, {[k]: v, ej: false}); saveEtq(); }
+    else { const x = ev.xs[+el.dataset.i]; const hat = haPorTanque(ev);
+      if(k === "dosis") x.item.dosis = v; else if(k === "tanque" && hat) x.item.dosis = v != null ? Math.round(v / hat * 10000) / 10000 : null;
+      S.ejemplo = false; save(); }
+    renderCaldo();
+  }));
+}
+
+/* ---------- Rotación de modos de acción ---------- */
+const LOW_RISK = g => !g || /^FRAC (M|P)/.test(g) || g === "IRAC UN" || g === "HRAC 0";
+const GRUPO_DESC = {}; D.activos.forEach(a => { if(a.grupo && !GRUPO_DESC[a.grupo]) GRUPO_DESC[a.grupo] = (a.modo_accion || "").split("–").slice(1).join("–").trim(); });
+const grupoTxt = g => g ? `${g}${GRUPO_DESC[g] ? " · " + GRUPO_DESC[g] : ""}` : "Sin grupo";
+const CNT = {};
+function countRubro(id){
+  const k = RUBRO + ":" + id;
+  if(CNT[k] == null) CNT[k] = D.productos.filter(p => !p.m && p.s.includes(RUBRO) && p.k.some(c => c[1] === id)).length;
+  return CNT[k];
+}
+function histLotes(loteIds, dias = 365){
+  const lim = Date.now() - dias * 864e5;
+  return (HIST || []).filter(h => new Date(h.fecha).getTime() >= lim && h.loteIds.some(id => loteIds.includes(id))).sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+const usaGrupo = (h, g) => h.items.some(it => it.ais.some(a => a.grupo === g));
+function rotacionDe(o, lotes){
+  const g = o.grupo;
+  if(!lotes.length) return {g, n: null, level: null};
+  const hs = histLotes(lotes), usados = hs.filter(h => usaGrupo(h, g));
+  const prev = hs.find(h => h.items.some(it => it.ais.some(a => a.clase === o.clase)));
+  const repite = !!(prev && usaGrupo(prev, g));
+  let level = 0;
+  if(LOW_RISK(g)) level = 0;
+  else if(usados.length >= 2 || (usados.length >= 1 && D.resistencia[g])) level = 2;
+  else if(usados.length === 1 || repite) level = 1;
+  return {g, n: usados.length, last: usados[0], repite, level};
+}
+function alternativas(o, evitar){
+  const objs = o.objetivos || []; if(!objs.length) return [];
+  const byG = {};
+  D.activos.forEach(a => {
+    if(!a.grupo || a.grupo === o.grupo || evitar.has(a.grupo) || a.clase !== o.clase) return;
+    if(!(a.objetivos || []).some(x => objs.includes(x))) return;
+    const n = countRubro(a.id); if(!n) return;
+    (byG[a.grupo] = byG[a.grupo] || []).push({a, n});
+  });
+  return Object.entries(byG).map(([g, arr]) => ({g, arr: arr.sort((x, y) => y.n - x.n).slice(0, 4), tot: arr.reduce((s, x) => s + x.n, 0)}))
+    .sort((a, b) => (D.resistencia[a.g] ? 1 : 0) - (D.resistencia[b.g] ? 1 : 0) || b.tot - a.tot).slice(0, 6);
+}
+function aisCaldo(ev){
+  const seen = new Set(), out = [];
+  ev.xs.forEach(x => { if(x.virt) return; x.k.forEach(c => { if((c.t === "ai" || c.t === "bio") && c.o && !seen.has(c.id)){ seen.add(c.id); out.push({id: c.id, o: c.o, prod: x.n}); } }); });
+  return out;
+}
+const objTxt = arr => (arr || []).map(t => D.objetivos[t] || t).join(", ");
+function altHTML(o, evitar){
+  const alts = alternativas(o, evitar);
+  if(!alts.length) return `<p class="note">Sin alternativas registradas para los mismos objetivos en este rubro.</p>`;
+  return `<ul class="clean">${alts.map(a => `<li><b class="mono">${esc(a.g)}</b> ${esc(GRUPO_DESC[a.g] || "")}${D.resistencia[a.g] ? ` <span class="tag">con resistencias en la región</span>` : ""}: ${a.arr.map(x => `<button class="linkbtn" data-buscar="${esc(x.a.nombre)}">${esc(x.a.nombre)}</button> <span class="note">(${x.n})</span>`).join(", ")}</li>`).join("")}</ul>`;
+}
+function rotacionHTML(ev){
+  const ais = aisCaldo(ev).filter(a => a.o.clase && a.o.clase !== "coadyuvante");
+  const c = findCampo(S.ap.campo), lotes = S.ap.lotes || [];
+  const ctx = c && lotes.length ? `${esc(c.nombre)} · ${lotes.map(id => esc((findLote(c, id) || {}).nombre || "")).join(", ")}` : "";
+  if(!ais.length) return `<div class="panel-h"><h3>Rotación de modos de acción</h3></div><p class="note">Agregá productos para ver sus modos de acción.</p>`;
+  const usadosEnCaldo = new Set(ais.map(a => a.o.grupo).filter(Boolean));
+  // mezcla de modos de acción por objetivo
+  const porObj = {};
+  ais.forEach(a => (a.o.objetivos || []).forEach(t => { if(a.o.grupo && !LOW_RISK(a.o.grupo)) (porObj[t] = porObj[t] || new Set()).add(a.o.grupo); }));
+  const mezclas = Object.entries(porObj).filter(([t, s]) => s.size >= 2).map(([t, s]) => `${D.objetivos[t] || t} (${s.size} grupos)`);
+  const rows = ais.map(a => {
+    const r = rotacionDe(a.o, lotes);
+    const evitar = new Set(usadosEnCaldo);
+    if(lotes.length) histLotes(lotes).forEach(h => h.items.forEach(it => it.ais.forEach(x => { if(x.grupo) evitar.add(x.grupo); })));
+    const estado = r.level == null ? pill(null, "Sin lote elegido") : LOW_RISK(r.g) ? pill(0, r.g ? "Bajo riesgo" : "Sin grupo") :
+      r.level === 0 ? pill(0, "Grupo nuevo en el lote") : r.level === 1 ? pill(1, r.repite && !r.n ? "Repite la última" : "Usado 1 vez en 12 meses") : pill(2, `Usado ${r.n} ${r.n === 1 ? "vez" : "veces"}: rotá`);
+    return `<div class="rot l${r.level ?? "n"}">
+      <div class="al-h"><h4>${esc(a.o.nombre)} <span class="note">· ${esc(a.prod)}</span></h4>${estado}</div>
+      <p class="note"><span class="mono">${esc(grupoTxt(a.o.grupo))}</span>${a.o.usos ? " — " + esc(a.o.usos) : ""}</p>
+      ${r.n ? `<p class="note">Última vez: ${fmtFecha(r.last.fecha)} (${esc(r.last.items.map(i => i.n).join(" + "))}).</p>` : ""}
+      ${D.resistencia[a.o.grupo] ? `<p class="rnote">${esc(D.resistencia[a.o.grupo])}</p>` : ""}
+      <details><summary>Alternativas con otro modo de acción para ${esc(objTxt(a.o.objetivos)) || "los mismos objetivos"}</summary>${altHTML(a.o, evitar)}</details>
+    </div>`;
+  }).join("");
+  return `<div class="panel-h"><h3>Rotación de modos de acción</h3><span class="note">${ctx ? "Historial de " + ctx + " (12 meses)" : "Elegí campo y lotes en “2 · Aplicación” para comparar con el historial"}</span></div>
+    ${mezclas.length ? `<p class="note" style="margin-bottom:8px">✓ La mezcla combina modos de acción distintos para: ${esc(mezclas.join("; "))}.</p>` : ""}
+    <div class="stack" style="gap:8px">${rows}</div>`;
+}
+function bindRotacion(){
+  document.querySelectorAll("[data-buscar]").forEach(b => b.onclick = () => { setView("productos"); $("#pq").value = b.dataset.buscar; PLIM = 80; renderProductos(); });
+}
+
+/* ---------- Registrar aplicación ---------- */
+function openRegistrar(){
+  const ev = evaluate(S);
+  const reales = ev.xs.filter(x => x.p);
+  if(!reales.length){ toast("Agregá productos al caldo antes de registrar"); return; }
+  const c0 = S.ap.campo || (CAMPOS[0] || {}).id || "";
+  const fh = S.caldo.fecha_hora || isoLocal(new Date());
+  const a = ambEval(S.caldo);
+  const formHTML = cid => { const c = findCampo(cid); return c ? c.lotes.map(l => `<label class="chk"><input type="checkbox" value="${esc(l.id)}" ${(cid === S.ap.campo ? S.ap.lotes : []).includes(l.id) ? "checked" : ""}> ${esc(l.nombre)} <span class="note">${fmt(loteHa(l), 1)} ha</span></label>`).join("") : `<span class="note">Este campo no tiene lotes.</span>`; };
+  openDrawer(`<div class="stack"><span class="eyebrow">Historial</span><h2>Registrar aplicación</h2>
+    <p class="note">Se guarda en este dispositivo con los productos, las dosis, las condiciones ambientales y el semáforo de la mezcla.</p>
+    <form class="stack" id="fReg" style="gap:12px">
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+        <label class="f">Campo<select id="rCampo">${CAMPOS.length ? CAMPOS.map(c => `<option value="${esc(c.id)}"${c.id === c0 ? " selected" : ""}>${esc(c.nombre)}</option>`).join("") : `<option value="">(sin campos cargados)</option>`}</select></label>
+        <label class="f">Fecha y hora<input id="rFecha" type="datetime-local" value="${esc(fh)}" required></label>
+        <label class="f">Objetivo (plaga, enfermedad o maleza)<input id="rObj" list="dlObj" placeholder="Ej.: buva, roya asiática, chinches"></label>
+        <label class="f">Operador<input id="rOper" value="${esc(load("operador", ""))}"></label>
+      </div>
+      <datalist id="dlObj">${Object.values(D.objetivos).map(o => `<option value="${esc(o)}">`).join("")}</datalist>
+      <div><span class="eyebrow">Lotes aplicados</span><div class="row" id="rLotes" style="gap:6px;margin-top:6px">${formHTML(c0)}</div></div>
+      <label class="f">Observaciones<textarea id="rObs" rows="2"></textarea></label>
+      <div class="panel"><h4>Resumen</h4><ul class="clean note" style="margin-top:6px">
+        ${reales.map(x => `<li>${esc(x.n)}: ${x.dosis != null ? fmt(x.dosis, 3) + " " + unitOf(x) + "/ha" : "sin dosis"}</li>`).join("")}
+        <li>Volumen ${fmt(ev.inp.vol, 0)} L/ha · semáforo ${ev.overall == null ? "sin alertas" : NIV[ev.overall].nombre.toLowerCase()}</li>
+        <li>Condiciones: ${S.caldo.temperatura_ambiente_C ?? "—"} °C · HR ${S.caldo.HR ?? "—"} % · viento ${S.caldo.viento_kmh ?? "—"} km/h ${esc(S.caldo.viento_dir || "")} · Delta T ${a.dT ?? "—"}</li>
+      </ul>${a.ley === true ? `<p class="rnote" style="margin-top:6px">Las condiciones cargadas están fuera de la Ley 3742/09. Se puede registrar igual (queda marcado).</p>` : a.ley == null ? `<p class="note" style="margin-top:6px">Faltan datos de condiciones ambientales (panel 4).</p>` : ""}</div>
+      <div class="row"><button class="btn pri" type="submit">Guardar en el historial</button></div>
+    </form></div>`);
+  $("#rCampo").onchange = e => { $("#rLotes").innerHTML = formHTML(e.target.value); };
+  $("#fReg").onsubmit = e => {
+    e.preventDefault();
+    const c = findCampo($("#rCampo").value);
+    const loteIds = [...document.querySelectorAll("#rLotes input:checked")].map(i => i.value);
+    if(c && !loteIds.length){ toast("Marcá al menos un lote"); return; }
+    store("operador", $("#rOper").value);
+    const amb = {temperatura_ambiente_C: S.caldo.temperatura_ambiente_C, HR: S.caldo.HR, viento_kmh: S.caldo.viento_kmh, rafagas_kmh: S.caldo.rafagas_kmh, viento_dir: S.caldo.viento_dir, nubosidad: S.caldo.nubosidad, lluvia_h: S.caldo.lluvia_h, delta_T: a.dT, fuera_ley: a.ley};
+    const rec = {id: uid("h"), fecha: $("#rFecha").value, campoId: c ? c.id : null, campoNombre: c ? c.nombre : "", loteIds, loteNombres: loteIds.map(id => findLote(c, id).nombre),
+      ha: c ? Math.round(loteIds.reduce((s, id) => s + loteHa(findLote(c, id)), 0) * 10) / 10 : S.sup, objetivo: $("#rObj").value, operador: $("#rOper").value, obs: $("#rObs").value,
+      vol: ev.inp.vol, tanque: S.tanque, items: reales.map(x => itemSnap(x.p.r, x.dosis)), medidas: [...ev.act], semaforo: ev.overall, alertas: ev.fired.map(f => f.r.id), amb};
+    HIST.unshift(rec); saveHist();
+    openDrawer(`<div class="stack"><h2>Aplicación registrada</h2><p>${esc(fmtFH(rec.fecha))} · ${esc(rec.campoNombre)} ${esc(rec.loteNombres.join(", "))} · ${fmt(rec.ha, 1)} ha</p>
+      <div class="row"><button class="btn pri" id="goHist">Ver historial</button><button class="btn" id="goCampo">Ver en el mapa</button><button class="btn" id="goSeguir">Seguir en el armador</button></div></div>`);
+    $("#goHist").onclick = () => { closeDrawer(); setView("historial"); };
+    $("#goCampo").onclick = () => { closeDrawer(); CAMPO_SEL = rec.campoId; setView("campos"); };
+    $("#goSeguir").onclick = () => { closeDrawer(); renderCaldo(); };
+  };
+}
+$("#btnRegistrar").onclick = openRegistrar;
+
+/* ---------- Exportar / importar ---------- */
+const enIframe = (() => { try { return window.self !== window.top; } catch(e){ return true; } })();
+function bajar(nombre, texto, tipo){
+  if(enIframe){
+    openDrawer(`<div class="stack"><h2>${esc(nombre)}</h2><p class="note">En esta vista no se pueden descargar archivos. Copiá el contenido y guardalo con ese nombre, o usá la app instalada (ahí el botón descarga el archivo).</p>
+      <div class="row"><button class="btn pri" id="cpy">Copiar</button></div><textarea id="cpyTxt" rows="14" style="width:100%;font-family:var(--mono);font-size:.75rem">${esc(texto)}</textarea></div>`);
+    $("#cpy").onclick = async () => { try { await navigator.clipboard.writeText(texto); toast("Copiado"); } catch(e){ const t = $("#cpyTxt"); t.focus(); t.select(); toast("Seleccionado: usá Ctrl+C"); } };
+    return;
+  }
+  const blob = new Blob([texto], {type: tipo || "text/plain"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+const hoyTxt = () => new Date().toISOString().slice(0, 10);
+const slug = s => (s || "campo").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40);
+function resumenLote(c, l){
+  const hs = histLotes([l.id]);
+  const u = hs[0];
+  const rot = rotLote(l.id);
+  return {campo: c.nombre, lote: l.nombre, lote_id: l.id, ha: loteHa(l), cultivo: l.cultivo || "", aplic_12m: hs.length,
+    ult_fecha: u ? u.fecha : "", ult_productos: u ? u.items.map(i => i.n).join(" + ") : "", ult_grupos: u ? [...new Set(u.items.flatMap(i => i.ais.map(a => a.grupo)).filter(Boolean))].join(", ") : "",
+    rotacion: ["verde", "amarillo", "naranja", "rojo"][rot.level] || "", grupos_repetidos: rot.rep.join(", ")};
+}
+function lotesFC(campos){
+  const features = [];
+  campos.forEach(c => c.lotes.forEach(l => { if(l.geom) features.push({type: "Feature", properties: resumenLote(c, l), geometry: l.geom}); }));
+  return {type: "FeatureCollection", name: "lotes", crs: {type: "name", properties: {name: "urn:ogc:def:crs:OGC:1.3:CRS84"}}, features};
+}
+function histFilas(hs){
+  const out = [];
+  hs.forEach(h => { const c = findCampo(h.campoId);
+    (h.loteIds.length ? h.loteIds : [null]).forEach((lid, i) => { const l = c && lid ? findLote(c, lid) : null;
+      out.push({h, l, props: {fecha: h.fecha, campo: h.campoNombre || "", lote: l ? l.nombre : (h.loteNombres[i] || ""), lote_id: lid || "", ha_lote: l ? loteHa(l) : "", objetivo: h.objetivo || "",
+        productos: h.items.map(it => `${it.n} ${it.dosis ?? ""} ${it.u}/ha`).join(" + "), activos: [...new Set(h.items.flatMap(it => it.ais.map(a => a.nombre)))].join(", "),
+        grupos: [...new Set(h.items.flatMap(it => it.ais.map(a => a.grupo)).filter(Boolean))].join(", "), vol_L_ha: h.vol ?? "",
+        temp_C: h.amb?.temperatura_ambiente_C ?? "", HR: h.amb?.HR ?? "", viento_kmh: h.amb?.viento_kmh ?? "", viento_dir: h.amb?.viento_dir ?? "", delta_T: h.amb?.delta_T ?? "",
+        ley_3742: h.amb?.fuera_ley === true ? "fuera" : h.amb?.fuera_ley === false ? "ok" : "", semaforo: h.semaforo == null ? "" : NIV[h.semaforo].nombre, operador: h.operador || "", obs: h.obs || ""}}); }); });
+  return out;
+}
+function csv(rows){
+  if(!rows.length) return "";
+  const keys = Object.keys(rows[0]);
+  const q = v => { const s = typeof v === "number" ? String(v).replace(".", ",") : String(v ?? ""); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  return "﻿" + keys.join(";") + "\n" + rows.map(r => keys.map(k => q(r[k])).join(";")).join("\n");
+}
+function kml(fc, nombre){
+  const x = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const ring = r => r.map(p => `${p[0]},${p[1]},0`).join(" ");
+  const poly = p => `<Polygon><outerBoundaryIs><LinearRing><coordinates>${ring(p[0])}</coordinates></LinearRing></outerBoundaryIs>${p.slice(1).map(h => `<innerBoundaryIs><LinearRing><coordinates>${ring(h)}</coordinates></LinearRing></innerBoundaryIs>`).join("")}</Polygon>`;
+  const pm = fc.features.map(f => { const ps = polysOf(f.geometry);
+    return `<Placemark><name>${x(f.properties.lote || f.properties.nombre || "")}</name><ExtendedData>${Object.entries(f.properties).map(([k, v]) => `<Data name="${x(k)}"><value>${x(v)}</value></Data>`).join("")}</ExtendedData>${ps.length > 1 ? `<MultiGeometry>${ps.map(poly).join("")}</MultiGeometry>` : ps.map(poly).join("")}</Placemark>`; }).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(nombre)}</name>\n${pm}\n</Document></kml>`;
+}
+function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", [])}; }
+const EXPORTS = {
+  lotes_geojson: () => bajar(`lotes_${hoyTxt()}.geojson`, JSON.stringify(lotesFC(CAMPOS), null, 1), "application/geo+json"),
+  lotes_kml: () => bajar(`lotes_${hoyTxt()}.kml`, kml(lotesFC(CAMPOS), "Lotes"), "application/vnd.google-earth.kml+xml"),
+  hist_csv: () => bajar(`historial_${hoyTxt()}.csv`, csv(histFilas(HIST).map(r => r.props)), "text/csv"),
+  hist_geojson: () => bajar(`historial_${hoyTxt()}.geojson`, JSON.stringify({type: "FeatureCollection", name: "historial_aplicaciones", features: histFilas(HIST).filter(r => r.l && r.l.geom).map(r => ({type: "Feature", properties: r.props, geometry: r.l.geom}))}, null, 1), "application/geo+json"),
+  respaldo: () => bajar(`respaldo_consultas_${hoyTxt()}.json`, JSON.stringify(respaldo()), "application/json"),
+};
+function kmlAGeo(txt){
+  const doc = new DOMParser().parseFromString(txt, "application/xml");
+  const parseCoords = s => s.trim().split(/\s+/).map(t => t.split(",").map(Number)).filter(p => p.length >= 2 && !isNaN(p[0])).map(p => [p[0], p[1]]);
+  const feats = [];
+  doc.querySelectorAll("Placemark").forEach(pm => {
+    const name = pm.querySelector("name")?.textContent?.trim() || "";
+    const props = {name};
+    pm.querySelectorAll("ExtendedData Data, ExtendedData SimpleData").forEach(d => { props[d.getAttribute("name")] = (d.querySelector("value")?.textContent ?? d.textContent).trim(); });
+    const polys = [...pm.querySelectorAll("Polygon")].map(pg => { const outer = pg.querySelector("outerBoundaryIs coordinates"); if(!outer) return null;
+      return [parseCoords(outer.textContent)].concat([...pg.querySelectorAll("innerBoundaryIs coordinates")].map(c => parseCoords(c.textContent))); }).filter(Boolean);
+    if(!polys.length){ const ls = pm.querySelector("LineString coordinates"); if(ls){ const r = parseCoords(ls.textContent); if(r.length >= 3) polys.push([r.concat([r[0]])]); } }
+    if(polys.length) feats.push({type: "Feature", properties: props, geometry: polys.length > 1 ? {type: "MultiPolygon", coordinates: polys} : {type: "Polygon", coordinates: polys[0]}});
+  });
+  return {type: "FeatureCollection", features: feats};
+}
+function gpxAGeo(txt){
+  const doc = new DOMParser().parseFromString(txt, "application/xml");
+  const feats = [];
+  [...doc.querySelectorAll("trk"), ...doc.querySelectorAll("rte")].forEach((t, i) => {
+    const pts = [...t.querySelectorAll("trkpt, rtept")].map(p => [+p.getAttribute("lon"), +p.getAttribute("lat")]);
+    if(pts.length >= 3) feats.push({type: "Feature", properties: {name: t.querySelector("name")?.textContent || "Lote " + (i + 1)}, geometry: {type: "Polygon", coordinates: [pts.concat([pts[0]])]}});
+  });
+  return {type: "FeatureCollection", features: feats};
+}
+function poligonos(gj){
+  const list = Array.isArray(gj) ? gj : [gj];
+  const out = [];
+  list.forEach(g => {
+    const fs = g.type === "FeatureCollection" ? g.features : g.type === "Feature" ? [g] : g.type ? [{type: "Feature", properties: {}, geometry: g}] : [];
+    fs.forEach(f => { if(f && f.geometry && /Polygon/.test(f.geometry.type)) out.push({props: f.properties || {}, geom: {type: f.geometry.type, coordinates: f.geometry.coordinates.map ? stripZ(f.geometry) : f.geometry.coordinates}}); });
+  });
+  return out;
+}
+function stripZ(g){ const r = ring => ring.map(p => [+p[0], +p[1]]); return g.type === "Polygon" ? g.coordinates.map(r) : g.coordinates.map(p => p.map(r)); }
+async function importarArchivo(file){
+  const name = file.name.toLowerCase();
+  try {
+    let gj;
+    if(name.endsWith(".zip")){
+      if(!window.shp){ toast("No se pudo cargar el lector de Shapefile"); return; }
+      gj = await window.shp(await file.arrayBuffer());
+    } else {
+      const txt = await file.text();
+      if(name.endsWith(".kml")) gj = kmlAGeo(txt);
+      else if(name.endsWith(".gpx")) gj = gpxAGeo(txt);
+      else { const j = JSON.parse(txt); if(j.app === "consultas-caldo"){ restaurar(j); return; } gj = j; }
+    }
+    const feats = poligonos(gj);
+    if(!feats.length){ toast("El archivo no tiene polígonos de lotes"); return; }
+    const proyectado = feats.some(f => polysOf(f.geom).some(p => p[0].some(c => Math.abs(c[0]) > 180 || Math.abs(c[1]) > 90)));
+    previewImport(feats, file.name, proyectado);
+  } catch(e){ console.error(e); toast("No se pudo leer el archivo: " + (e.message || e)); }
+}
+function previewImport(feats, fname, proyectado){
+  const keys = [...new Set(feats.flatMap(f => Object.keys(f.props)))];
+  const guess = keys.find(k => /^(nombre|name|lote|denominaci|parcela|id)$/i.test(k)) || keys[0] || "";
+  const gCult = keys.find(k => /cultivo|crop/i.test(k)) || "";
+  const base = fname.replace(/\.[^.]+$/, "");
+  openDrawer(`<div class="stack"><span class="eyebrow">Importar lotes</span><h2>${esc(fname)}</h2>
+    ${proyectado ? `<p class="rnote">Las coordenadas parecen proyectadas (UTM u otra). Exportá desde QGIS en EPSG:4326 (WGS 84) o usá un Shapefile .zip con su archivo .prj.</p>` : ""}
+    <p>${feats.length} polígonos · ${fmt(feats.reduce((s, f) => s + geomHa(f.geom), 0), 1)} ha en total.</p>
+    <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+      <label class="f">Agregar al campo<select id="iCampo"><option value="__nuevo">Campo nuevo</option>${CAMPOS.map(c => `<option value="${esc(c.id)}">${esc(c.nombre)}</option>`).join("")}</select></label>
+      <label class="f" id="iNuevoWrap">Nombre del campo nuevo<input id="iNuevo" value="${esc(base)}"></label>
+      <label class="f">Campo con el nombre del lote<select id="iNom">${keys.map(k => `<option${k === guess ? " selected" : ""}>${esc(k)}</option>`).join("")}<option value="">(numerar Lote 1, 2…)</option></select></label>
+      <label class="f">Campo con el cultivo<select id="iCult"><option value="">(ninguno)</option>${keys.map(k => `<option${k === gCult ? " selected" : ""}>${esc(k)}</option>`).join("")}</select></label>
+    </div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Atributos</th><th style="text-align:right">ha</th></tr></thead><tbody>${feats.slice(0, 25).map((f, i) => `<tr><td>${i + 1}</td><td class="note">${esc(Object.entries(f.props).slice(0, 4).map(([k, v]) => k + ": " + v).join(" · "))}</td><td class="n">${fmt(geomHa(f.geom), 1)}</td></tr>`).join("")}</tbody></table></div>
+    <div class="row"><button class="btn pri" id="iOk">Importar ${feats.length} lotes</button></div></div>`);
+  $("#iCampo").onchange = e => { $("#iNuevoWrap").hidden = e.target.value !== "__nuevo"; };
+  $("#iOk").onclick = () => {
+    let c = findCampo($("#iCampo").value);
+    if(!c){ c = {id: uid("c"), nombre: $("#iNuevo").value || base, ubicacion: "", lotes: []}; CAMPOS.push(c); }
+    const kn = $("#iNom").value, kc = $("#iCult").value;
+    feats.forEach((f, i) => c.lotes.push({id: uid("l"), nombre: String((kn && f.props[kn]) || "Lote " + (c.lotes.length + 1)), cultivo: kc ? String(f.props[kc] || "") : "", geom: f.geom, ha: Math.round(geomHa(f.geom) * 10) / 10}));
+    saveCampos(); CAMPO_SEL = c.id; closeDrawer(); toast(`${feats.length} lotes importados`); renderCampos(true);
+  };
+}
+function restaurar(j){
+  openDrawer(`<div class="stack"><span class="eyebrow">Respaldo</span><h2>Restaurar respaldo</h2>
+    <p>Del ${esc(fmtFH(j.fecha))}: ${j.campos?.length || 0} campos, ${j.historial?.length || 0} aplicaciones, ${j.guardados?.length || 0} caldos guardados.</p>
+    <div class="row"><button class="btn pri" id="rsAdd">Agregar a lo que tengo</button><button class="btn" id="rsRep">Reemplazar todo</button></div>
+    <p class="note">“Agregar” suma los campos y aplicaciones que no estén. “Reemplazar” borra lo de este dispositivo y deja solo el respaldo.</p></div>`);
+  const fin = () => { saveCampos(); saveHist(); saveEtq(); closeDrawer(); toast("Respaldo restaurado"); renderAll(); };
+  $("#rsAdd").onclick = () => { const ids = new Set(CAMPOS.map(c => c.id)), hids = new Set(HIST.map(h => h.id));
+    (j.campos || []).forEach(c => { if(!ids.has(c.id)) CAMPOS.push(c); }); (j.historial || []).forEach(h => { if(!hids.has(h.id)) HIST.push(h); });
+    ETQ = Object.assign({}, j.etiquetas || {}, ETQ); store("guardados", load("guardados", []).concat(j.guardados || [])); fin(); };
+  $("#rsRep").onclick = () => { CAMPOS = j.campos || []; HIST = j.historial || []; ETQ = j.etiquetas || {}; store("guardados", j.guardados || []); fin(); };
+}
+
+/* ---------- Rotación por lote ---------- */
+function rotLote(loteId){
+  const hs = histLotes([loteId]);
+  const cnt = {};
+  hs.forEach(h => new Set(h.items.flatMap(i => i.ais.map(a => a.grupo)).filter(g => g && !LOW_RISK(g))).forEach(g => { cnt[g] = (cnt[g] || 0) + 1; }));
+  const rep = Object.entries(cnt).filter(([g, n]) => n >= 2).sort((a, b) => b[1] - a[1]).map(([g, n]) => `${g} ×${n}`);
+  const max = Math.max(0, ...Object.values(cnt));
+  return {level: hs.length ? (max >= 3 ? 2 : max === 2 ? 1 : 0) : null, rep, cnt, n: hs.length};
+}
+
+/* ---------- Campos y lotes (mapa) ---------- */
+let MAP_FIT = null;
+let CAMPO_SEL = load("campo_sel", null), MAP = null, MAPLAYER = null, DRAW = null, BASE = null, COLOR_POR = "rotacion";
+const COL = {rot: ["var(--s0)", "var(--s1)", "var(--s2)", "var(--s3)"]};
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888"; }
+function loteColor(l){
+  if(COLOR_POR === "cultivo"){ const pal = ["#2F8545", "#C99A00", "#5A5FA8", "#2B7A9E", "#9A6A00", "#B0476B"]; const cs = [...new Set(CAMPOS.flatMap(c => c.lotes.map(x => x.cultivo || "")))]; return pal[cs.indexOf(l.cultivo || "") % pal.length]; }
+  if(COLOR_POR === "ultima"){ const u = histLotes([l.id])[0]; if(!u) return cssVar("--s-off"); const d = (Date.now() - new Date(u.fecha)) / 864e5; return d <= 15 ? cssVar("--s3") : d <= 45 ? cssVar("--s2") : d <= 120 ? cssVar("--s1") : cssVar("--s0"); }
+  const r = rotLote(l.id); return r.level == null ? cssVar("--s-off") : cssVar("--s" + r.level);
+}
+function renderCampos(force){
+  const el = $("#v-campos");
+  if(!el.dataset.built || force){
+    el.dataset.built = 1;
+    el.innerHTML = `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><h2>Campos y lotes</h2><p class="lead">Cargá tus campos dibujando los lotes en el mapa o importándolos desde QGIS, Google Earth o un GPS. Cada aplicación registrada queda en el historial del lote y alimenta el control de rotación.</p></div>
+      <div class="row" style="gap:6px"><button class="btn" id="cNuevo">Nuevo campo</button><label class="btn" for="cFile">Importar lotes</label><input id="cFile" type="file" accept=".geojson,.json,.kml,.zip,.gpx" hidden></div></div>
+      <div id="cTop"></div>
+      <div class="grid2" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)">
+        <div class="panel" style="padding:10px"><div class="row" style="justify-content:space-between;margin-bottom:8px;gap:6px">
+          <span class="row" style="gap:6px"><button class="btn sm" id="mDraw">Dibujar lote</button><span id="mDrawBar" class="row" style="gap:6px" hidden><button class="btn pri sm" id="mFin">Terminar</button><button class="btn sm" id="mUndo">Deshacer punto</button><button class="btn sm" id="mCancel">Cancelar</button></span></span>
+          <span class="row" style="gap:6px"><label class="f" style="flex-direction:row;align-items:center;gap:6px">Mapa base<select id="mBase"><option value="sat">Satélite</option><option value="osm">Calles</option><option value="none">Sin mapa</option></select></label>
+          <label class="f" style="flex-direction:row;align-items:center;gap:6px">Color<select id="mColor"><option value="rotacion">Rotación</option><option value="ultima">Última aplicación</option><option value="cultivo">Cultivo</option></select></label></span></div>
+          <div id="map" class="map"></div><p class="note" id="mNote" style="margin-top:6px"></p><div id="mLeyenda" class="row" style="gap:8px;margin-top:6px"></div></div>
+        <div class="stack" id="cList"></div>
+      </div>
+      <div class="panel"><div class="panel-h"><h3>Exportar e intercambiar</h3><span class="note">Coordenadas en WGS 84 (EPSG:4326)</span></div>
+        <div class="row" style="gap:6px"><button class="btn sm" data-x="lotes_geojson">Lotes · GeoJSON (QGIS)</button><button class="btn sm" data-x="lotes_kml">Lotes · KML (Google Earth, GPS)</button><button class="btn sm" data-x="hist_geojson">Historial con lotes · GeoJSON</button><button class="btn sm" data-x="hist_csv">Historial · CSV (Excel)</button><button class="btn sm" data-x="respaldo">Respaldo completo</button><label class="btn sm" for="cRest">Restaurar respaldo</label><input id="cRest" type="file" accept=".json" hidden></div>
+        <p class="note" style="margin-top:8px">Importa: GeoJSON, KML, Shapefile comprimido en .zip (con .shp, .dbf y .prj) y GPX. En QGIS: clic derecho en la capa → Exportar → Guardar objetos como… → GeoJSON, SRC EPSG:4326. El respaldo guarda campos, historial, dosis de etiqueta y caldos para pasarlos a otro dispositivo.</p></div>`;
+    $("#cNuevo").onclick = () => editarCampo(null);
+    $("#cFile").onchange = e => { const f = e.target.files[0]; if(f) importarArchivo(f); e.target.value = ""; };
+    $("#cRest").onchange = async e => { const f = e.target.files[0]; if(f){ try { const j = JSON.parse(await f.text()); if(j.app === "consultas-caldo") restaurar(j); else toast("No es un respaldo de esta app"); } catch(err){ toast("Archivo inválido"); } } e.target.value = ""; };
+    el.querySelectorAll("[data-x]").forEach(b => b.onclick = () => EXPORTS[b.dataset.x]());
+    $("#mDraw").onclick = () => empezarDibujo(null);
+    $("#mFin").onclick = terminarDibujo; $("#mUndo").onclick = () => { if(DRAW){ DRAW.pts.pop(); dibujarTemp(); } }; $("#mCancel").onclick = cancelarDibujo;
+    $("#mBase").value = load("mapa_base", "sat"); $("#mBase").onchange = e => { store("mapa_base", e.target.value); setBase(e.target.value); };
+    $("#mColor").value = COLOR_POR; $("#mColor").onchange = e => { COLOR_POR = e.target.value; refreshMap(false); leyenda(); };
+    initMap();
+  }
+  if(!findCampo(CAMPO_SEL)) CAMPO_SEL = (CAMPOS[0] || {}).id || null;
+  store("campo_sel", CAMPO_SEL);
+  const c = findCampo(CAMPO_SEL);
+  $("#cTop").innerHTML = CAMPOS.length ? `<div class="row" style="gap:10px;align-items:flex-end">
+      <label class="f" style="min-width:240px">Campo<select id="cSel">${CAMPOS.map(x => `<option value="${esc(x.id)}"${x.id === CAMPO_SEL ? " selected" : ""}>${esc(x.nombre)}${x.ejemplo ? " (ejemplo)" : ""}</option>`).join("")}</select></label>
+      <button class="btn sm" id="cEdit">Editar campo</button><button class="btn sm" id="cLote">Agregar lote sin mapa</button>
+      ${hayEjemplo() ? `<button class="btn sm" id="cDelEj">Eliminar ejemplo</button>` : `<button class="btn sm" id="cAddEj">Cargar ejemplo</button>`}</div>
+      ${c ? `<div class="kv" style="margin-top:10px"><div><b>${fmt(campoHa(c), 1)} ha</b><span>Superficie (${c.lotes.length} lotes)</span></div><div><b>${histLotes(c.lotes.map(l => l.id)).length}</b><span>Aplicaciones en 12 meses</span></div><div><b>${c.lotes.filter(l => rotLote(l.id).level === 2).length}</b><span>Lotes que necesitan rotar</span></div><div><b style="font-family:var(--body);font-size:.92rem">${esc(c.ubicacion || "—")}</b><span>Ubicación</span></div></div>` : ""}` :
+    `<div class="panel stack" style="gap:8px"><h3>Todavía no hay campos</h3><p class="note">Creá un campo y dibujá sus lotes, importalos desde un archivo, o cargá el ejemplo de 500 ha para ver cómo funciona.</p><div class="row"><button class="btn pri" id="cAddEj">Cargar ejemplo</button></div></div>`;
+  $("#cSel") && ($("#cSel").onchange = e => { CAMPO_SEL = e.target.value; renderCampos(); refreshMap(true); });
+  $("#cEdit") && ($("#cEdit").onclick = () => editarCampo(c));
+  $("#cLote") && ($("#cLote").onclick = () => editarLote(c, null, null));
+  $("#cDelEj") && ($("#cDelEj").onclick = e => { const b = e.target; if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Eliminar el campo y el historial de ejemplo? Tocá de nuevo"; return; } eliminarEjemplo(); CAMPO_SEL = null; renderCampos(); refreshMap(true); });
+  $("#cAddEj") && ($("#cAddEj").onclick = () => { cargarEjemplo(); CAMPO_SEL = "ej-campo"; renderCampos(); refreshMap(true); toast("Ejemplo cargado"); });
+  $("#cList").innerHTML = c ? c.lotes.map(l => { const r = rotLote(l.id), u = histLotes([l.id])[0];
+    return `<button class="lote-card" data-l="${esc(l.id)}"><span class="row" style="justify-content:space-between;gap:6px"><b>${esc(l.nombre)}</b>${r.level == null ? pill(null, "Sin aplicaciones") : pill(r.level, r.level === 2 ? "Rotar" : r.level === 1 ? "Atención" : "Rotación OK")}</span>
+      <span class="note">${fmt(loteHa(l), 1)} ha · ${esc(l.cultivo || "sin cultivo")}${l.geom ? "" : " · sin mapa"}</span>
+      <span class="note">${u ? `Última: ${fmtFecha(u.fecha)} · ${esc(u.items.map(i => i.n).join(" + "))}` : "Sin aplicaciones en 12 meses"}</span>
+      ${r.rep.length ? `<span class="note">Grupos repetidos: ${esc(r.rep.join(", "))}</span>` : ""}</button>`; }).join("") || `<p class="note">Este campo no tiene lotes: dibujalos en el mapa o importalos.</p>` : "";
+  $("#cList").querySelectorAll(".lote-card").forEach(b => b.onclick = () => abrirLote(c, findLote(c, b.dataset.l)));
+  setTimeout(() => { if(MAP){ MAP.invalidateSize(); refreshMap(!!force || MAP_FIT !== CAMPO_SEL); } }, 50);
+  leyenda();
+}
+function leyenda(){
+  const el = $("#mLeyenda"); if(!el) return;
+  const items = COLOR_POR === "rotacion" ? [[0, "Rotación OK"], [1, "Grupo repetido 2 veces"], [2, "3 o más veces: rotar"], [null, "Sin aplicaciones"]] :
+    COLOR_POR === "ultima" ? [[3, "Hace ≤ 15 días"], [2, "16 a 45 días"], [1, "46 a 120 días"], [0, "Más de 120 días"], [null, "Sin aplicaciones"]] : [];
+  el.innerHTML = items.map(([l, t]) => pill(l, t)).join("");
+}
+function initMap(){
+  if(!window.L){ $("#map").innerHTML = `<p class="note" style="padding:16px">El mapa necesita la biblioteca de mapas, que no se pudo cargar. Los lotes igual se pueden cargar sin mapa o importar.</p>`; return; }
+  MAP = L.map("map", {zoomControl: true, attributionControl: true}).setView([-25.5, -55.5], 7);
+  setBase(load("mapa_base", "sat"));
+  MAP.on("click", e => { if(!DRAW) return; DRAW.pts.push([e.latlng.lng, e.latlng.lat]); dibujarTemp(); });
+}
+let tileErr = 0;
+function setBase(v){
+  if(!MAP) return;
+  if(BASE){ MAP.removeLayer(BASE); BASE = null; }
+  $("#mNote").textContent = "";
+  if(v === "none") return;
+  BASE = v === "osm" ? L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}) :
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {maxZoom: 19, attribution: "Imágenes © Esri"});
+  tileErr = 0;
+  BASE.on("tileerror", () => { if(++tileErr === 3) $("#mNote").textContent = "El mapa base necesita internet (en la vista previa de Claude no se carga). Los lotes se ven igual."; });
+  BASE.addTo(MAP);
+}
+function refreshMap(fit){
+  if(!MAP) return;
+  if(MAPLAYER) MAP.removeLayer(MAPLAYER);
+  const c = findCampo(CAMPO_SEL);
+  MAPLAYER = L.featureGroup();
+  if(c) c.lotes.forEach(l => { if(!l.geom) return; const col = loteColor(l);
+    const lay = L.geoJSON({type: "Feature", geometry: l.geom}, {style: {color: col, weight: 2, fillColor: col, fillOpacity: .35}});
+    lay.bindTooltip(`${l.nombre} · ${fmt(loteHa(l), 0)} ha`, {permanent: true, direction: "center", className: "lote-tip"});
+    lay.on("click", () => { if(!DRAW) abrirLote(c, l); });
+    MAPLAYER.addLayer(lay); });
+  MAPLAYER.addTo(MAP);
+  if(fit && MAPLAYER.getLayers().length){ MAP.fitBounds(MAPLAYER.getBounds(), {padding: [20, 20]}); MAP_FIT = CAMPO_SEL; }
+}
+function empezarDibujo(lote){
+  if(!MAP){ toast("El mapa no está disponible"); return; }
+  if(!findCampo(CAMPO_SEL)){ editarCampo(null); toast("Primero creá el campo"); return; }
+  DRAW = {pts: [], lote, temp: null}; $("#mDrawBar").hidden = false; $("#mDraw").hidden = true;
+  $("#mNote").textContent = "Tocá el mapa en cada esquina del lote. Después tocá “Terminar”.";
+  document.getElementById("map").scrollIntoView({block: "center"});
+}
+function dibujarTemp(){
+  if(DRAW.temp) MAP.removeLayer(DRAW.temp);
+  const ll = DRAW.pts.map(p => [p[1], p[0]]);
+  DRAW.temp = ll.length >= 3 ? L.polygon(ll, {color: cssVar("--accent"), weight: 2, dashArray: "5 4"}) : L.polyline(ll, {color: cssVar("--accent"), weight: 2});
+  DRAW.temp.addTo(MAP);
+  $("#mNote").textContent = `${DRAW.pts.length} puntos${DRAW.pts.length >= 3 ? " · " + fmt(geomHa({type: "Polygon", coordinates: [DRAW.pts.concat([DRAW.pts[0]])]}), 1) + " ha" : ""}`;
+}
+function cancelarDibujo(){ if(DRAW && DRAW.temp) MAP.removeLayer(DRAW.temp); DRAW = null; $("#mDrawBar").hidden = true; $("#mDraw").hidden = false; $("#mNote").textContent = ""; }
+function terminarDibujo(){
+  if(!DRAW || DRAW.pts.length < 3){ toast("Marcá al menos 3 puntos"); return; }
+  const geom = {type: "Polygon", coordinates: [DRAW.pts.concat([DRAW.pts[0]])]};
+  const lote = DRAW.lote; cancelarDibujo();
+  const c = findCampo(CAMPO_SEL);
+  if(lote){ lote.geom = geom; lote.ha = Math.round(geomHa(geom) * 10) / 10; saveCampos(); renderCampos(); refreshMap(false); toast("Lote redibujado"); }
+  else editarLote(c, null, geom);
+}
+function editarCampo(c){
+  openDrawer(`<div class="stack"><h2>${c ? "Editar campo" : "Nuevo campo"}</h2><form id="fCampo" class="stack" style="gap:10px">
+    <label class="f">Nombre<input id="fcNom" value="${esc(c ? c.nombre : "")}" required></label>
+    <label class="f">Ubicación (distrito, departamento)<input id="fcUb" value="${esc(c ? c.ubicacion || "" : "")}"></label>
+    <div class="row"><button class="btn pri" type="submit">Guardar</button>${c ? `<button class="btn" type="button" id="fcDel">Borrar campo</button>` : ""}</div></form></div>`);
+  $("#fCampo").onsubmit = e => { e.preventDefault(); if(c){ c.nombre = $("#fcNom").value; c.ubicacion = $("#fcUb").value; } else { const n = {id: uid("c"), nombre: $("#fcNom").value, ubicacion: $("#fcUb").value, lotes: []}; CAMPOS.push(n); CAMPO_SEL = n.id; }
+    saveCampos(); closeDrawer(); renderCampos(); refreshMap(true); };
+  if(c) $("#fcDel").onclick = e => { const b = e.target; if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Borrar el campo y sus lotes? Tocá de nuevo"; return; }
+    CAMPOS = CAMPOS.filter(x => x !== c); saveCampos(); closeDrawer(); CAMPO_SEL = null; renderCampos(); refreshMap(true); };
+}
+function editarLote(c, l, geom){
+  if(!c){ toast("Primero creá el campo"); return; }
+  const ha = geom ? Math.round(geomHa(geom) * 10) / 10 : l ? loteHa(l) : "";
+  openDrawer(`<div class="stack"><h2>${l ? "Editar lote" : "Nuevo lote"}</h2><form id="fLote" class="stack" style="gap:10px">
+    <label class="f">Nombre<input id="flNom" value="${esc(l ? l.nombre : "Lote " + (c.lotes.length + 1))}" required></label>
+    <label class="f">Cultivo<input id="flCult" value="${esc(l ? l.cultivo || "" : "")}" list="dlCult"></label>
+    <datalist id="dlCult">${["Soja", "Maíz", "Trigo", "Girasol", "Canola", "Arroz", "Algodón", "Caña de azúcar", "Sésamo", "Chía", "Pastura", "Eucalipto", "Pino", "Hortalizas", "Frutales", "Barbecho"].map(x => `<option value="${x}">`).join("")}</datalist>
+    <label class="f">Superficie (ha)${(geom || (l && l.geom)) ? " · calculada del mapa" : ""}<input id="flHa" type="number" step="0.1" min="0" value="${ha}"></label>
+    <div class="row"><button class="btn pri" type="submit">Guardar</button></div></form></div>`);
+  $("#fLote").onsubmit = e => { e.preventDefault();
+    const d = {nombre: $("#flNom").value, cultivo: $("#flCult").value, ha: numOrNull($("#flHa").value)};
+    if(l) Object.assign(l, d); else c.lotes.push(Object.assign({id: uid("l"), geom: geom || null}, d));
+    saveCampos(); closeDrawer(); renderCampos(); refreshMap(false); };
+}
+function abrirLote(c, l){
+  const hs = histLotes([l.id], 3650), r = rotLote(l.id);
+  const porClase = {};
+  histLotes([l.id]).forEach(h => h.items.forEach(it => it.ais.forEach(a => { if(!a.grupo) return; const k = a.clase || "otros"; porClase[k] = porClase[k] || {}; porClase[k][a.grupo] = (porClase[k][a.grupo] || new Set()).add(h.id); })));
+  openDrawer(`<div class="stack"><span class="eyebrow">${esc(c.nombre)}</span><h2>${esc(l.nombre)}</h2>
+    <div class="row">${pill(r.level, r.level == null ? "Sin aplicaciones" : r.level === 2 ? "Necesita rotar" : r.level === 1 ? "Atención: grupo repetido" : "Rotación OK")}<span class="note">${fmt(loteHa(l), 1)} ha · ${esc(l.cultivo || "sin cultivo")}</span></div>
+    <div class="row"><button class="btn pri" id="lUsar">Usar en el caldo</button><button class="btn" id="lEdit">Editar</button><button class="btn" id="lRedraw">${l.geom ? "Redibujar" : "Dibujar"} en el mapa</button><button class="btn" id="lDel">Borrar lote</button></div>
+    <div class="panel"><h4>Modos de acción usados en 12 meses</h4>${Object.keys(porClase).length ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Clase</th><th>Grupo</th><th style="text-align:right">Aplicaciones</th></tr></thead><tbody>${Object.entries(porClase).flatMap(([k, gs]) => Object.entries(gs).sort((a, b) => b[1].size - a[1].size).map(([g, s]) => `<tr><td>${esc(CLASES[k] || k)}</td><td><span class="mono">${esc(g)}</span> <span class="note">${esc(GRUPO_DESC[g] || "")}</span></td><td class="n">${s.size >= 3 ? pill(2, s.size + "") : s.size === 2 ? pill(1, s.size + "") : s.size}</td></tr>`)).join("")}</tbody></table></div>` : `<p class="note">Sin aplicaciones registradas.</p>`}</div>
+    <h3>Historial del lote</h3>
+    ${hs.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Productos</th><th>Objetivo</th><th>Condiciones</th></tr></thead><tbody>${hs.map(h => `<tr><td class="mono">${esc(fmtFecha(h.fecha))}</td><td>${h.items.map(i => `${esc(i.n)} <span class="note">${fmt(i.dosis, 3)} ${i.u}/ha</span>`).join("<br>")}</td><td>${esc(h.objetivo || "")}</td><td class="note">${ambTxt(h.amb)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="note">Todavía no hay aplicaciones. Registralas desde “Armar caldo”.</p>`}</div>`);
+  $("#lUsar").onclick = () => { S.ap = {campo: c.id, lotes: [l.id]}; S.supManual = false; S.sup = loteHa(l); S.ejemplo = false; save(); fillInputs(); closeDrawer(); setView("caldo"); };
+  $("#lEdit").onclick = () => editarLote(c, l, null);
+  $("#lRedraw").onclick = () => { closeDrawer(); CAMPO_SEL = c.id; setView("campos"); empezarDibujo(l); };
+  $("#lDel").onclick = e => { const b = e.target; if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Borrar? Tocá de nuevo"; return; } c.lotes = c.lotes.filter(x => x !== l); saveCampos(); closeDrawer(); renderCampos(); refreshMap(false); };
+}
+function ambTxt(a){
+  if(!a) return "—";
+  const p = [];
+  if(a.temperatura_ambiente_C != null) p.push(a.temperatura_ambiente_C + " °C"); if(a.HR != null) p.push("HR " + a.HR + " %"); if(a.viento_kmh != null) p.push(a.viento_kmh + " km/h " + (a.viento_dir || ""));
+  if(a.delta_T != null) p.push("ΔT " + a.delta_T);
+  return esc(p.join(" · ") || "—") + (a.fuera_ley === true ? " " + pill(3, "fuera de ley") : "");
+}
+
+/* ---------- Historial ---------- */
+const HF = {campo: "", lote: "", clase: "", desde: "", hasta: "", q: ""};
+function renderHistorial(){
+  const el = $("#v-historial");
+  const c = findCampo(HF.campo);
+  const lista = (HIST || []).filter(h => (!HF.campo || h.campoId === HF.campo) && (!HF.lote || h.loteIds.includes(HF.lote)) &&
+    (!HF.clase || h.items.some(i => i.ais.some(a => a.clase === HF.clase))) && (!HF.desde || h.fecha.slice(0, 10) >= HF.desde) && (!HF.hasta || h.fecha.slice(0, 10) <= HF.hasta) &&
+    (!HF.q || JSON.stringify([h.objetivo, h.items.map(i => i.n + " " + i.pa), h.operador, h.obs, h.loteNombres]).toLowerCase().includes(HF.q.toLowerCase()))).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const ha = lista.reduce((s, h) => s + (h.ha || 0), 0);
+  el.innerHTML = `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><h2>Historial de aplicaciones</h2><p class="lead">Todo lo que se registra desde “Armar caldo”: productos, dosis, lotes, condiciones ambientales y semáforo. Queda guardado en este dispositivo.</p></div>
+    <div class="row" style="gap:6px"><button class="btn sm" data-x="hist_csv">Exportar CSV</button><button class="btn sm" data-x="hist_geojson">Exportar GeoJSON</button><button class="btn sm" data-x="respaldo">Respaldo</button></div></div>
+    <div class="panel"><div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      <label class="f">Campo<select id="hfCampo"><option value="">Todos</option>${CAMPOS.map(x => `<option value="${esc(x.id)}"${x.id === HF.campo ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}</select></label>
+      <label class="f">Lote<select id="hfLote"><option value="">Todos</option>${c ? c.lotes.map(l => `<option value="${esc(l.id)}"${l.id === HF.lote ? " selected" : ""}>${esc(l.nombre)}</option>`).join("") : ""}</select></label>
+      <label class="f">Clase<select id="hfClase"><option value="">Todas</option>${Object.entries(CLASES).map(([k, v]) => `<option value="${k}"${k === HF.clase ? " selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label class="f">Desde<input id="hfDesde" type="date" value="${esc(HF.desde)}"></label>
+      <label class="f">Hasta<input id="hfHasta" type="date" value="${esc(HF.hasta)}"></label>
+      <label class="f">Buscar<input id="hfQ" type="search" value="${esc(HF.q)}" placeholder="Producto, objetivo, operador"></label></div></div>
+    <p class="note">${lista.length} aplicaciones · ${fmt(ha, 1)} ha aplicadas</p>
+    ${lista.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Campo · lotes</th><th>Productos</th><th>Grupos</th><th>Condiciones</th><th>Semáforo</th><th></th></tr></thead><tbody>${lista.map(h => `<tr>
+      <td class="mono">${esc(fmtFH(h.fecha))}${h.ejemplo ? `<br><span class="tag">ejemplo</span>` : ""}</td>
+      <td>${esc(h.campoNombre || "—")}<br><span class="note">${esc(h.loteNombres.join(", "))} · ${fmt(h.ha, 1)} ha</span></td>
+      <td>${h.items.map(i => `${esc(i.n)} <span class="note">${fmt(i.dosis, 3)} ${i.u}/ha</span>`).join("<br>")}${h.objetivo ? `<br><span class="note">Objetivo: ${esc(h.objetivo)}</span>` : ""}</td>
+      <td class="mono note">${esc([...new Set(h.items.flatMap(i => i.ais.map(a => a.grupo)).filter(Boolean))].join(", "))}</td>
+      <td class="note">${ambTxt(h.amb)}</td><td>${h.semaforo == null ? pill(null, "Sin alertas") : pill(h.semaforo)}</td>
+      <td><span class="row" style="gap:4px;flex-wrap:nowrap"><button class="btn sm" data-a="usar" data-id="${esc(h.id)}">Repetir</button><button class="btn sm" data-a="del" data-id="${esc(h.id)}">Borrar</button></span></td></tr>`).join("")}</tbody></table></div>` :
+    `<div class="panel"><p class="note">No hay aplicaciones con esos filtros. Para registrar una, armá el caldo y tocá “Registrar aplicación”.</p></div>`}`;
+  const upd = () => renderHistorial();
+  $("#hfCampo").onchange = e => { HF.campo = e.target.value; HF.lote = ""; upd(); };
+  $("#hfLote").onchange = e => { HF.lote = e.target.value; upd(); };
+  $("#hfClase").onchange = e => { HF.clase = e.target.value; upd(); };
+  $("#hfDesde").onchange = e => { HF.desde = e.target.value; upd(); };
+  $("#hfHasta").onchange = e => { HF.hasta = e.target.value; upd(); };
+  $("#hfQ").onchange = e => { HF.q = e.target.value; upd(); };
+  el.querySelectorAll("[data-x]").forEach(b => b.onclick = () => EXPORTS[b.dataset.x]());
+  el.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { const h = HIST.find(x => x.id === b.dataset.id); if(!h) return;
+    if(b.dataset.a === "del"){ if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Seguro?"; return; } HIST = HIST.filter(x => x !== h); saveHist(); upd(); }
+    else { S.items = h.items.filter(i => PROD[i.r]).map(i => ({r: i.r, dosis: i.dosis})); S.ap = {campo: h.campoId, lotes: h.loteIds.slice()}; S.sup = h.ha; S.vol = h.vol || S.vol; S.medidas = (h.medidas || []).filter(m => MED[m] && MED[m].tipo !== "producto" || VIRT[m]); S.ejemplo = false; save(); fillInputs(); setView("caldo"); toast("Caldo cargado desde el historial"); } });
+}
+
+/* ---------- Rotación (pestaña) ---------- */
+const RF = {clase: "fungicida", obj: "roya", q: ""};
+function renderRotacion(){
+  const el = $("#v-rotacion");
+  const objsClase = {herbicida: ["gram", "hoja", "cip", "len", "total", "pre"], insecticida: ["lag", "chin", "pulg", "mbla", "trips", "acar", "coleo", "suelo", "horm", "chich", "minad", "cochi", "nema", "alm", "lang", "term"], fungicida: ["roya", "manch", "oidio", "antr", "mild", "suelf", "scle", "bact", "podr", "piri"]};
+  if(!objsClase[RF.clase].includes(RF.obj)) RF.obj = objsClase[RF.clase][0];
+  const act = D.activos.filter(a => a.clase === RF.clase && (a.objetivos || []).includes(RF.obj));
+  const byG = {};
+  act.forEach(a => { const n = countRubro(a.id); (byG[a.grupo || "Sin grupo"] = byG[a.grupo || "Sin grupo"] || []).push({a, n}); });
+  const grupos = Object.entries(byG).map(([g, arr]) => ({g, arr: arr.sort((x, y) => y.n - x.n), tot: arr.reduce((s, x) => s + x.n, 0)})).filter(x => x.tot > 0).sort((a, b) => b.tot - a.tot);
+  const q = RF.q.trim().toLowerCase();
+  const hit = q ? D.activos.filter(a => a.nombre.toLowerCase().includes(q)).slice(0, 6) : [];
+  el.innerHTML = `<div><h2>Rotación de modos de acción</h2><p class="lead">Para qué se usa cada principio activo y con qué grupos se puede alternar para el mismo objetivo. Rotar el grupo de modo de acción (no la marca) es la principal herramienta para frenar la resistencia de malezas, plagas y enfermedades.</p></div>
+    <div class="panel"><h3>Reglas básicas</h3><ul class="clean" style="margin-top:8px">${D.principios_rotacion.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>
+    <div class="panel"><div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+      <label class="f">Buscar principio activo<input id="rq" type="search" value="${esc(RF.q)}" placeholder="Ej.: protioconazol"></label>
+      <label class="f">Clase<select id="rcl">${Object.entries(CLASES).map(([k, v]) => `<option value="${k}"${k === RF.clase ? " selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label class="f">Objetivo<select id="rob">${objsClase[RF.clase].map(o => `<option value="${o}"${o === RF.obj ? " selected" : ""}>${esc(D.objetivos[o])}</option>`).join("")}</select></label></div></div>
+    ${hit.length ? `<div class="cols">${hit.map(a => `<div class="panel stack" style="gap:6px"><h3>${esc(a.nombre)}</h3><span class="mono note">${esc(grupoTxt(a.grupo))}</span><p>${esc(a.usos || "—")}</p><p class="note">Objetivos: ${esc(objTxt(a.objetivos))} · ${countRubro(a.id)} productos en ${esc(D.rubros[RUBRO].nombre)}</p>${D.resistencia[a.grupo] ? `<p class="rnote">${esc(D.resistencia[a.grupo])}</p>` : ""}<details><summary>Alternativas con otro modo de acción</summary>${altHTML(a, new Set())}</details></div>`).join("")}</div>` : ""}
+    <div class="panel"><div class="panel-h"><h3>${esc(D.objetivos[RF.obj])}: grupos disponibles</h3><span class="note">${esc(D.rubros[RUBRO].nombre)} · productos vigentes</span></div>
+      ${grupos.length ? `<div class="stack" style="gap:8px">${grupos.map(x => `<div class="rot ln"><div class="al-h"><h4><span class="mono">${esc(x.g)}</span> ${esc(GRUPO_DESC[x.g] || "")}</h4><span class="tag">${x.tot} productos</span></div>
+        <p class="note">${x.arr.filter(y => y.n).map(y => `<button class="linkbtn" data-buscar="${esc(y.a.nombre)}">${esc(y.a.nombre)}</button> (${y.n})`).join(", ")}</p>
+        ${D.resistencia[x.g] ? `<p class="rnote">${esc(D.resistencia[x.g])}</p>` : LOW_RISK(x.g) ? `<p class="note">Bajo riesgo de resistencia: buen socio de mezcla.</p>` : ""}</div>`).join("")}</div>` : `<p class="note">Sin productos para este objetivo en el rubro elegido.</p>`}</div>
+    <p class="note">Fuentes: clasificaciones HRAC (2024), IRAC y FRAC; Weedscience.org (casos de Paraguay); estudios de resistencia de roya asiática en Paraguay (Pest Management Science, 2026) e IRAC-BR. Los usos son orientativos: la etiqueta de cada producto define cultivos, plagas y dosis.</p>`;
+  $("#rq").onchange = e => { RF.q = e.target.value; renderRotacion(); };
+  $("#rcl").onchange = e => { RF.clase = e.target.value; renderRotacion(); };
+  $("#rob").onchange = e => { RF.obj = e.target.value; renderRotacion(); };
+  bindRotacion();
+}
+
+/* ---------- Ayuda ---------- */
+function helpHTML(){
+  const fams = Object.entries(D.familias).map(([k,v])=>`<li><span class="fam fam-${k}">${esc(v.nombre)}</span> ${esc(v.como)}</li>`).join("");
+  return `<div class="stack">
+  <span class="eyebrow">Ayuda</span>
+  <h2>Cómo se usa Consultas de Caldo</h2>
+  <p>La app revisa una mezcla de productos antes de prepararla: qué problemas puede dar en el tanque o en el cultivo, qué tan graves son, qué hacer para bajar el riesgo y en qué orden cargar cada producto.</p>
+  <div class="row"><button class="btn pri" id="hTour">Hacer el recorrido guiado</button><button class="btn" id="hCaso">Ver el caso práctico</button></div>
+
+  <div class="panel"><h3>En 7 pasos</h3>
+  <ol class="help-steps" style="margin-top:10px">
+    <li><div><b>Elegí tu rubro</b> arriba: Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. El buscador y el listado muestran los productos de ese rubro.</div></li>
+    <li><div><b>Agregá los productos</b> en “Armar caldo”: escribí el nombre comercial, el activo o la empresa y tocá el producto. Cargá la dosis por hectárea (L/ha o kg/ha según la presentación).</div></li>
+    <li><div><b>Elegí dónde vas a aplicar</b>: campo y lotes (se cargan en “Campos y lotes”). La superficie se suma sola y la app compara la mezcla con el historial de esos lotes para avisarte si repetís el mismo modo de acción.</div></li>
+    <li><div><b>Completá la aplicación, el agua y las condiciones ambientales</b>: volumen por hectárea, tanque, cuánto tiempo va a esperar el caldo, el análisis de agua y la temperatura, humedad y viento del momento. La app calcula el Delta T y controla la Ley 3742/09. Lo que falte queda “a verificar”.</div></li>
+    <li><div><b>Leé el semáforo</b> y bajá el riesgo: cada alerta muestra las medidas que la corrigen. Al tocar una medida (por ejemplo “Antiespumante” o “Agitación constante”) se aplica y el color se recalcula. Al lado de la flecha ves el color que quedaría antes de tocarla.</div></li>
+    <li><div><b>Revisá dosis y cantidades</b>: cargá la dosis de etiqueta (queda guardada) y la dosis a aplicar, o la cantidad que ponés en cada tanque. La app te da el total para la superficie, los tanques y el último tanque parcial.</div></li>
+    <li><div><b>Prepará y registrá</b>: seguí el “Orden de carga”, hacé la prueba de jarra y, después de aplicar, tocá “Registrar aplicación”. Queda en el historial del lote, se ve en el mapa y se puede exportar a QGIS.</div></li>
+  </ol></div>
+
+  <div class="panel"><h3>El semáforo</h3>
+    <div class="stack" style="gap:10px;margin-top:10px">${NIV.map(n=>`<div class="row" style="flex-wrap:nowrap;align-items:flex-start">${lampHTML(n.n,true)}<div><b class="c${n.n}">${esc(n.nombre)} · ${esc(n.lema)}</b><p class="note">${esc(n.texto)}</p></div></div>`).join("")}</div>
+    <p class="note" style="margin-top:10px">El color de la mezcla es el peor de sus alertas. Cada alerta arranca según su gravedad y baja 1 o 2 niveles por cada medida aplicada, hasta su <b>piso</b>: hay problemas que no se arreglan con manejo (por ejemplo, el cloro con ácidos queda siempre en rojo) y la única salida es separar las aplicaciones.</p>
+  </div>
+
+  <div class="panel"><h3>Tres tipos de medidas</h3>
+    <ul class="clean" style="margin-top:8px">
+      <li><b>Estabilizadores que entran al tanque:</b> sulfato de amonio, secuestrante, regulador de pH, antiespumante y compatibilizador. Se agregan a la mezcla como un producto más y aparecen en el orden de carga. Ojo: un estabilizador puede activar otra alerta (por ejemplo, sulfato de amonio con dicamba o cobre); la app lo avisa.</li>
+      <li><b>Prácticas:</b> orden de carga, pre-dilución, tanque al 50-70 %, agitación constante, prueba de jarra, dosis plena, lavado del equipo.</li>
+      <li><b>Ajustes:</b> cambian un dato de la aplicación (aplicar enseguida, subir a 100 L/ha, agua templada, agua limpia, sin cloro, horas frescas). Con eso algunas alertas directamente dejan de aplicar.</li>
+    </ul>
+    <p class="note" style="margin-top:6px">Si un producto de la mezcla ya trae el estabilizador (por ejemplo, un aceite con antiespumante), la medida se marca sola.</p>
+  </div>
+
+  <div class="panel"><h3>Presentación y orden de carga</h3>
+    <ul class="clean" style="margin-top:8px">${fams}</ul>
+    <p class="note" style="margin-top:6px">Orden general: agua → correctores → bolsas hidrosolubles → sólidos dispersables → sólidos solubles → suspensiones → emulsionables y oleosos → solubles → adyuvantes → fertilizantes → completar y medir pH.</p>
+  </div>
+
+  <div class="panel"><h3>Las demás pestañas</h3>
+    <dl class="faq">
+      <dt>Campos y lotes</dt><dd>El mapa de tus campos. Dibujá cada lote tocando sus esquinas o importalos desde QGIS (GeoJSON o Shapefile .zip), Google Earth (KML) o un GPS (GPX). Cada lote muestra su última aplicación y el estado de rotación; tocá un lote para ver su historial.</dd>
+      <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
+      <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo.</dd>
+      <dt>Caso práctico</dt><dd>Un ejemplo agrícola completo: la mezcla tal como se planeó, qué medidas se aplicaron y cómo quedó. Se puede abrir en el armador para probarlo.</dd>
+      <dt>Productos</dt><dd>El listado del SENAVE filtrado por rubro, clase, presentación y empresa. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
+      <dt>Formulaciones e inertes</dt><dd>Qué lleva cada tipo de formulación además del activo, qué parámetros de calidad debe cumplir, qué problemas da una formulación de mala calidad y cómo hacer una prueba casera.</dd>
+      <dt>Diagnóstico</dt><dd>Si ya preparaste el caldo y ves algo raro (grumos, cristales, espuma, capas, calor), elegí el síntoma: la app muestra las causas probables y qué hacer.</dd>
+      <dt>Problemas y reglas</dt><dd>Los 31 problemas posibles del caldo, con su explicación, y las reglas del semáforo con su color de partida, su piso y las medidas que lo bajan.</dd>
+    </dl>
+  </div>
+
+  <div class="panel"><h3>Preguntas frecuentes</h3>
+    <dl class="faq">
+      <dt>¿Dónde se guardan mis datos?</dt><dd>Solo en este dispositivo y en este navegador. Con “Guardar este caldo” podés guardar mezclas con nombre y volver a abrirlas desde “Mis caldos”. No se envía nada a internet.</dd>
+      <dt>¿Funciona sin internet?</dt><dd>Sí. Todo el listado de productos y las reglas vienen dentro de la app.</dd>
+      <dt>¿Cómo la instalo en el celular o la PC?</dt><dd>Abrí la app desde su dirección web en Chrome o Edge y tocá “Instalar app” (o el menú ⋮ → “Instalar aplicación” / “Agregar a la pantalla principal”). En iPhone: Safari → botón Compartir → “Agregar a inicio”. Una vez instalada abre como cualquier aplicación y funciona sin conexión.</dd>
+      <dt>¿De dónde salen los productos?</dt><dd>Del listado del SENAVE con corte al ${esc(D.meta.fecha_generacion.split("-").reverse().join("/"))}: productos con registro vigente (${D.productos.filter(p=>!p.m).length.toLocaleString("es-PY")}), más los de mantenimiento vencido marcados aparte.</dd>
+      <dt>¿El rubro es oficial?</dt><dd>No. El listado del SENAVE no trae cultivos; el rubro se asigna según el principio activo y es orientativo. Los cultivos autorizados están en la etiqueta.</dd>
+      <dt>¿Qué significa “a verificar”?</dt><dd>Alertas que dependen de un dato que no cargaste (por ejemplo, la dureza del agua). Se muestran aparte con el color que tendrían.</dd>
+      <dt>¿Reemplaza a la etiqueta o a la prueba de jarra?</dt><dd>No. La etiqueta del producto prevalece siempre y la prueba de jarra con el agua y las dosis reales es la confirmación final.</dd>
+      <dt>¿Cómo empiezo de cero?</dt><dd>En “Armar caldo”, botón “Empezar de cero”. Para volver al ejemplo, abrí el caso práctico y tocá “Abrir este caso en el armador”.</dd>
+      <dt>¿Qué es el campo de ejemplo y cómo lo elimino?</dt><dd>La app trae una “Estancia Ejemplo” de 500 ha con 8 lotes y un año de aplicaciones hipotéticas, para ver el mapa, el historial y los avisos de rotación. Se elimina con el botón de abajo o en “Campos y lotes” → “Eliminar ejemplo”; tus datos no se tocan. Se puede volver a cargar cuando quieras.</dd>
+      <dt>¿Cómo paso mis datos a otro celular o a la PC?</dt><dd>En “Campos y lotes” → “Respaldo completo” se descarga un archivo con campos, historial, dosis de etiqueta y caldos guardados. En el otro equipo: “Restaurar respaldo”.</dd>
+      <dt>¿Cómo lo abro en QGIS?</dt><dd>Exportá “Lotes · GeoJSON” o “Historial con lotes · GeoJSON” y arrastralo a QGIS (sistema de coordenadas WGS 84, EPSG:4326). El historial trae una fila por aplicación y lote, con fecha, productos, grupos, condiciones y semáforo.</dd>
+      <dt>¿Qué es el Delta T?</dt><dd>La diferencia entre la temperatura del aire y la de bulbo húmedo; mide qué tan rápido se evaporan las gotas. Entre 2 y 8 es ideal; por encima de 10 no conviene aplicar.</dd>
+    </dl>
+  </div>
+  <div class="panel"><h3>Ejemplo de 500 ha</h3><p class="note" style="margin:6px 0">${hayEjemplo() ? "El ejemplo está cargado." : "El ejemplo no está cargado."}</p>
+    <div class="row">${hayEjemplo() ? `<button class="btn" id="hDelEj">Eliminar ejemplo</button><button class="btn" id="hVerEj">Ver el campo de ejemplo</button>` : `<button class="btn" id="hAddEj">Cargar ejemplo</button>`}</div></div>
+  <p class="note">Datos: base química v${esc(D.meta.version)} (${esc(D.meta.fecha_generacion)}).</p>
+  </div>`;
+}
+function openHelp(){ openDrawer(helpHTML()); $("#hTour").onclick=()=>{ closeDrawer(); startTour(); }; $("#hCaso").onclick=()=>{ closeDrawer(); setView("caso"); };
+  const d=$("#hDelEj"); if(d) d.onclick=e=>{ const b=e.target; if(!b.dataset.ok){ b.dataset.ok=1; b.textContent="¿Eliminar el ejemplo? Tocá de nuevo"; return; } eliminarEjemplo(); openHelp(); renderAll(); };
+  const v=$("#hVerEj"); if(v) v.onclick=()=>{ closeDrawer(); CAMPO_SEL="ej-campo"; setView("campos"); };
+  const a=$("#hAddEj"); if(a) a.onclick=()=>{ cargarEjemplo(); toast("Ejemplo cargado"); openHelp(); renderAll(); }; }
+$("#btnHelp").onclick=openHelp;
+
+/* ---------- Recorrido guiado ---------- */
+const TOUR = [
+  {v:"caldo", sel:"#rubros", t:"Elegí tu rubro", d:"Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. Define qué productos aparecen en el buscador y en el listado."},
+  {v:"caldo", sel:"#pProductos", t:"Productos del caldo", d:"Buscá por nombre, activo o empresa y tocá el producto para agregarlo. Cargá la dosis por hectárea. Cada producto muestra su presentación (soluble, sólido, suspensión u oleoso) y su paso de carga."},
+  {v:"caldo", sel:"#pAplic", t:"Dónde y cómo se aplica", d:"Elegí el campo y los lotes (la superficie se suma sola), el volumen por hectárea, el tanque y cuántas horas va a esperar el caldo."},
+  {v:"caldo", sel:"#pAgua", t:"El agua", d:"pH, dureza, temperatura y turbidez son los datos que más cambian el resultado. Si no los tenés, las alertas que dependen de ellos quedan “a verificar”."},
+  {v:"caldo", sel:"#pAmb", t:"Condiciones ambientales", d:"Temperatura, humedad, viento y lluvia prevista. La app calcula el Delta T, controla la Ley 3742/09 y suma alertas de deriva y evaporación."},
+  {v:"caldo", sel:"#pSemaforo", t:"El semáforo de la mezcla", d:"Verde: problema leve. Amarillo: precaución. Naranja: riesgo alto, solo con correcciones. Rojo: no mezclar. El color general es el de la peor alerta."},
+  {v:"caldo", sel:"#pAlertas .al", t:"Cada alerta", d:"Explica qué problema puede aparecer, por qué pasa y qué hacer. El color de la izquierda es el riesgo actual."},
+  {v:"caldo", sel:"#pAlertas .meds", t:"Medidas para bajar el color", d:"Tocá una medida para aplicarla. Después de la flecha ves cómo quedaría la alerta; si la medida activa otra regla, también lo avisa."},
+  {v:"caldo", sel:"#pRot", t:"Rotación de modos de acción", d:"Cada activo con su grupo (HRAC, IRAC o FRAC). Si ese grupo ya se usó en los lotes elegidos, avisa y propone alternativas con otro modo de acción."},
+  {v:"caldo", sel:"#pDosis", t:"Dosis y cantidades", d:"Dosis de etiqueta y dosis a aplicar, total para la superficie, cantidad por tanque y último tanque parcial."},
+  {v:"caldo", sel:"#pProblemas", t:"Los 31 problemas", d:"El estado de cada problema posible del caldo (queso, cristales, espuma, antagonismo, fitotoxicidad…). Tocá uno para ver cómo se ve, cómo se previene y qué hacer si ya ocurrió."},
+  {v:"caldo", sel:"#pOrden", t:"Orden de carga", d:"El orden en que van los productos según su presentación, cómo cargar cada uno y cuánto va por tanque."},
+  {v:"caldo", sel:"#pJarra", t:"Prueba de jarra", d:"Cantidad de cada producto por litro de caldo para probar la mezcla en un frasco antes de cargar el tanque."},
+  {v:"caldo", sel:"#btnRegistrar", t:"Registrar la aplicación", d:"Después de aplicar, guardá fecha, lotes, productos, dosis y condiciones en el historial. “Guardar este caldo” guarda solo la receta para reusarla."},
+  {v:"campos", sel:"#map", t:"Campos y lotes en el mapa", d:"Dibujá o importá tus lotes (QGIS, Google Earth, GPS). El color muestra el estado de rotación o la última aplicación; tocá un lote para ver su historial."},
+  {v:"campos", sel:"#cTop", t:"Campo de ejemplo", d:"El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan."},
+  {v:"caldo", sel:'#tabs [data-v="historial"]', t:"Historial", d:"Todas las aplicaciones registradas, con filtros y exportación a Excel (CSV) y QGIS (GeoJSON)."},
+  {v:"caldo", sel:'#tabs [data-v="rotacion"]', t:"Rotación", d:"Para qué se usa cada activo, su grupo de modo de acción y qué grupos alternar para el mismo objetivo."},
+  {v:"caldo", sel:'#tabs [data-v="caso"]', t:"Caso práctico", d:"Un barbecho químico de soja paso a paso: cómo pasa de naranja a amarillo y qué conviene separar."},
+  {v:"caldo", sel:'#tabs [data-v="productos"]', t:"Productos", d:"El listado del SENAVE con la ficha de cada producto, sus activos, su formulación e inertes, y otras marcas con el mismo activo."},
+  {v:"caldo", sel:'#tabs [data-v="inertes"]', t:"Formulaciones e inertes", d:"Qué lleva cada formulación además del activo, la calidad que debe cumplir y cómo detectar un producto en mal estado."},
+  {v:"caldo", sel:'#tabs [data-v="diag"]', t:"Diagnóstico", d:"Si el caldo ya muestra grumos, cristales, espuma o capas, elegí el síntoma y la app te dice las causas probables."},
+  {v:"caldo", sel:"#btnHelp", t:"Ayuda", d:"Volvé acá cuando quieras: está la explicación completa y las preguntas frecuentes."},
+];
+let TI = -1;
+function startTour(){ if(VIEW!=="caldo") setView("caldo"); TI=0; showTour(); }
+function endTour(){ TI=-1; document.querySelectorAll(".tour-spot,.tour-card,.tour-block").forEach(e=>e.remove()); }
+function showTour(){
+  document.querySelectorAll(".tour-spot,.tour-card,.tour-block").forEach(e=>e.remove());
+  const st = TOUR[TI]; if(!st){ endTour(); return; }
+  if(VIEW!==st.v) setView(st.v);
+  const el = document.querySelector(st.sel); if(!el){ TI++; showTour(); return; }
+  el.scrollIntoView({block:"center", behavior:"instant"});
+  const block=document.createElement("div"); block.className="tour-block"; block.onclick=endTour;
+  const spot=document.createElement("div"); spot.className="tour-spot";
+  const card=document.createElement("div"); card.className="tour-card"; card.setAttribute("role","dialog");
+  card.innerHTML = `<div class="tour-bar"><i style="width:${(TI+1)/TOUR.length*100}%"></i></div>
+    <span class="eyebrow">Paso ${TI+1} de ${TOUR.length}</span><h3>${esc(st.t)}</h3><p>${esc(st.d)}</p>
+    <div class="row" style="justify-content:space-between"><button class="btn sm" id="tSalir">Salir</button><span class="row" style="gap:6px"><button class="btn sm" id="tAnt" ${TI===0?"disabled":""}>Anterior</button><button class="btn pri sm" id="tSig">${TI===TOUR.length-1?"Terminar":"Siguiente"}</button></span></div>`;
+  document.body.append(block, spot, card);
+  const place=()=>{
+    const r=el.getBoundingClientRect(), vh=innerHeight, vw=innerWidth, pad=6;
+    const top=Math.max(4,r.top-pad), h=Math.min(r.height+pad*2, vh-8);
+    Object.assign(spot.style,{left:(r.left-pad)+"px",top:top+"px",width:(r.width+pad*2)+"px",height:h+"px"});
+    const ch=card.offsetHeight, cw=card.offsetWidth;
+    let ct = r.bottom+14; if(ct+ch>vh-8) ct = r.top-ch-14; if(ct<8) ct = vh-ch-12;
+    let cl = Math.min(Math.max(8, r.left), vw-cw-8);
+    card.style.top=ct+"px"; card.style.left=cl+"px";
+  };
+  requestAnimationFrame(place); card._place=place;
+  $("#tSalir").onclick=endTour; $("#tAnt").onclick=()=>{TI--;showTour()}; $("#tSig").onclick=()=>{TI++;showTour()};
+  $("#tSig").focus();
+}
+addEventListener("resize",()=>{ const c=document.querySelector(".tour-card"); if(c&&c._place) c._place(); });
+addEventListener("scroll",()=>{ const c=document.querySelector(".tour-card"); if(c&&c._place) c._place(); }, {passive:true});
+document.addEventListener("keydown",e=>{ if(TI<0) return; if(e.key==="Escape") endTour(); if(e.key==="ArrowRight"){TI++;showTour()} if(e.key==="ArrowLeft"&&TI>0){TI--;showTour()} });
+$("#btnTourBanner").onclick=startTour;
+
+/* ---------- Mis caldos (guardados en el dispositivo) ---------- */
+function guardados(){ return load("guardados", []); }
+function resumenCaldo(s){ return s.items.map(it=>PROD[it.r]?PROD[it.r].n:"").filter(Boolean).join(" + ") || "Sin productos"; }
+function openGuardados(conForm){
+  const list = guardados();
+  const now = new Date(); const def = "Caldo "+now.toLocaleDateString("es-PY")+" "+now.toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit"});
+  openDrawer(`<div class="stack"><span class="eyebrow">Guardados en este dispositivo</span><h2>Mis caldos</h2>
+    ${conForm?`<form class="inline-form panel" id="fGuardar"><label class="f" style="flex:1 1 220px">Nombre del caldo<input id="gNombre" value="${esc(def)}" maxlength="80"></label><button class="btn pri" type="submit">Guardar</button></form><p class="note">Se guarda: ${esc(resumenCaldo(S))}, con las dosis, el agua y las medidas.</p>`:""}
+    <div class="saved" id="gList">${list.length?list.map((g,i)=>`<div class="it"><div style="min-width:0"><b>${esc(g.nombre)}</b><br><span class="note">${esc(g.fecha)} · ${esc(resumenCaldo(g.estado))}</span></div><span class="row" style="gap:6px"><button class="btn sm" data-a="abrir" data-i="${i}">Abrir</button><button class="btn sm" data-a="borrar" data-i="${i}">Borrar</button></span></div>`).join(""):`<p class="note">Todavía no guardaste caldos. Armá una mezcla y tocá “Guardar este caldo”.</p>`}</div></div>`);
+  const f=$("#fGuardar"); if(f) f.onsubmit=e=>{ e.preventDefault(); const l=guardados(); l.unshift({nombre:$("#gNombre").value.trim()||def, fecha:new Date().toLocaleString("es-PY"), estado:clone(S)}); store("guardados",l); openGuardados(false); };
+  $("#gList").querySelectorAll("button").forEach(b=>b.onclick=()=>{ const l=guardados(), i=+b.dataset.i;
+    if(b.dataset.a==="abrir"){ S=clone(l[i].estado); S.ejemplo=false; save(); fillInputs(); closeDrawer(); setView("caldo"); }
+    else if(b.dataset.a==="borrar"){ if(b.dataset.ok){ l.splice(i,1); store("guardados",l); openGuardados(false); } else { b.dataset.ok=1; b.textContent="¿Borrar? Tocá de nuevo"; } } });
+}
+$("#btnGuardar").onclick=()=>openGuardados(true);
+$("#btnMisCaldos").onclick=()=>openGuardados(false);
+
+/* ---------- Instalación (PWA) ---------- */
+let INSTALL=null;
+addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); INSTALL=e; $("#btnInstall").hidden=false; });
+$("#btnInstall").onclick=async()=>{ if(!INSTALL) return; INSTALL.prompt(); try{ await INSTALL.userChoice; }catch(e){} INSTALL=null; $("#btnInstall").hidden=true; };
+addEventListener("appinstalled",()=>{ $("#btnInstall").hidden=true; });
+
+/* ---------- Render general ---------- */
+function renderAll(){
+  if(VIEW==="caldo") renderCaldo();
+  else if(VIEW==="caso") renderCaso();
+  else if(VIEW==="campos") renderCampos();
+  else if(VIEW==="historial") renderHistorial();
+  else if(VIEW==="rotacion") renderRotacion();
+  else if(VIEW==="productos") renderProductos();
+  else if(VIEW==="inertes") renderInertes();
+  else if(VIEW==="diag") renderDiag();
+  else if(VIEW==="problemas") renderProblemas();
+}
+renderRubros(); fillInputs(); bindInputs(); bindSearch(); initProductFilters();
+const h = (location.hash||"").slice(1); if(["caldo","campos","historial","rotacion","caso","productos","inertes","diag","problemas"].includes(h)) setView(h); else renderAll();
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
