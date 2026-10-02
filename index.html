@@ -203,6 +203,8 @@ ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .rb{display:inline-flex;gap:3px}
 .rb i{font-style:normal;font-size:.66rem;font-weight:700;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--muted)}
 .rb i.on{color:var(--accent);border-color:var(--accent)}
+.rb i.sec{color:var(--accent);border-style:dashed;opacity:.75}
+.rbedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 
 .drawer{position:fixed;inset:0;z-index:40;background:rgba(10,15,12,.45);display:flex;justify-content:flex-end}
 .drawer-in{background:var(--paper);width:min(720px,100%);height:100%;overflow:auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px;padding-top:calc(18px + env(safe-area-inset-top,0px))}
@@ -398,6 +400,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
           <label class="f">Empresa<select id="pemp"><option value="">Todas</option></select></label>
           <label class="f">Mantenimiento<select id="pmant"><option value="0">Vigente</option><option value="">Todos</option><option value="1">Vencido (verificar)</option></select></label>
         </div>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="pAmplio"> Incluir productos de uso general con uso secundario en este rubro (p. ej. glifosato dirigido)</label>
       </div>
       <p class="note" id="pcount"></p>
       <div class="plist" id="plist"></div>
@@ -433,6 +436,11 @@ const FORM = byId(D.formulaciones,"codigo");
 const PROB = byId(D.catalogo_problemas);
 const RULE = byId(D.reglas);
 const PROD = Object.fromEntries(D.productos.map(p=>[p.r,p]));
+/* Rubros por producto: s = hecho para ese rubro; s2 = uso secundario (oculto salvo "uso general").
+   El usuario puede corregir los rubros de un producto (se guarda en este dispositivo y va en el respaldo). */
+D.productos.forEach(p => { p.s0 = p.s; p.s20 = p.s2 || ""; });
+let RUBOVR = {};
+function aplicarOvr(){ D.productos.forEach(p => { const o = RUBOVR[p.r]; p.s = o != null ? o : p.s0; p.s2 = o != null ? "" : p.s20; }); }
 const ORDEN = Object.fromEntries(D.orden_carga.map(o=>[o.paso,o]));
 const SOLIDOS = new Set(["WG","WP","WS","SG","SP","TB","DS","GR","GB","DP"]);
 const famOf = f => D.form_familia[f] || "no_caldo";
@@ -483,6 +491,9 @@ function migrar(s){
 }
 let S = migrar(load("estado", null));
 let RUBRO = load("rubro","AG");
+let AMPLIO = load("rubro_amplio", false);
+RUBOVR = load("rubro_ovr", {}); aplicarOvr();
+function setOvr(r, s){ if(s == null) delete RUBOVR[r]; else RUBOVR[r] = s; store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; }
 
 /* ---------- Motor ---------- */
 function expandItem(it){
@@ -682,8 +693,15 @@ function setView(v){
   renderAll(); window.scrollTo({top:0});
 }
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
-const inRubro = p => p.s.includes(RUBRO);
-const rubBadges = s => `<span class="rb">${RUBK.map(k=>`<i class="${s.includes(k)?"on":""}" title="${esc(D.rubros[k].nombre)}">${k}</i>`).join("")}</span>`;
+const inRubro = p => p.s.includes(RUBRO) || (AMPLIO && (p.s2 || "").includes(RUBRO));
+const secRubro = p => !p.s.includes(RUBRO) && (p.s2 || "").includes(RUBRO);
+const rubBadges = (s, s2 = "") => `<span class="rb">${RUBK.map(k=>`<i class="${s.includes(k)?"on":s2.includes(k)?"sec":""}" title="${esc(D.rubros[k].nombre)}${!s.includes(k)&&s2.includes(k)?" (uso secundario)":""}">${k}</i>`).join("")}</span>`;
+/* uso de un activo en el rubro elegido */
+const usoR = (a, r = RUBRO) => a && a.ur ? a.ur[r] || null : null;
+const enRubroAI = a => { const u = usoR(a); return !!u && (!u.sec || AMPLIO); };
+const objR = a => { const u = usoR(a); return u ? u.o : []; };
+const usoTxt = a => { const u = usoR(a); return u ? u.u : (a.usos || ""); };
+const rubrosDe = a => a && a.ur ? Object.keys(a.ur).filter(k => !a.ur[k].sec).map(k => D.rubros[k].nombre).join(", ") : "";
 
 /* ---------- Armador: entradas ---------- */
 const AMB_KEYS = ["fecha_hora","temperatura_ambiente_C","HR","viento_kmh","rafagas_kmh","viento_dir","nubosidad","lluvia_h"];
@@ -741,11 +759,16 @@ function searchProducts(q, limit=12, onlyRubro=true){
 function bindSearch(){
   const inp=$("#q"), box=$("#sugg");
   inp.oninput=()=>{
-    const res = searchProducts(inp.value, 14);
-    if(!res.length){ box.hidden = inp.value.trim().length<2; box.innerHTML = inp.value.trim().length<2?"":`<div class="note" style="padding:10px">Sin resultados en el rubro ${esc(D.rubros[RUBRO].nombre)}.</div>`; return; }
-    box.innerHTML = res.map(p=>`<button data-r="${esc(p.r)}"><span class="t">${esc(p.n)} ${famChip(p.f)}</span><span class="s">${esc(p.pa)} · ${esc(p.e)}${p.u!=="pulverizacion"?" · "+(p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"):""}</span></button>`).join("");
+    if(inp.value.trim().length<2) inp.dataset.todos = "";
+    const todos = inp.dataset.todos === "1";
+    const res = searchProducts(inp.value, 14, !todos);
+    if(!res.length){ const fuera = inp.value.trim().length>=2 && !todos ? searchProducts(inp.value, 99, false).length : 0;
+      box.hidden = inp.value.trim().length<2; box.innerHTML = inp.value.trim().length<2?"":`<div class="note" style="padding:10px">Sin resultados en el rubro ${esc(D.rubros[RUBRO].nombre)}.${fuera?` <button class="linkbtn" id="qTodos">Buscar en todos los rubros (${fuera}${fuera>=99?"+":""})</button>`:""}</div>`;
+      const bt = $("#qTodos"); if(bt) bt.onmousedown = e => { e.preventDefault(); inp.dataset.todos = "1"; inp.oninput(); inp.focus(); };
+      return; }
+    box.innerHTML = (todos?`<div class="note" style="padding:6px 10px">Todos los rubros</div>`:"") + res.map(p=>`<button data-r="${esc(p.r)}"><span class="t">${esc(p.n)} ${famChip(p.f)}${secRubro(p)?` <span class="tag">uso secundario</span>`:!inRubro(p)?` <span class="tag">fuera del rubro</span>`:""}</span><span class="s">${esc(p.pa)} · ${esc(p.e)}${p.u!=="pulverizacion"?" · "+(p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"):""}</span></button>`).join("");
     box.hidden=false;
-    box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ S.items.push({r:b.dataset.r,dosis:null}); S.ejemplo=false; inp.value=""; box.hidden=true; save(); renderCaldo(); });
+    box.querySelectorAll("button[data-r]").forEach(b=>b.onclick=()=>{ S.items.push({r:b.dataset.r,dosis:null}); S.ejemplo=false; inp.value=""; inp.dataset.todos=""; box.hidden=true; save(); renderCaldo(); });
   };
   document.addEventListener("click",e=>{ if(!e.target.closest(".search")) box.hidden=true; });
 }
@@ -783,7 +806,7 @@ function renderCaldo(){
   else mix.innerHTML = ev.xs.map((x,i)=>{
     const isV = !!x.virt;
     const u = unitOf(x);
-    const offR = x.p && !inRubro(x.p) ? `<span class="tag">fuera del rubro</span>` : "";
+    const offR = x.p && secRubro(x.p) ? `<span class="tag">uso secundario en el rubro</span>` : x.p && !inRubro(x.p) ? `<span class="tag">fuera del rubro</span>` : "";
     const warn = x.p && x.p.u!=="pulverizacion" ? `<span class="tag" style="color:var(--s3)">${x.p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"}</span>`:"";
     const mant = x.p && x.p.m ? `<span class="tag">mantenimiento vencido</span>`:"";
     const dose = isV ? `<span class="note">${x.virt==="ams"||x.virt==="antiesp"?"ver orden de carga":"según etiqueta"}</span>` : `<span class="dose"><input type="number" step="0.005" min="0" value="${x.dosis??""}" data-i="${i}" aria-label="Dosis de ${esc(x.n)}"><span class="note">${u}/ha</span></span>`;
@@ -947,7 +970,8 @@ function openProblem(id, ev){ openDrawer(problemHTML(PROB[id], ev)); }
 function aiCard(c){
   const o=c.o; if(!o) return `<div class="panel"><h4>${esc(c.orig||c.id)}</h4><p class="note">Sin ficha química.</p></div>`;
   const rows = c.t==="ai" ? [["Clase",o.clase],["Grupo químico",o.grupo_quimico],["Modo de acción",o.modo_accion],["Naturaleza iónica",o.naturaleza_ionica],["Solubilidad (mg/L)",o.solubilidad_agua_mg_L],["log Kow",o.log_Kow],["Hidrólisis alcalina / ácida",`${o.hidrolisis_alcalina??"—"} / ${o.hidrolisis_acida??"—"}`],["pH óptimo del caldo",o.pH_optimo_caldo?o.pH_optimo_caldo.join("–"):"—"],["Sensibilidad a dureza / turbidez",`${o.sensibilidad_dureza??"—"} / ${o.sensibilidad_turbidez??"—"}`],["Tiempo máx. en caldo",o.tiempo_max_caldo_h!=null?o.tiempo_max_caldo_h+" h":"—"],["Confianza de los datos",o.confianza_datos]] : [["Función",o.funcion||o.tipo],["pH óptimo",o.pH_optimo_caldo?o.pH_optimo_caldo.join("–"):"—"]];
-  return `<div class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><h4>${esc(o.nombre)}${c.conc!=null?` <span class="note mono">${fmt(c.conc,1)} %</span>`:""}${c.forma?` <span class="tag">${esc(c.forma.replace("_"," "))}</span>`:""}</h4>${D.ai_rubros[c.id]?rubBadges(D.ai_rubros[c.id].split(" ").join("")):""}</div>
+  return `<div class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><h4>${esc(o.nombre)}${c.conc!=null?` <span class="note mono">${fmt(c.conc,1)} %</span>`:""}${c.forma?` <span class="tag">${esc(c.forma.replace("_"," "))}</span>`:""}</h4>${D.ai_rubros[c.id]?rubBadges(Object.keys(o.ur||{}).filter(k=>!o.ur[k].sec).join(""), Object.keys(o.ur||{}).filter(k=>o.ur[k].sec).join("")):""}</div>
+    ${o.ur?(usoR(o)?`<p><b>Uso en ${esc(D.rubros[RUBRO].nombre)}${usoR(o).sec?" (secundario)":""}:</b> ${esc(usoR(o).u)}</p>`:`<p class="note"><b>Sin uso habitual en ${esc(D.rubros[RUBRO].nombre)}.</b> Se usa en: ${esc(rubrosDe(o))}.</p>`):""}
     <div class="tw"><table><tbody>${rows.map(([k,v])=>`<tr><th style="width:42%">${esc(k)}</th><td>${esc(v??"—")}</td></tr>`).join("")}</tbody></table></div>
     ${o.notas&&o.notas.length?`<ul class="clean note">${o.notas.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}
     ${o.incompatible_con?`<p class="note"><b>Incompatible con:</b> ${esc(o.incompatible_con.join(", "))}</p>`:""}
@@ -971,12 +995,12 @@ function formBlock(code){
 function productHTML(p){
   const k = p.k.map(([t,id,forma,conc,orig])=>({t,id,forma,conc,orig,o:compObj(t,id)}));
   const sig = p.k.filter(c=>c[0]!=="ady").map(c=>c[1]).sort().join("+");
-  const eq = sig ? D.productos.filter(q=>q.r!==p.r && !q.m && q.k.filter(c=>c[0]!=="ady").map(c=>c[1]).sort().join("+")===sig) : [];
+  const eq = sig ? D.productos.filter(q=>q.r!==p.r && !q.m && inRubro(q) && q.k.filter(c=>c[0]!=="ady").map(c=>c[1]).sort().join("+")===sig) : [];
   const d=p.d||{};
   return `<div class="stack">
     <span class="eyebrow">Registro SENAVE N° ${esc(p.r)} · ${esc(p.c)}</span>
     <h2>${esc(p.n)}</h2>
-    <div class="row">${famChip(p.f)}${rubBadges(p.s)}${p.m?`<span class="tag">Mantenimiento vencido: verificar si está en el mercado</span>`:""}${p.u!=="pulverizacion"?`<span class="tag">${p.u==="tratamiento_semillas"?"Tratamiento de semillas":"No va en caldo"}</span>`:""}</div>
+    <div class="row">${famChip(p.f)}${rubBadges(p.s, p.s2)}${secRubro(p)?`<span class="tag">Uso secundario en ${esc(D.rubros[RUBRO].nombre)}</span>`:!inRubro(p)?`<span class="tag">Fuera del rubro ${esc(D.rubros[RUBRO].nombre)}</span>`:""}${p.m?`<span class="tag">Mantenimiento vencido: verificar si está en el mercado</span>`:""}${p.u!=="pulverizacion"?`<span class="tag">${p.u==="tratamiento_semillas"?"Tratamiento de semillas":"No va en caldo"}</span>`:""}</div>
     <div class="row"><button class="btn pri" id="addFromDrawer">Agregar al caldo</button></div>
     <div class="tw"><table><tbody>
       <tr><th style="width:34%">Principio activo (SENAVE)</th><td>${esc(p.pa)}</td></tr>
@@ -1002,29 +1026,43 @@ function productHTML(p){
     <h3>Formulación, inertes y calidad</h3>
     <div class="panel">${formBlock(p.f)}</div>
     <p class="note">La composición exacta de los inertes de este producto no es pública: se declara al SENAVE en el registro. Los solventes y componentes peligrosos figuran en su hoja de seguridad.</p>
-    ${eq.length?`<h3>Mismo activo, otras marcas (${eq.length})</h3><div class="tw"><table><thead><tr><th>Producto</th><th>Registrante</th><th>Formulación</th></tr></thead><tbody>${eq.slice(0,40).map(q=>`<tr><td>${esc(q.n)}</td><td>${esc(q.e)}</td><td>${famChip(q.f)}</td></tr>`).join("")}</tbody></table></div>${eq.length>40?`<p class="note">Y ${eq.length-40} más.</p>`:""}`:""}
+    <h3>Rubros de este producto</h3>
+    <div class="panel stack" style="gap:8px"><p class="note">El listado del SENAVE no trae cultivos: el rubro se asigna por los usos de cada activo. Si sabés que este producto (por su etiqueta) va en otro rubro, corregilo acá; se guarda en este dispositivo y viaja en el respaldo.</p>
+      <div class="rbedit" id="rbEdit">${RUBK.map(k=>`<button class="chip" data-k="${k}" aria-pressed="${p.s.includes(k)}" style="font-size:.78rem;padding:2px 9px">${esc(D.rubros[k].nombre)}</button>`).join("")}${RUBOVR[p.r]!=null?`<button class="btn sm" id="rbReset">Volver a lo sugerido</button><span class="tag">Corregido por vos</span>`:""}</div></div>
+    ${eq.length?`<h3>Mismo activo, otras marcas en ${esc(D.rubros[RUBRO].nombre)} (${eq.length})</h3><div class="tw"><table><thead><tr><th>Producto</th><th>Registrante</th><th>Formulación</th></tr></thead><tbody>${eq.slice(0,40).map(q=>`<tr><td>${esc(q.n)}</td><td>${esc(q.e)}</td><td>${famChip(q.f)}</td></tr>`).join("")}</tbody></table></div>${eq.length>40?`<p class="note">Y ${eq.length-40} más.</p>`:""}`:""}
   </div>`;
 }
-function openProduct(r){ const p=PROD[r]; openDrawer(productHTML(p)); $("#addFromDrawer").onclick=()=>{ S.items.push({r:p.r,dosis:null}); S.ejemplo=false; save(); closeDrawer(); setView("caldo"); }; }
+function openProduct(r){ const p=PROD[r]; openDrawer(productHTML(p)); $("#addFromDrawer").onclick=()=>{ S.items.push({r:p.r,dosis:null}); S.ejemplo=false; save(); closeDrawer(); setView("caldo"); };
+  const reabrir = () => { const y = $("#drawerIn").scrollTop; renderAll(); openProduct(r); $("#drawerIn").scrollTop = y; };
+  document.querySelectorAll("#rbEdit .chip").forEach(b => b.onclick = () => { const k = b.dataset.k;
+    let s = RUBK.filter(x => x === k ? !p.s.includes(x) : p.s.includes(x)).join("");
+    setOvr(p.r, s === p.s0 && !p.s20 ? null : s); reabrir(); toast(s.includes(k) ? `Agregado a ${D.rubros[k].nombre}` : `Quitado de ${D.rubros[k].nombre}`); });
+  const rb = $("#rbReset"); if(rb) rb.onclick = () => { setOvr(p.r, null); reabrir(); toast("Rubros sugeridos restablecidos"); };
+}
 </script>
 <script>
 /* ---------- Productos ---------- */
 let PLIM = 80;
 function initProductFilters(){
   $("#pfam").innerHTML = `<option value="">Todas</option>`+Object.entries(D.familias).map(([k,v])=>`<option value="${k}">${esc(v.nombre)}</option>`).join("");
-  const emps = [...new Set(D.productos.map(p=>p.e))].sort((a,b)=>a.localeCompare(b));
-  $("#pemp").innerHTML = `<option value="">Todas (${emps.length})</option>`+emps.map(e=>`<option>${esc(e)}</option>`).join("");
+
   ["#pq","#pclase","#pfam","#pemp","#pmant"].forEach(s=>$(s).addEventListener(s==="#pq"?"input":"change",()=>{PLIM=80;renderProductos()}));
+  $("#pAmplio").checked = AMPLIO;
+  $("#pAmplio").onchange = e => { AMPLIO = e.target.checked; store("rubro_amplio", AMPLIO); for(const k in CNT) delete CNT[k]; PLIM=80; renderProductos(); };
   $("#pmore").onclick=()=>{PLIM+=120;renderProductos()};
 }
 function renderProductos(){
+  const ek = RUBRO + (AMPLIO ? "+" : "") + Object.keys(RUBOVR).length;
+  if($("#pemp").dataset.k !== ek){ const prev = $("#pemp").value; const emps = [...new Set(D.productos.filter(inRubro).map(p=>p.e))].sort((a,b)=>a.localeCompare(b));
+    $("#pemp").innerHTML = `<option value="">Todas (${emps.length})</option>`+emps.map(e=>`<option${e===prev?" selected":""}>${esc(e)}</option>`).join(""); $("#pemp").dataset.k = ek; }
+  $("#pAmplio").checked = AMPLIO;
   const q=$("#pq").value.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,""), cl=$("#pclase").value, fam=$("#pfam").value, emp=$("#pemp").value, mant=$("#pmant").value;
   const list = D.productos.filter(p=>inRubro(p) && (!cl||(p.c||"").toUpperCase().includes(cl)) && (!fam||famOf(p.f)===fam) && (!emp||p.e===emp) && (mant===""||String(p.m)===mant) &&
     (!q || (p.n+" "+p.pa+" "+p.e+" "+p.r).toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").includes(q)));
   list.sort((a,b)=>a.n.localeCompare(b.n));
-  $("#prodLead").textContent = `${D.rubros[RUBRO].nombre}: ${D.rubros[RUBRO].detalle}. Listado SENAVE con corte al ${D.meta.fecha_generacion.split("-").reverse().join("/")}. El rubro es orientativo según el principio activo; los cultivos autorizados están en la etiqueta.`;
+  $("#prodLead").textContent = `${D.rubros[RUBRO].nombre}: ${D.rubros[RUBRO].detalle}. Listado SENAVE con corte al ${D.meta.fecha_generacion.split("-").reverse().join("/")}. Solo se listan los productos hechos para este rubro${AMPLIO?" y los de uso general con uso secundario (marcados con borde punteado)":""}. El rubro se asigna por los usos de cada activo; los cultivos autorizados están en la etiqueta.`;
   $("#pcount").textContent = `${list.length.toLocaleString("es-PY")} productos`;
-  $("#plist").innerHTML = list.slice(0,PLIM).map(p=>`<button class="prow" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)}</span></span><span class="pa s">${esc(p.pa)}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s)}</span></button>`).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros.</p>`;
+  $("#plist").innerHTML = list.slice(0,PLIM).map(p=>`<button class="prow" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)}</span></span><span class="pa s">${esc(p.pa)}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s, p.s2)}</span></button>`).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros.</p>`;
   $("#plist").querySelectorAll(".prow").forEach(b=>b.onclick=()=>openProduct(b.dataset.r));
   $("#pmore").hidden = list.length<=PLIM;
 }
@@ -1376,8 +1414,8 @@ const GRUPO_DESC = {}; D.activos.forEach(a => { if(a.grupo && !GRUPO_DESC[a.grup
 const grupoTxt = g => g ? `${g}${GRUPO_DESC[g] ? " · " + GRUPO_DESC[g] : ""}` : "Sin grupo";
 const CNT = {};
 function countRubro(id){
-  const k = RUBRO + ":" + id;
-  if(CNT[k] == null) CNT[k] = D.productos.filter(p => !p.m && p.s.includes(RUBRO) && p.k.some(c => c[1] === id)).length;
+  const k = RUBRO + (AMPLIO ? "+" : "") + ":" + id;
+  if(CNT[k] == null) CNT[k] = D.productos.filter(p => !p.m && inRubro(p) && p.k.some(c => c[1] === id)).length;
   return CNT[k];
 }
 function histLotes(loteIds, dias = 365){
@@ -1397,12 +1435,14 @@ function rotacionDe(o, lotes){
   else if(usados.length === 1 || repite) level = 1;
   return {g, n: usados.length, last: usados[0], repite, level};
 }
+/* objetivos de un activo en el rubro (si no se usa en el rubro, los generales) */
+const objsDe = o => { const r = objR(o); return r.length ? r : (o.objetivos || []); };
 function alternativas(o, evitar){
-  const objs = o.objetivos || []; if(!objs.length) return [];
+  const objs = objsDe(o); if(!objs.length) return [];
   const byG = {};
   D.activos.forEach(a => {
     if(!a.grupo || a.grupo === o.grupo || evitar.has(a.grupo) || a.clase !== o.clase) return;
-    if(!(a.objetivos || []).some(x => objs.includes(x))) return;
+    if(!enRubroAI(a) || !objR(a).some(x => objs.includes(x))) return;
     const n = countRubro(a.id); if(!n) return;
     (byG[a.grupo] = byG[a.grupo] || []).push({a, n});
   });
@@ -1428,7 +1468,7 @@ function rotacionHTML(ev){
   const usadosEnCaldo = new Set(ais.map(a => a.o.grupo).filter(Boolean));
   // mezcla de modos de acción por objetivo
   const porObj = {};
-  ais.forEach(a => (a.o.objetivos || []).forEach(t => { if(a.o.grupo && !LOW_RISK(a.o.grupo)) (porObj[t] = porObj[t] || new Set()).add(a.o.grupo); }));
+  ais.forEach(a => objsDe(a.o).forEach(t => { if(a.o.grupo && !LOW_RISK(a.o.grupo)) (porObj[t] = porObj[t] || new Set()).add(a.o.grupo); }));
   const mezclas = Object.entries(porObj).filter(([t, s]) => s.size >= 2).map(([t, s]) => `${D.objetivos[t] || t} (${s.size} grupos)`);
   const rows = ais.map(a => {
     const r = rotacionDe(a.o, lotes);
@@ -1438,10 +1478,10 @@ function rotacionHTML(ev){
       r.level === 0 ? pill(0, "Grupo nuevo en el lote") : r.level === 1 ? pill(1, r.repite && !r.n ? "Repite la última" : "Usado 1 vez en 12 meses") : pill(2, `Usado ${r.n} ${r.n === 1 ? "vez" : "veces"}: rotá`);
     return `<div class="rot l${r.level ?? "n"}">
       <div class="al-h"><h4>${esc(a.o.nombre)} <span class="note">· ${esc(a.prod)}</span></h4>${estado}</div>
-      <p class="note"><span class="mono">${esc(grupoTxt(a.o.grupo))}</span>${a.o.usos ? " — " + esc(a.o.usos) : ""}</p>
+      <p class="note"><span class="mono">${esc(grupoTxt(a.o.grupo))}</span>${usoTxt(a.o) ? " — " + esc(usoTxt(a.o)) : ""}${a.o.ur && !usoR(a.o) ? ` <span class="tag">sin uso habitual en ${esc(D.rubros[RUBRO].nombre)}</span>` : ""}</p>
       ${r.n ? `<p class="note">Última vez: ${fmtFecha(r.last.fecha)} (${esc(r.last.items.map(i => i.n).join(" + "))}).</p>` : ""}
       ${D.resistencia[a.o.grupo] ? `<p class="rnote">${esc(D.resistencia[a.o.grupo])}</p>` : ""}
-      <details><summary>Alternativas con otro modo de acción para ${esc(objTxt(a.o.objetivos)) || "los mismos objetivos"}</summary>${altHTML(a.o, evitar)}</details>
+      <details><summary>Alternativas con otro modo de acción para ${esc(objTxt(objsDe(a.o))) || "los mismos objetivos"} en ${esc(D.rubros[RUBRO].nombre)}</summary>${altHTML(a.o, evitar)}</details>
     </div>`;
   }).join("");
   return `<div class="panel-h"><h3>Rotación de modos de acción</h3><span class="note">${ctx ? "Historial de " + ctx + " (12 meses)" : "Elegí campo y lotes en “2 · Aplicación” para comparar con el historial"}</span></div>
@@ -1557,7 +1597,7 @@ function openRegistrar(){
         <label class="f">Objetivo (plaga, enfermedad o maleza)<input id="rObj" list="dlObj" placeholder="Ej.: buva, roya asiática, chinches"></label>
         <label class="f">Operador<input id="rOper" value="${esc(load("operador", ""))}"></label>
       </div>
-      <datalist id="dlObj">${Object.values(D.objetivos).map(o => `<option value="${esc(o)}">`).join("")}</datalist>
+      <datalist id="dlObj">${Object.entries(D.objetivos).filter(([k]) => D.activos.some(a => enRubroAI(a) && objR(a).includes(k))).map(([k, o]) => `<option value="${esc(o)}">`).join("")}</datalist>
       <div><span class="eyebrow">Lotes aplicados</span><div class="row" id="rLotes" style="gap:6px;margin-top:6px">${formHTML(c0)}</div></div>
       <label class="f">Observaciones<textarea id="rObs" rows="2"></textarea></label>
       <div class="panel"><h4>Resumen</h4><ul class="clean note" style="margin-top:6px">
@@ -1644,7 +1684,7 @@ function kml(fc, nombre){
     return `<Placemark><name>${x(f.properties.lote || f.properties.nombre || "")}</name><ExtendedData>${Object.entries(f.properties).map(([k, v]) => `<Data name="${x(k)}"><value>${x(v)}</value></Data>`).join("")}</ExtendedData>${ps.length > 1 ? `<MultiGeometry>${ps.map(poly).join("")}</MultiGeometry>` : ps.map(poly).join("")}</Placemark>`; }).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(nombre)}</name>\n${pm}\n</Document></kml>`;
 }
-function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", [])}; }
+function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", []), rubros_corregidos: RUBOVR}; }
 function bajarBin(nombre, blob){
   if(enIframe){ toast("En esta vista no se pueden descargar archivos: usá la app publicada o instalada"); return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
@@ -1987,11 +2027,11 @@ function restaurar(j){
     <p>Del ${esc(fmtFH(j.fecha))}: ${j.campos?.length || 0} campos, ${j.historial?.length || 0} aplicaciones, ${j.guardados?.length || 0} caldos guardados.</p>
     <div class="row"><button class="btn pri" id="rsAdd">Agregar a lo que tengo</button><button class="btn" id="rsRep">Reemplazar todo</button></div>
     <p class="note">“Agregar” suma los campos y aplicaciones que no estén. “Reemplazar” borra lo de este dispositivo y deja solo el respaldo.</p></div>`);
-  const fin = () => { saveCampos(); saveHist(); saveEtq(); closeDrawer(); toast("Respaldo restaurado"); renderAll(); };
+  const fin = () => { saveCampos(); saveHist(); saveEtq(); store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; closeDrawer(); toast("Respaldo restaurado"); renderAll(); };
   $("#rsAdd").onclick = () => { const ids = new Set(CAMPOS.map(c => c.id)), hids = new Set(HIST.map(h => h.id));
     (j.campos || []).forEach(c => { if(!ids.has(c.id)) CAMPOS.push(c); }); (j.historial || []).forEach(h => { if(!hids.has(h.id)) HIST.push(h); });
-    ETQ = Object.assign({}, j.etiquetas || {}, ETQ); store("guardados", load("guardados", []).concat(j.guardados || [])); fin(); };
-  $("#rsRep").onclick = () => { CAMPOS = j.campos || []; HIST = j.historial || []; ETQ = j.etiquetas || {}; store("guardados", j.guardados || []); fin(); };
+    ETQ = Object.assign({}, j.etiquetas || {}, ETQ); RUBOVR = Object.assign({}, j.rubros_corregidos || {}, RUBOVR); store("guardados", load("guardados", []).concat(j.guardados || [])); fin(); };
+  $("#rsRep").onclick = () => { CAMPOS = j.campos || []; HIST = j.historial || []; ETQ = j.etiquetas || {}; RUBOVR = j.rubros_corregidos || {}; store("guardados", j.guardados || []); fin(); };
 }
 
 /* ---------- Rotación por lote ---------- */
@@ -2368,29 +2408,43 @@ function renderHistorial(){
 const RF = {clase: "fungicida", obj: "roya", q: ""};
 function renderRotacion(){
   const el = $("#v-rotacion");
-  const objsClase = {herbicida: ["gram", "hoja", "cip", "len", "total", "pre"], insecticida: ["lag", "chin", "pulg", "mbla", "trips", "acar", "coleo", "suelo", "horm", "chich", "minad", "cochi", "nema", "alm", "lang", "term"], fungicida: ["roya", "manch", "oidio", "antr", "mild", "suelf", "scle", "bact", "podr", "piri"]};
-  if(!objsClase[RF.clase].includes(RF.obj)) RF.obj = objsClase[RF.clase][0];
-  const act = D.activos.filter(a => a.clase === RF.clase && (a.objetivos || []).includes(RF.obj));
+  const OBJS_CLASE = {herbicida: ["gram", "hoja", "cip", "len", "total", "pre"], insecticida: ["lag", "chin", "pulg", "mbla", "trips", "acar", "coleo", "suelo", "horm", "chich", "minad", "cochi", "nema", "alm", "lang", "term"], fungicida: ["roya", "manch", "oidio", "antr", "mild", "suelf", "scle", "bact", "podr", "piri"]};
+  // solo los objetivos que tienen productos del rubro elegido
+  const actObj = (cl, ob) => D.activos.filter(a => a.clase === cl && enRubroAI(a) && objR(a).includes(ob) && countRubro(a.id) > 0);
+  const objsClase = {}; Object.entries(OBJS_CLASE).forEach(([cl, arr]) => { objsClase[cl] = arr.filter(ob => actObj(cl, ob).length); });
+  const clases = Object.keys(OBJS_CLASE).filter(cl => objsClase[cl].length);
+  if(clases.length && !clases.includes(RF.clase)) RF.clase = clases[0];
+  const objs = objsClase[RF.clase] || [];
+  if(!objs.includes(RF.obj)) RF.obj = objs[0];
+  const act = RF.obj ? actObj(RF.clase, RF.obj) : [];
   const byG = {};
   act.forEach(a => { const n = countRubro(a.id); (byG[a.grupo || "Sin grupo"] = byG[a.grupo || "Sin grupo"] || []).push({a, n}); });
   const grupos = Object.entries(byG).map(([g, arr]) => ({g, arr: arr.sort((x, y) => y.n - x.n), tot: arr.reduce((s, x) => s + x.n, 0)})).filter(x => x.tot > 0).sort((a, b) => b.tot - a.tot);
-  const q = RF.q.trim().toLowerCase();
-  const hit = q ? D.activos.filter(a => a.nombre.toLowerCase().includes(q)).slice(0, 6) : [];
-  el.innerHTML = `<div><h2>Rotación de modos de acción</h2><p class="lead">Para qué se usa cada principio activo y con qué grupos se puede alternar para el mismo objetivo. Rotar el grupo de modo de acción (no la marca) es la principal herramienta para frenar la resistencia de malezas, plagas y enfermedades.</p></div>
+  const nrm = t => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "").replace(/h/g, "");
+  const q = nrm(RF.q);
+  const hitAll = q ? D.activos.filter(a => nrm(a.nombre).includes(q) || nrm(a.id).includes(q)) : [];
+  const hit = hitAll.filter(a => enRubroAI(a)).slice(0, 6), fuera = hitAll.filter(a => !enRubroAI(a)).slice(0, 8);
+  const RN = esc(D.rubros[RUBRO].nombre);
+  const faltan = Object.keys(OBJS_CLASE).filter(cl => !objsClase[cl].length).map(cl => CLASES[cl].toLowerCase() + "s");
+  el.innerHTML = `<div><h2>Rotación de modos de acción · ${RN}</h2><p class="lead">Para qué se usa cada principio activo en ${RN} y con qué grupos se puede alternar para el mismo objetivo. Solo aparecen activos, objetivos y productos de este rubro: cambiá el rubro arriba para ver otro. Rotar el grupo de modo de acción (no la marca) es la principal herramienta para frenar la resistencia.</p></div>
     <div class="panel"><h3>Reglas básicas</h3><ul class="clean" style="margin-top:8px">${D.principios_rotacion.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>
     <div class="panel"><div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
       <label class="f">Buscar principio activo<input id="rq" type="search" value="${esc(RF.q)}" placeholder="Ej.: protioconazol"></label>
-      <label class="f">Clase<select id="rcl">${Object.entries(CLASES).map(([k, v]) => `<option value="${k}"${k === RF.clase ? " selected" : ""}>${v}</option>`).join("")}</select></label>
-      <label class="f">Objetivo<select id="rob">${objsClase[RF.clase].map(o => `<option value="${o}"${o === RF.obj ? " selected" : ""}>${esc(D.objetivos[o])}</option>`).join("")}</select></label></div></div>
-    ${hit.length ? `<div class="cols">${hit.map(a => `<div class="panel stack" style="gap:6px"><h3>${esc(a.nombre)}</h3><span class="mono note">${esc(grupoTxt(a.grupo))}</span><p>${esc(a.usos || "—")}</p><p class="note">Objetivos: ${esc(objTxt(a.objetivos))} · ${countRubro(a.id)} productos en ${esc(D.rubros[RUBRO].nombre)}</p>${D.resistencia[a.grupo] ? `<p class="rnote">${esc(D.resistencia[a.grupo])}</p>` : ""}<details><summary>Alternativas con otro modo de acción</summary>${altHTML(a, new Set())}</details></div>`).join("")}</div>` : ""}
-    <div class="panel"><div class="panel-h"><h3>${esc(D.objetivos[RF.obj])}: grupos disponibles</h3><span class="note">${esc(D.rubros[RUBRO].nombre)} · productos vigentes</span></div>
+      ${clases.length ? `<label class="f">Clase<select id="rcl">${clases.map(k => `<option value="${k}"${k === RF.clase ? " selected" : ""}>${CLASES[k]}</option>`).join("")}</select></label>
+      <label class="f">Objetivo<select id="rob">${objs.map(o => `<option value="${o}"${o === RF.obj ? " selected" : ""}>${esc(D.objetivos[o])}</option>`).join("")}</select></label>` : ""}</div>
+      ${faltan.length && clases.length ? `<p class="note" style="margin-top:8px">En ${RN} no hay ${faltan.join(" ni ")} de uso habitual registrados.</p>` : ""}</div>
+    ${hit.length ? `<div class="cols">${hit.map(a => `<div class="panel stack" style="gap:6px"><h3>${esc(a.nombre)}</h3><span class="mono note">${esc(grupoTxt(a.grupo))}</span><p>${esc(usoTxt(a) || "—")}</p><p class="note">Objetivos en ${RN}: ${esc(objTxt(objR(a)))} · ${countRubro(a.id)} productos</p>${D.resistencia[a.grupo] ? `<p class="rnote">${esc(D.resistencia[a.grupo])}</p>` : ""}<details><summary>Alternativas con otro modo de acción en ${RN}</summary>${altHTML(a, new Set())}</details></div>`).join("")}</div>` : ""}
+    ${fuera.length ? `<div class="panel stack" style="gap:4px">${fuera.map(a => usoR(a) ? `<p class="note"><b>${esc(a.nombre)}</b>: en ${RN} solo tiene uso secundario (${esc(usoR(a).u)}). Sus productos se hacen para ${esc(rubrosDe(a))}; para incluirlos marcá “Incluir productos de uso general” en Productos.</p>` : `<p class="note"><b>${esc(a.nombre)}</b>: sin uso habitual en ${RN}${rubrosDe(a) ? ` (se usa en ${esc(rubrosDe(a))})` : ""}.</p>`).join("")}</div>` : ""}
+    ${q && !hitAll.length ? `<div class="panel"><p class="note">No encontré ese principio activo.</p></div>` : ""}
+    ${clases.length ? `<div class="panel"><div class="panel-h"><h3>${esc(D.objetivos[RF.obj])}: grupos disponibles</h3><span class="note">${RN} · productos vigentes</span></div>
       ${grupos.length ? `<div class="stack" style="gap:8px">${grupos.map(x => `<div class="rot ln"><div class="al-h"><h4><span class="mono">${esc(x.g)}</span> ${esc(GRUPO_DESC[x.g] || "")}</h4><span class="tag">${x.tot} productos</span></div>
         <p class="note">${x.arr.filter(y => y.n).map(y => `<button class="linkbtn" data-buscar="${esc(y.a.nombre)}">${esc(y.a.nombre)}</button> (${y.n})`).join(", ")}</p>
-        ${D.resistencia[x.g] ? `<p class="rnote">${esc(D.resistencia[x.g])}</p>` : LOW_RISK(x.g) ? `<p class="note">Bajo riesgo de resistencia: buen socio de mezcla.</p>` : ""}</div>`).join("")}</div>` : `<p class="note">Sin productos para este objetivo en el rubro elegido.</p>`}</div>
-    <p class="note">Fuentes: clasificaciones HRAC (2024), IRAC y FRAC; Weedscience.org (casos de Paraguay); estudios de resistencia de roya asiática en Paraguay (Pest Management Science, 2026) e IRAC-BR. Los usos son orientativos: la etiqueta de cada producto define cultivos, plagas y dosis.</p>`;
+        ${D.resistencia[x.g] ? `<p class="rnote">${esc(D.resistencia[x.g])}</p>` : LOW_RISK(x.g) ? `<p class="note">Bajo riesgo de resistencia: buen socio de mezcla.</p>` : ""}</div>`).join("")}</div>` : `<p class="note">Sin productos para este objetivo en el rubro elegido.</p>`}</div>`
+      : `<div class="panel"><p class="note">En ${RN} no hay herbicidas, insecticidas ni fungicidas de uso habitual registrados para rotar.</p></div>`}
+    <p class="note">Fuentes: clasificaciones HRAC (2024), IRAC y FRAC; Weedscience.org (casos de Paraguay); estudios de resistencia de roya asiática en Paraguay (Pest Management Science, 2026) e IRAC-BR. Los usos por rubro son orientativos: la etiqueta de cada producto define cultivos, plagas y dosis.</p>`;
   $("#rq").onchange = e => { RF.q = e.target.value; renderRotacion(); };
-  $("#rcl").onchange = e => { RF.clase = e.target.value; renderRotacion(); };
-  $("#rob").onchange = e => { RF.obj = e.target.value; renderRotacion(); };
+  if($("#rcl")) $("#rcl").onchange = e => { RF.clase = e.target.value; renderRotacion(); };
+  if($("#rob")) $("#rob").onchange = e => { RF.obj = e.target.value; renderRotacion(); };
   bindRotacion();
 }
 
@@ -2405,7 +2459,7 @@ function helpHTML(){
 
   <div class="panel"><h3>En 7 pasos</h3>
   <ol class="help-steps" style="margin-top:10px">
-    <li><div><b>Elegí tu rubro</b> arriba: Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. El buscador y el listado muestran los productos de ese rubro.</div></li>
+    <li><div><b>Elegí tu rubro</b> arriba: Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. El buscador, el listado de productos y la rotación muestran solo lo de ese rubro: en Pasturas no aparecen los productos ni las opciones de rotación de soja o de hortalizas. Si buscás algo que no está, el buscador ofrece “Buscar en todos los rubros”.</div></li>
     <li><div><b>Agregá los productos</b> en “Armar caldo”: escribí el nombre comercial, el activo o la empresa y tocá el producto. Cargá la dosis por hectárea (L/ha o kg/ha según la presentación).</div></li>
     <li><div><b>Elegí dónde vas a aplicar</b>: campo y lotes (se cargan en “Campos y lotes”). La superficie se suma sola y la app compara la mezcla con el historial de esos lotes para avisarte si repetís el mismo modo de acción.</div></li>
     <li><div><b>Completá la aplicación, el agua y las condiciones ambientales</b>: volumen por hectárea, tanque, cuánto tiempo va a esperar el caldo, el análisis de agua y la temperatura, humedad y viento del momento. La app calcula el Delta T y controla la Ley 3742/09. Lo que falte queda “a verificar”.</div></li>
@@ -2437,9 +2491,9 @@ function helpHTML(){
     <dl class="faq">
       <dt>Campos y lotes</dt><dd>El mapa de tus campos. Cada lote es un polígono con la forma real del lote, con todos los puntos que haga falta. Se puede cargar de cuatro maneras: <b>dibujarlo</b> tocando el mapa en cada quiebre del límite; <b>recorrer el borde con GPS</b> desde el celular; <b>importarlo</b> desde QGIS (GeoPackage, Shapefile .zip, GeoJSON), Google Earth (KML o KMZ), un GPS (GPX) o un CSV de vértices, también arrastrando el archivo sobre el mapa; o cargarlo <b>sin mapa</b>, solo con nombre y hectáreas. El mapa es opcional: nada de la app se bloquea si un lote no tiene límites. En la ficha de cada lote: <b>Editar límites</b> (arrastrar puntos, agregar con +, borrar con doble toque), <b>Dividir</b> con una línea y su <b>historial de pulverizaciones</b> propio. En “Armar caldo” los lotes se marcan con botones o tocándolos en el mapa.</dd>
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
-      <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo.</dd>
+      <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo, siempre dentro del rubro elegido.</dd>
       <dt>Caso práctico</dt><dd>Un ejemplo agrícola completo: la mezcla tal como se planeó, qué medidas se aplicaron y cómo quedó. Se puede abrir en el armador para probarlo.</dd>
-      <dt>Productos</dt><dd>El listado del SENAVE filtrado por rubro, clase, presentación y empresa. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
+      <dt>Productos</dt><dd>El listado del SENAVE con solo los productos del rubro elegido, filtrable por clase, presentación y empresa. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
       <dt>Formulaciones e inertes</dt><dd>Qué lleva cada tipo de formulación además del activo, qué parámetros de calidad debe cumplir, qué problemas da una formulación de mala calidad y cómo hacer una prueba casera.</dd>
       <dt>Diagnóstico</dt><dd>Si ya preparaste el caldo y ves algo raro (grumos, cristales, espuma, capas, calor), elegí el síntoma: la app muestra las causas probables y qué hacer.</dd>
       <dt>Cultivos y carry-over</dt><dd>En “2 · Aplicación” elegí el cultivo actual, el momento de la aplicación (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo actual tolera cada herbicida y cuántos días hay que esperar para sembrar, también por aplicaciones anteriores registradas en los lotes.</dd>
@@ -2453,7 +2507,8 @@ function helpHTML(){
       <dt>¿Funciona sin internet?</dt><dd>Sí. Todo el listado de productos y las reglas vienen dentro de la app.</dd>
       <dt>¿Cómo la instalo en el celular o la PC?</dt><dd>Abrí la app desde su dirección web en Chrome o Edge y tocá “Instalar app” (o el menú ⋮ → “Instalar aplicación” / “Agregar a la pantalla principal”). En iPhone: Safari → botón Compartir → “Agregar a inicio”. Una vez instalada abre como cualquier aplicación y funciona sin conexión.</dd>
       <dt>¿De dónde salen los productos?</dt><dd>Del listado del SENAVE con corte al ${esc(D.meta.fecha_generacion.split("-").reverse().join("/"))}: productos con registro vigente (${D.productos.filter(p=>!p.m).length.toLocaleString("es-PY")}), más los de mantenimiento vencido marcados aparte.</dd>
-      <dt>¿El rubro es oficial?</dt><dd>No. El listado del SENAVE no trae cultivos; el rubro se asigna según el principio activo y es orientativo. Los cultivos autorizados están en la etiqueta.</dd>
+      <dt>¿Cómo se decide el rubro de cada producto?</dt><dd>El listado del SENAVE no trae cultivos, así que la app usa los usos de cada principio activo en cada rubro. Un producto entra en un rubro solo si <b>todos</b> sus activos se usan ahí; las mezclas formuladas para soja o maíz quedan en Agrícola y los curasemillas también. Los productos de uso general que en un rubro solo se usan dirigidos (por ejemplo glifosato entre filas de frutales) quedan ocultos; para verlos, en “Productos” marcá “Incluir productos de uso general”. Es orientativo: los cultivos autorizados están en la etiqueta.</dd>
+      <dt>Un producto aparece en un rubro que no corresponde (o falta)</dt><dd>Abrí el producto y, en “Rubros de este producto”, marcá o desmarcá los rubros. La corrección queda guardada en este dispositivo, cuenta para el buscador y la rotación, y viaja en el respaldo.</dd>
       <dt>¿Qué significa “a verificar”?</dt><dd>Alertas que dependen de un dato que no cargaste (por ejemplo, la dureza del agua). Se muestran aparte con el color que tendrían.</dd>
       <dt>¿Reemplaza a la etiqueta o a la prueba de jarra?</dt><dd>No. La etiqueta del producto prevalece siempre y la prueba de jarra con el agua y las dosis reales es la confirmación final.</dd>
       <dt>¿Cómo empiezo de cero?</dt><dd>En “Armar caldo”, botón “Empezar de cero”. Para volver al ejemplo, abrí el caso práctico y tocá “Abrir este caso en el armador”.</dd>
@@ -2476,7 +2531,7 @@ $("#btnHelp").onclick=openHelp;
 
 /* ---------- Recorrido guiado ---------- */
 const TOUR = [
-  {v:"caldo", sel:"#rubros", t:"Elegí tu rubro", d:"Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. Define qué productos aparecen en el buscador y en el listado."},
+  {v:"caldo", sel:"#rubros", t:"Elegí tu rubro", d:"Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. Define qué productos aparecen en el buscador y en el listado, y qué opciones de rotación ves."},
   {v:"caldo", sel:"#pProductos", t:"Productos del caldo", d:"Buscá por nombre, activo o empresa y tocá el producto para agregarlo. Cargá la dosis por hectárea. Cada producto muestra su presentación (soluble, sólido, suspensión u oleoso) y su paso de carga."},
   {v:"caldo", sel:"#pAplic", t:"Dónde y cómo se aplica", d:"Elegí el campo y los lotes (la superficie se suma sola), el volumen por hectárea, el tanque y cuántas horas va a esperar el caldo."},
   {v:"caldo", sel:"#pAgua", t:"El agua", d:"pH, dureza, temperatura y turbidez son los datos que más cambian el resultado. Si no los tenés, las alertas que dependen de ellos quedan “a verificar”."},

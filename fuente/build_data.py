@@ -5,6 +5,7 @@ from config_semaforo import NIVELES, MEDIDAS, REGLAS
 from config_inertes import FAMILIAS, FORM_FAMILIA, INERTES, IMPUREZAS, SENALES_MAL_ESTADO, PRUEBA_CALIDAD_CASERA
 from config_usos import OBJETIVOS, USOS, RESISTENCIA, PRINCIPIOS_ROTACION
 from config_carryover import CULTIVOS, GRAM, HOJA, CARRY, SELECT, MOMENTOS
+from config_rubro_uso import USO_RUBRO
 from config_reglas_extra import REGLAS_EXTRA, SEMAFORO_EXTRA, MEDIDAS_EXTRA, PROBLEMAS_EXTRA
 import re
 
@@ -22,29 +23,56 @@ def nopat(x):
     return {k: v for k, v in x.items() if k != "patron"}
 
 faltan = set()
+def _rest_ok(rest, n, form):
+    for t in rest.split():
+        if t == "solo" and n != 1: return False
+        if t.startswith("f:") and form not in t[2:].split(","): return False
+    return True
+def _es_sec(id_, x):
+    e = USO_RUBRO.get(id_, {}).get(x)
+    return bool(e and "sec" in e[2].split())
 def rubros_producto(p):
-    s = []
-    solo_ady = True
-    for c in p["componentes"]:
-        if c["tipo"] == "ady":
-            continue
-        solo_ady = False
-        r = AI_RUBROS.get(c["id"])
+    """Devuelve (rubros propios, rubros de uso secundario) del producto comercial."""
+    comps = [c for c in p["componentes"] if c["tipo"] != "ady"]
+    if not comps:
+        return "AGHOFOPA", ""
+    ids = list(dict.fromkeys(c["id"] for c in comps))
+    n = len(ids)
+    sets, union, crudo = [], [], []
+    for i in ids:
+        r = AI_RUBROS.get(i)
         if r is None:
-            faltan.add(c["id"]); r = "AG"
+            faltan.add(i); r = "AG"
+        crudo.append(r.split())
+        ok = []
         for x in r.split():
-            if x not in s: s.append(x)
-    if solo_ady:
-        s = ["AG", "HO", "FO", "PA"]
+            if x not in union: union.append(x)
+            e = USO_RUBRO.get(i, {}).get(x)
+            if e is None or _rest_ok(e[2], n, p["formulacion"]): ok.append(x)
+        sets.append(ok)
+    # el producto va en los rubros que comparten TODOS sus activos
+    s = [x for x in union if all(x in o for o in sets)]
+    if not s:   # sin rubro común con las restricciones: el rubro donde coinciden más activos
+        cnt = collections.Counter(x for o in crudo for x in o)
+        mx = max(cnt.values()); s = [x for x in union if cnt.get(x) == mx]
+    if p["uso"] == "tratamiento_semillas" and "AG" in s:
+        s = ["AG"]
+    # uso secundario: algún activo solo se usa dirigido en ese rubro
+    sec = [x for x in s if any(_es_sec(i, x) for i in ids)]
+    s = [x for x in s if x not in sec]
+    if not s and sec:   # todos sus rubros son secundarios: queda en el primero
+        s = [sec.pop(0)]
     cu = (p.get("clase_uso") or "").upper()
     if "HORMIG" in cu:
         for x in ("FO", "PA"):
             if x not in s: s.append(x)
+            if x in sec: sec.remove(x)
     if "GORGOJ" in cu or p["formulacion"] == "FUM":
         if "AL" not in s: s.append("AL")
-    return "".join(x for x in s)
+    return "".join(s), "".join(sec)
 
 def compact(p, mant):
+    rp = rubros_producto(p)
     return {
         "r": p["registro"], "n": p["producto"].strip(), "e": (p.get("registrante") or "").strip(),
         "fa": (p.get("fabricante") or "").strip(), "po": (p.get("pais_origen") or "").strip(),
@@ -52,7 +80,7 @@ def compact(p, mant):
         "f": p["formulacion"], "fs": (p.get("formulacion_senave") or "").strip(), "u": p["uso"],
         "pa": (p.get("principio_activo_senave") or "").strip(),
         "k": [[c["tipo"], c["id"], c.get("forma"), c.get("concentracion_pct"), c.get("nombre_original")] for c in p["componentes"]],
-        "d": p["derivado"], "s": rubros_producto(p), "m": mant,
+        "d": p["derivado"], "s": rp[0], "s2": rp[1], "m": mant,
         "v": p.get("vencimiento_registro"), "mh": p.get("mantenimiento_hasta"),
     }
 
@@ -75,6 +103,23 @@ botanicos = [nopat(x) for x in d["extractos_botanicos"]]
 for b in botanicos:
     u = USOS.get(b["id"])
     if u: b["usos"], b["objetivos"] = u[0], u[1].split()
+def uso_rubros(a):
+    ur = {}
+    for x in (AI_RUBROS.get(a["id"]) or "").split():
+        e = USO_RUBRO.get(a["id"], {}).get(x)
+        if e:
+            ur[x] = {"u": e[0], "o": e[1].split()}
+            if "sec" in e[2].split(): ur[x]["sec"] = 1
+        elif a.get("usos"): ur[x] = {"u": a["usos"], "o": a.get("objetivos", [])}
+    if ur: a["ur"] = ur
+for a in activos + biologicos + botanicos: uso_rubros(a)
+for k, v in USO_RUBRO.items():
+    assert k in AI_RUBROS, k
+    assert set(v) <= set(AI_RUBROS[k].split()), (k, set(v) - set(AI_RUBROS[k].split()))
+    for x, e in v.items():
+        for t in e[1].split(): assert t in OBJETIVOS, (k, x, t)
+_multi = [k for k, v in AI_RUBROS.items() if len(v.split()) > 1 and set(v.split()) - set(USO_RUBRO.get(k, {}))]
+print("multirubro sin uso por rubro:", _multi)
 sin_usos = [a["id"] for a in activos if a["id"] not in USOS]
 print("activos sin usos:", sin_usos)
 for k, v in USOS.items():
@@ -129,6 +174,7 @@ print("sin rubro:", faltan)
 print("sin inertes:", forms - set(INERTES))
 cnt = collections.Counter(ch for p in prods for ch in [p["s"][i:i+2] for i in range(0, len(p["s"]), 2)])
 print("productos por rubro:", cnt)
+print("uso secundario:", collections.Counter(p["s2"][i:i+2] for p in prods for i in range(0, len(p["s2"]), 2)))
 js = "window.DB=" + json.dumps(DB, ensure_ascii=False, separators=(",", ":")) + ";"
 open(OUT, "w", encoding="utf-8").write(js)
 print("data.js", round(len(js.encode()) / 1e6, 2), "MB")
