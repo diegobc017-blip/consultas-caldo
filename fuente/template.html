@@ -183,12 +183,17 @@ ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .prow:hover{background:var(--sunk)}
 .prow .t{font-weight:700;overflow-wrap:anywhere}
 .prow .s{font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}
-@media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr) auto}.prow .pa{grid-column:1/-1;order:3}}
+@media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pa{order:3}.prow>.row{justify-content:flex-start!important;order:2}.pwide{grid-column:1/-1}}
 .rb{display:inline-flex;gap:3px}
 .rb i{font-style:normal;font-size:.66rem;font-weight:700;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--muted)}
 .rb i.on{color:var(--accent);border-color:var(--accent)}
 .rb i.sec{color:var(--accent);border-style:dashed;opacity:.75}
 .rbedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag.esp{color:var(--accent);border-color:var(--accent);font-weight:700}
+.tag.mio{color:var(--ink);background:var(--sunk)}
+.pfx{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.pfchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pfchips .chip{font-size:.76rem;padding:1px 8px}
 
 .drawer{position:fixed;inset:0;z-index:40;background:rgba(10,15,12,.45);display:flex;justify-content:flex-end}
 .drawer-in{background:var(--paper);width:min(720px,100%);height:100%;overflow:auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px;padding-top:calc(18px + env(safe-area-inset-top,0px))}
@@ -376,12 +381,27 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
       <div class="panel">
         <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">
           <label class="f" style="grid-column:span 2">Buscar<input id="pq" type="search" placeholder="Nombre, activo, empresa o registro"></label>
+          <label class="f pwide">Ordenar por<select id="pord">
+            <option value="rec">Recomendado: específicos primero</option><option value="nom">Nombre A–Z</option><option value="nomd">Nombre Z–A</option>
+            <option value="dif">Más difundidos</option><option value="mio">Más usados por mí</option><option value="emp">Empresa A–Z</option>
+            <option value="new">Registro más nuevo</option><option value="old">Registro más antiguo</option><option value="tox">Menor toxicidad</option></select></label>
+          <label class="f pwide">Mostrar<select id="palc"></select></label>
           <label class="f">Clase<select id="pclase"><option value="">Todas</option><option>HERBICIDA</option><option>INSECTICIDA</option><option>FUNGICIDA</option><option>ACARICIDA</option><option>NEMATICIDA</option><option>COADYUVANTE</option><option>REGULADOR</option><option>MICROBIOL</option><option>SEMILLA</option></select></label>
-          <label class="f">Presentación<select id="pfam"><option value="">Todas</option></select></label>
-          <label class="f">Empresa<select id="pemp"><option value="">Todas</option></select></label>
-          <label class="f">Mantenimiento<select id="pmant"><option value="0">Vigente</option><option value="">Todos</option><option value="1">Vencido (verificar)</option></select></label>
+          <label class="f">Objetivo<select id="pobj"></select></label>
         </div>
-        <label class="chk" style="margin-top:10px"><input type="checkbox" id="pAmplio"> Incluir productos de uso general con uso secundario en este rubro (p. ej. glifosato dirigido)</label>
+        <details class="box" id="pMas" style="margin-top:10px"><summary>Más filtros: activo, modo de acción, empresa, origen, toxicidad</summary>
+          <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));padding:0 12px 12px">
+            <label class="f">Principio activo<select id="pai"></select></label>
+            <label class="f">Modo de acción<select id="pgru"></select></label>
+            <label class="f">Empresa<select id="pemp"><option value="">Todas</option></select></label>
+            <label class="f">País de origen<select id="porig"></select></label>
+            <label class="f">Presentación<select id="pfam"><option value="">Todas</option></select></label>
+            <label class="f">Toxicología<select id="ptox"><option value="">Todas</option><option value="IV">IV · menos tóxico</option><option value="III">III</option><option value="II">II</option><option value="I">I · más tóxico (IA, IB)</option></select></label>
+            <label class="f">Mantenimiento<select id="pmant"><option value="0">Vigente</option><option value="">Todos</option><option value="1">Vencido (verificar)</option></select></label>
+          </div>
+        </details>
+        <div class="pfx"><label class="chk"><input type="checkbox" id="pAmplio"> Incluir productos de uso general con uso secundario en este rubro (p. ej. glifosato dirigido)</label><button class="btn sm" id="pclr">Limpiar filtros</button></div>
+        <div class="pfchips" id="pchips" style="margin-top:8px"></div>
       </div>
       <p class="note" id="pcount"></p>
       <div class="plist" id="plist"></div>
@@ -474,7 +494,7 @@ let S = migrar(load("estado", null));
 let RUBRO = load("rubro","AG");
 let AMPLIO = load("rubro_amplio", false);
 RUBOVR = load("rubro_ovr", {}); aplicarOvr();
-function setOvr(r, s){ if(s == null) delete RUBOVR[r]; else RUBOVR[r] = s; store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; }
+function setOvr(r, s){ if(s == null) delete RUBOVR[r]; else RUBOVR[r] = s; store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; for(const k in DIFC) delete DIFC[k]; }
 
 /* ---------- Motor ---------- */
 function expandItem(it){
@@ -733,9 +753,13 @@ function searchProducts(q, limit=12, onlyRubro=true){
   for(const p of D.productos){
     if(onlyRubro && !inRubro(p)) continue;
     const hay = (p.n+" "+p.pa+" "+p.e+" "+p.r).toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-    if(hay.includes(q)){ out.push(p); if(out.length>=limit) break; }
+    if(hay.includes(q)) out.push(p);
   }
-  return out;
+  // primero: nombre que empieza con lo buscado, específicos del rubro, usados por mí, vigentes
+  const mios = usosMios();
+  out.sort((a,b) => (a.n.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").startsWith(q)?0:1) - (b.n.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").startsWith(q)?0:1) ||
+    nivelRubro(a)-nivelRubro(b) || (mios[b.r]||0)-(mios[a.r]||0) || a.m-b.m || a.n.localeCompare(b.n, "es"));
+  return out.slice(0, limit);
 }
 function bindSearch(){
   const inp=$("#q"), box=$("#sugg");
@@ -747,7 +771,7 @@ function bindSearch(){
       box.hidden = inp.value.trim().length<2; box.innerHTML = inp.value.trim().length<2?"":`<div class="note" style="padding:10px">Sin resultados en el rubro ${esc(D.rubros[RUBRO].nombre)}.${fuera?` <button class="linkbtn" id="qTodos">Buscar en todos los rubros (${fuera}${fuera>=99?"+":""})</button>`:""}</div>`;
       const bt = $("#qTodos"); if(bt) bt.onmousedown = e => { e.preventDefault(); inp.dataset.todos = "1"; inp.oninput(); inp.focus(); };
       return; }
-    box.innerHTML = (todos?`<div class="note" style="padding:6px 10px">Todos los rubros</div>`:"") + res.map(p=>`<button data-r="${esc(p.r)}"><span class="t">${esc(p.n)} ${famChip(p.f)}${secRubro(p)?` <span class="tag">uso secundario</span>`:!inRubro(p)?` <span class="tag">fuera del rubro</span>`:""}</span><span class="s">${esc(p.pa)} · ${esc(p.e)}${p.u!=="pulverizacion"?" · "+(p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"):""}</span></button>`).join("");
+    box.innerHTML = (todos?`<div class="note" style="padding:6px 10px">Todos los rubros</div>`:"") + res.map(p=>`<button data-r="${esc(p.r)}"><span class="t">${esc(p.n)} ${famChip(p.f)}${secRubro(p)?` <span class="tag">uso secundario</span>`:!inRubro(p)?` <span class="tag">fuera del rubro</span>`:esEsp(p)?` <span class="tag esp">específico</span>`:""}</span><span class="s">${esc(p.pa)} · ${esc(p.e)}${p.u!=="pulverizacion"?" · "+(p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"):""}</span></button>`).join("");
     box.hidden=false;
     box.querySelectorAll("button[data-r]").forEach(b=>b.onclick=()=>{ S.items.push({r:b.dataset.r,dosis:null}); S.ejemplo=false; inp.value=""; inp.dataset.todos=""; box.hidden=true; save(); renderCaldo(); });
   };
@@ -1024,27 +1048,97 @@ function openProduct(r){ const p=PROD[r]; openDrawer(productHTML(p)); $("#addFro
 <script>
 /* ---------- Productos ---------- */
 let PLIM = 80;
+/* Filtros del listado de productos (se recuerdan en este dispositivo) */
+const PF0 = {q:"", ord:"rec", alc:"todos", clase:"", obj:"", ai:"", gru:"", emp:"", orig:"", fam:"", tox:"", mant:"0"};
+let PF = Object.assign({}, PF0, load("pfiltros", {}), {q:""});
+const PFSEL = {pq:"q", pord:"ord", palc:"alc", pclase:"clase", pobj:"obj", pai:"ai", pgru:"gru", pemp:"emp", porig:"orig", pfam:"fam", ptox:"tox", pmant:"mant"};
+const NORM = t => (t||"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const TOXN = t => { t = (t||"").replace(/[.\s]/g,"").toUpperCase(); return t==="IV"?"IV":t==="III"?"III":t==="II"?"II":/^I(A|B)?$/.test(t)?"I":""; };
+const TOXORD = {IV:0, III:1, II:2, I:3, "":4};
+const aisDe = p => [...new Set(p.k.filter(c=>c[0]!=="ady").map(c=>c[1]))];
+const objOf = id => compObj(AI[id]?"ai":BIO[id]?"bio":"bot", id);
+/* veces que usé cada producto (historial) */
+function usosMios(){ const m = {}; (HIST||[]).forEach(h => h.items.forEach(i => { m[i.r] = (m[i.r]||0) + 1; })); return m; }
+/* difusión: cuántas marcas vigentes del rubro tienen la misma composición */
+const DIFC = {};
+/* composición: activos químicos por id; biológicos y botánicos por el organismo o extracto declarado */
+const firma = p => p._f || (p._f = [...new Set(p.k.filter(c=>c[0]!=="ady").map(c => c[0]==="ai" ? c[1] : c[1]+":"+NORM(c[4]).replace(/[^A-Z]/g,"").slice(0,30)))].sort().join("+"));
+function difusion(p){ const f = firma(p); if(!f) return 0; const k = RUBRO + (AMPLIO?"+":"") + ":" + f;
+  if(DIFC[k] == null) DIFC[k] = D.productos.filter(q => !q.m && inRubro(q) && firma(q) === f).length;
+  return DIFC[k]; }
+const esEsp = p => (p.es||"").includes(RUBRO) && p.s.includes(RUBRO);
+/* nivel para ordenar: 0 específico del rubro, 1 del rubro, 2 coadyuvante o de uso general, 3 uso secundario/fuera */
+const nivelRubro = p => !p.s.includes(RUBRO) ? 3 : esEsp(p) ? 0 : aisDe(p).length ? 1 : 2;
+function ordenar(list, ord){
+  const mios = usosMios(), byN = (a,b) => a.n.localeCompare(b.n, "es");
+  const f = {
+    rec: (a,b) => nivelRubro(a)-nivelRubro(b) || (mios[b.r]||0)-(mios[a.r]||0) || difusion(b)-difusion(a) || byN(a,b),
+    nom: byN, nomd: (a,b) => -byN(a,b),
+    dif: (a,b) => difusion(b)-difusion(a) || nivelRubro(a)-nivelRubro(b) || byN(a,b),
+    mio: (a,b) => (mios[b.r]||0)-(mios[a.r]||0) || nivelRubro(a)-nivelRubro(b) || byN(a,b),
+    emp: (a,b) => a.e.localeCompare(b.e, "es") || byN(a,b),
+    new: (a,b) => (b.ha||"").localeCompare(a.ha||"") || (+b.r)-(+a.r),
+    old: (a,b) => (+a.r)-(+b.r),
+    tox: (a,b) => TOXORD[TOXN(a.t)]-TOXORD[TOXN(b.t)] || nivelRubro(a)-nivelRubro(b) || byN(a,b),
+  }[ord] || byN;
+  return list.sort(f);
+}
+function opts(sel, arr, val, todos){ $(sel).innerHTML = `<option value="">${esc(todos)}</option>` + arr.map(([v,t]) => `<option value="${esc(v)}"${v===val?" selected":""}>${esc(t)}</option>`).join(""); if(![...$(sel).options].some(o => o.value === val)) $(sel).value = ""; }
 function initProductFilters(){
-  $("#pfam").innerHTML = `<option value="">Todas</option>`+Object.entries(D.familias).map(([k,v])=>`<option value="${k}">${esc(v.nombre)}</option>`).join("");
-
-  ["#pq","#pclase","#pfam","#pemp","#pmant"].forEach(s=>$(s).addEventListener(s==="#pq"?"input":"change",()=>{PLIM=80;renderProductos()}));
-  $("#pAmplio").checked = AMPLIO;
-  $("#pAmplio").onchange = e => { AMPLIO = e.target.checked; store("rubro_amplio", AMPLIO); for(const k in CNT) delete CNT[k]; PLIM=80; renderProductos(); };
+  Object.entries(PFSEL).forEach(([id, k]) => $("#"+id).addEventListener(id==="pq"?"input":"change", e => { PF[k] = e.target.value; if(k !== "q") store("pfiltros", Object.assign({}, PF, {q:""})); PLIM=80; renderProductos(); }));
+  $("#pAmplio").onchange = e => { AMPLIO = e.target.checked; store("rubro_amplio", AMPLIO); for(const k in CNT) delete CNT[k]; for(const k in DIFC) delete DIFC[k]; PLIM=80; renderProductos(); };
+  $("#pclr").onclick = () => { PF = Object.assign({}, PF0); store("pfiltros", PF); $("#pq").value = ""; PLIM=80; renderProductos(); };
   $("#pmore").onclick=()=>{PLIM+=120;renderProductos()};
 }
 function renderProductos(){
-  const ek = RUBRO + (AMPLIO ? "+" : "") + Object.keys(RUBOVR).length;
-  if($("#pemp").dataset.k !== ek){ const prev = $("#pemp").value; const emps = [...new Set(D.productos.filter(inRubro).map(p=>p.e))].sort((a,b)=>a.localeCompare(b));
-    $("#pemp").innerHTML = `<option value="">Todas (${emps.length})</option>`+emps.map(e=>`<option${e===prev?" selected":""}>${esc(e)}</option>`).join(""); $("#pemp").dataset.k = ek; }
+  const RN = D.rubros[RUBRO].nombre;
+  // productos del rubro (base para armar las opciones de los filtros)
+  const alc = PF.alc || "todos", otro = alc.startsWith("con:") ? alc.slice(4) : "";
+  const base = D.productos.filter(p => inRubro(p) && (alc !== "esp" || esEsp(p)) && (!otro || p.s.includes(otro) || (AMPLIO && (p.s2||"").includes(otro))));
+  const vig = base.filter(p => PF.mant==="" || String(p.m)===PF.mant);
+  // opciones dependientes del rubro
+  const nOtro = k => D.productos.filter(p => !p.m && inRubro(p) && (p.s.includes(k) || (AMPLIO && (p.s2||"").includes(k)))).length;
+  $("#palc").innerHTML = [["todos", `Todos los de ${RN}`], ["esp", `Solo específicos de ${RN}`], ...RUBK.filter(k => k !== RUBRO).map(k => ["con:"+k, `Útiles en ${RN} y también en ${D.rubros[k].nombre}`])]
+    .map(([v,t]) => `<option value="${v}"${v===alc?" selected":""}>${esc(t)}</option>`).join("");
+  const objs = Object.keys(D.objetivos).filter(o => vig.some(p => aisDe(p).some(id => objR(objOf(id)).includes(o))));
+  opts("#pobj", objs.map(o => [o, D.objetivos[o]]), PF.obj, "Todos");
+  const ais = [...new Set(vig.flatMap(aisDe))].map(id => [id, (objOf(id)||{}).nombre || id]).sort((a,b) => a[1].localeCompare(b[1], "es"));
+  opts("#pai", ais, PF.ai, `Todos (${ais.length})`);
+  const grus = [...new Set(vig.flatMap(p => aisDe(p).map(id => (AI[id]||{}).grupo)).filter(Boolean))].sort((a,b) => a.localeCompare(b, "es", {numeric:true}));
+  opts("#pgru", grus.map(g => [g, grupoTxt(g)]), PF.gru, "Todos");
+  const emps = [...new Set(vig.map(p => p.e))].sort((a,b) => a.localeCompare(b, "es"));
+  opts("#pemp", emps.map(e => [e, e]), PF.emp, `Todas (${emps.length})`);
+  const origs = Object.entries(vig.reduce((m,p) => (m[p.po] = (m[p.po]||0) + 1, m), {})).sort((a,b) => b[1]-a[1]);
+  opts("#porig", origs.map(([o,n]) => [o, `${o || "Sin dato"} (${n})`]), PF.orig, "Todos");
+  opts("#pfam", Object.entries(D.familias).map(([k,v]) => [k, v.nombre]), PF.fam, "Todas");
+  ["pq","pord","pclase","ptox","pmant"].forEach(id => { $("#"+id).value = PF[PFSEL[id]]; });
   $("#pAmplio").checked = AMPLIO;
-  const q=$("#pq").value.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,""), cl=$("#pclase").value, fam=$("#pfam").value, emp=$("#pemp").value, mant=$("#pmant").value;
-  const list = D.productos.filter(p=>inRubro(p) && (!cl||(p.c||"").toUpperCase().includes(cl)) && (!fam||famOf(p.f)===fam) && (!emp||p.e===emp) && (mant===""||String(p.m)===mant) &&
-    (!q || (p.n+" "+p.pa+" "+p.e+" "+p.r).toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").includes(q)));
-  list.sort((a,b)=>a.n.localeCompare(b.n));
-  $("#prodLead").textContent = `${D.rubros[RUBRO].nombre}: ${D.rubros[RUBRO].detalle}. Listado SENAVE con corte al ${D.meta.fecha_generacion.split("-").reverse().join("/")}. Solo se listan los productos hechos para este rubro${AMPLIO?" y los de uso general con uso secundario (marcados con borde punteado)":""}. El rubro se asigna por los usos de cada activo; los cultivos autorizados están en la etiqueta.`;
-  $("#pcount").textContent = `${list.length.toLocaleString("es-PY")} productos`;
-  $("#plist").innerHTML = list.slice(0,PLIM).map(p=>`<button class="prow" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)}</span></span><span class="pa s">${esc(p.pa)}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s, p.s2)}</span></button>`).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros.</p>`;
+  // filtrar
+  const q = NORM(PF.q.trim());
+  const list = base.filter(p => (!PF.clase || (p.c||"").toUpperCase().includes(PF.clase)) && (!PF.fam || famOf(p.f)===PF.fam) && (!PF.emp || p.e===PF.emp) &&
+    (PF.mant==="" || String(p.m)===PF.mant) && (!PF.orig || p.po===PF.orig) && (!PF.tox || TOXN(p.t)===PF.tox) &&
+    (!PF.ai || aisDe(p).includes(PF.ai)) && (!PF.gru || aisDe(p).some(id => (AI[id]||{}).grupo === PF.gru)) &&
+    (!PF.obj || aisDe(p).some(id => objR(objOf(id)).includes(PF.obj))) &&
+    (!q || NORM(p.n+" "+p.pa+" "+p.e+" "+p.r).includes(q)));
+  ordenar(list, PF.ord);
+  const mios = usosMios();
+  $("#prodLead").textContent = `${RN}: ${D.rubros[RUBRO].detalle}. Listado SENAVE con corte al ${D.meta.fecha_generacion.split("-").reverse().join("/")}. Primero van los productos específicos de ${RN}; luego los que también sirven en otros rubros y al final los coadyuvantes. El rubro se asigna por los usos de cada activo; los cultivos autorizados están en la etiqueta.`;
+  // resumen de filtros activos
+  const act = [];
+  if(alc !== "todos") act.push(["alc", alc==="esp" ? `Solo específicos` : `También en ${D.rubros[otro].nombre}`]);
+  [["clase","pclase"],["obj","pobj"],["ai","pai"],["gru","pgru"],["emp","pemp"],["orig","porig"],["fam","pfam"],["tox","ptox"]].forEach(([k,id]) => { if(PF[k]) act.push([k, $("#"+id).selectedOptions[0]?.textContent || PF[k]]); });
+  if(PF.mant !== "0") act.push(["mant", PF.mant==="" ? "Con mantenimiento vencido" : "Solo vencidos"]);
+  $("#pchips").innerHTML = act.map(([k,t]) => `<button class="chip" data-k="${k}" aria-pressed="true" title="Quitar filtro">${esc(t)} ✕</button>`).join("");
+  $("#pchips").querySelectorAll(".chip").forEach(b => b.onclick = () => { PF[b.dataset.k] = PF0[b.dataset.k]; store("pfiltros", Object.assign({}, PF, {q:""})); renderProductos(); });
+  if(act.some(([k]) => !["alc","clase","obj"].includes(k))) $("#pMas").open = true;
+  const nEsp = list.filter(esEsp).length;
+  $("#pcount").textContent = `${list.length.toLocaleString("es-PY")} productos · ${nEsp.toLocaleString("es-PY")} específicos de ${RN}` + (PF.ord==="dif" ? " · difusión = marcas registradas con la misma composición (el SENAVE no publica ventas)" : "");
+  $("#plist").innerHTML = list.slice(0,PLIM).map(p=>{ const dif = difusion(p), u = mios[p.r];
+    return `<button class="prow" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)}${p.ha?` · desde ${esc(p.ha.slice(0,4))}`:""}${p.po?` · ${esc(p.po)}`:""}</span>
+      <span class="row" style="gap:4px;margin-top:3px">${esEsp(p)?`<span class="tag esp">Específico de ${esc(RN)}</span>`:""}${secRubro(p)?`<span class="tag">uso secundario</span>`:""}${u?`<span class="tag mio">Usado ${u} ${u===1?"vez":"veces"}</span>`:""}${dif>1?`<span class="tag" title="Marcas vigentes en ${esc(RN)} con la misma composición">${dif} marcas iguales</span>`:""}${TOXN(p.t)?`<span class="tag" title="Clase toxicológica">Tox. ${esc(TOXN(p.t)==="I"?p.t.replace(/\s/g,""):TOXN(p.t))}</span>`:""}</span></span>
+      <span class="pa s">${esc(p.pa)}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s, p.s2)}</span></button>`; }).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros. <button class="linkbtn" id="pclr2">Limpiar filtros</button></p>`;
   $("#plist").querySelectorAll(".prow").forEach(b=>b.onclick=()=>openProduct(b.dataset.r));
+  if($("#pclr2")) $("#pclr2").onclick = () => $("#pclr").click();
   $("#pmore").hidden = list.length<=PLIM;
 }
 
@@ -2474,7 +2568,7 @@ function helpHTML(){
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
       <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo, siempre dentro del rubro elegido.</dd>
       <dt>Caso práctico</dt><dd>Un ejemplo agrícola completo: la mezcla tal como se planeó, qué medidas se aplicaron y cómo quedó. Se puede abrir en el armador para probarlo.</dd>
-      <dt>Productos</dt><dd>El listado del SENAVE con solo los productos del rubro elegido, filtrable por clase, presentación y empresa. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
+      <dt>Productos</dt><dd>El listado del SENAVE con solo los productos del rubro elegido. Primero van los específicos del rubro. Se puede ordenar por nombre, difusión, uso propio, empresa, antigüedad del registro o toxicidad, y filtrar por clase, objetivo, principio activo, modo de acción, empresa, país de origen, presentación y toxicología. En “Mostrar” podés ver solo los específicos o los que sirven en tu rubro y también en otro. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
       <dt>Formulaciones e inertes</dt><dd>Qué lleva cada tipo de formulación además del activo, qué parámetros de calidad debe cumplir, qué problemas da una formulación de mala calidad y cómo hacer una prueba casera.</dd>
       <dt>Diagnóstico</dt><dd>Si ya preparaste el caldo y ves algo raro (grumos, cristales, espuma, capas, calor), elegí el síntoma: la app muestra las causas probables y qué hacer.</dd>
       <dt>Cultivos y carry-over</dt><dd>En “2 · Aplicación” elegí el cultivo actual, el momento de la aplicación (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo actual tolera cada herbicida y cuántos días hay que esperar para sembrar, también por aplicaciones anteriores registradas en los lotes.</dd>
@@ -2489,6 +2583,8 @@ function helpHTML(){
       <dt>¿Cómo la instalo en el celular o la PC?</dt><dd>Abrí la app desde su dirección web en Chrome o Edge y tocá “Instalar app” (o el menú ⋮ → “Instalar aplicación” / “Agregar a la pantalla principal”). En iPhone: Safari → botón Compartir → “Agregar a inicio”. Una vez instalada abre como cualquier aplicación y funciona sin conexión.</dd>
       <dt>¿De dónde salen los productos?</dt><dd>Del listado del SENAVE con corte al ${esc(D.meta.fecha_generacion.split("-").reverse().join("/"))}: productos con registro vigente (${D.productos.filter(p=>!p.m).length.toLocaleString("es-PY")}), más los de mantenimiento vencido marcados aparte.</dd>
       <dt>¿Cómo se decide el rubro de cada producto?</dt><dd>El listado del SENAVE no trae cultivos, así que la app usa los usos de cada principio activo en cada rubro. Un producto entra en un rubro solo si <b>todos</b> sus activos se usan ahí; las mezclas formuladas para soja o maíz quedan en Agrícola y los curasemillas también. Los productos de uso general que en un rubro solo se usan dirigidos (por ejemplo glifosato entre filas de frutales) quedan ocultos; para verlos, en “Productos” marcá “Incluir productos de uso general”. Es orientativo: los cultivos autorizados están en la etiqueta.</dd>
+      <dt>¿Qué es un producto “específico” del rubro?</dt><dd>Uno cuyo activo principal se usa sobre todo en ese rubro, por ejemplo picloram, aminopiralida o triclopir en Pasturas; clorotalonil, mancozeb o abamectina en Hortícola; cebos hormiguicidas o isoxaflutol en Forestal. Se listan primero. Los que también sirven en otros rubros vienen después y los coadyuvantes al final.</dd>
+      <dt>¿Qué significa “más difundidos”?</dt><dd>El SENAVE no publica ventas, así que la app usa como referencia cuántas marcas vigentes hay con la misma composición: cuantas más empresas registran esa fórmula, más difundida está en el mercado. “Más usados por mí” cuenta las veces que el producto aparece en tu historial.</dd>
       <dt>Un producto aparece en un rubro que no corresponde (o falta)</dt><dd>Abrí el producto y, en “Rubros de este producto”, marcá o desmarcá los rubros. La corrección queda guardada en este dispositivo, cuenta para el buscador y la rotación, y viaja en el respaldo.</dd>
       <dt>¿Qué significa “a verificar”?</dt><dd>Alertas que dependen de un dato que no cargaste (por ejemplo, la dureza del agua). Se muestran aparte con el color que tendrían.</dd>
       <dt>¿Reemplaza a la etiqueta o a la prueba de jarra?</dt><dd>No. La etiqueta del producto prevalece siempre y la prueba de jarra con el agua y las dosis reales es la confirmación final.</dd>

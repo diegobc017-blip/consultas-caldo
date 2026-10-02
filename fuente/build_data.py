@@ -18,6 +18,10 @@ if not SRC:
     raise SystemExit("No encuentro base_quimica_caldo.json (en datos/ del repositorio, en la carpeta consultas o en BASE_QUIMICA=ruta).")
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.js")
 d = json.load(open(SRC, encoding="utf-8"))
+# fecha de habilitación del registro (columna "Habilitación" del Excel del SENAVE)
+_HAB = os.path.join(os.path.dirname(SRC), "habilitacion_senave.json")
+if not os.path.exists(_HAB): _HAB = os.path.join(_AQUI, "..", "datos", "habilitacion_senave.json")
+HAB = json.load(open(_HAB, encoding="utf-8"))["habilitacion"] if os.path.exists(_HAB) else {}
 
 def nopat(x):
     return {k: v for k, v in x.items() if k != "patron"}
@@ -31,6 +35,18 @@ def _rest_ok(rest, n, form):
 def _es_sec(id_, x):
     e = USO_RUBRO.get(id_, {}).get(x)
     return bool(e and "sec" in e[2].split())
+def _es_pri(id_, x):
+    r = (AI_RUBROS.get(id_) or "").split()
+    if r and r[0] == x: return True
+    e = USO_RUBRO.get(id_, {}).get(x)
+    return bool(e and "pri" in e[2].split())
+def especificos(p, s):
+    """Rubros donde el producto es específico: es exclusivo de ese rubro o alguno de sus activos
+    tiene ese rubro como principal (los demás activos también se usan ahí)."""
+    ids = list(dict.fromkeys(c["id"] for c in p["componentes"] if c["tipo"] != "ady"))
+    if not ids: return ""
+    rs = [s[i:i+2] for i in range(0, len(s), 2)]
+    return "".join(x for x in rs if len(rs) == 1 or any(_es_pri(i, x) for i in ids))
 def rubros_producto(p):
     """Devuelve (rubros propios, rubros de uso secundario) del producto comercial."""
     comps = [c for c in p["componentes"] if c["tipo"] != "ady"]
@@ -80,7 +96,8 @@ def compact(p, mant):
         "f": p["formulacion"], "fs": (p.get("formulacion_senave") or "").strip(), "u": p["uso"],
         "pa": (p.get("principio_activo_senave") or "").strip(),
         "k": [[c["tipo"], c["id"], c.get("forma"), c.get("concentracion_pct"), c.get("nombre_original")] for c in p["componentes"]],
-        "d": p["derivado"], "s": rp[0], "s2": rp[1], "m": mant,
+        "d": p["derivado"], "s": rp[0], "s2": rp[1], "es": especificos(p, rp[0]), "m": mant,
+        "ha": HAB.get(p["registro"]),
         "v": p.get("vencimiento_registro"), "mh": p.get("mantenimiento_hasta"),
     }
 
@@ -174,6 +191,7 @@ print("sin rubro:", faltan)
 print("sin inertes:", forms - set(INERTES))
 cnt = collections.Counter(ch for p in prods for ch in [p["s"][i:i+2] for i in range(0, len(p["s"]), 2)])
 print("productos por rubro:", cnt)
+print("específicos por rubro:", collections.Counter(p["es"][i:i+2] for p in prods if not p["m"] for i in range(0, len(p["es"]), 2)))
 print("uso secundario:", collections.Counter(p["s2"][i:i+2] for p in prods for i in range(0, len(p["s2"]), 2)))
 js = "window.DB=" + json.dumps(DB, ensure_ascii=False, separators=(",", ":")) + ";"
 open(OUT, "w", encoding="utf-8").write(js)

@@ -8,6 +8,8 @@
 #   "sec"   uso secundario o dirigido: los productos se hacen para otro rubro (p. ej. glifosato
 #           entre filas de frutales). Quedan ocultos en ese rubro salvo que el usuario marque
 #           "Incluir productos de uso general" y no cuentan para la rotación del rubro.
+#   "pri"   rubro principal además del primero de AI_RUBROS (p. ej. 2,4-D en pasturas): los productos
+#           cuentan como "específicos del rubro" y se listan primero.
 #   Se pueden combinar: "solo sec".
 # Un producto comercial entra en un rubro si TODOS sus activos se usan en ese rubro
 # (intersección) y cumple las restricciones. Los curasemillas quedan en Agrícola.
@@ -17,7 +19,7 @@ USO_RUBRO = {
  # ---------------- HERBICIDAS ----------------
  "24d": {
   "AG": ("Hoja ancha en barbecho (buva, con glifosato), maíz, trigo, arroz y caña.", "hoja", ""),
-  "PA": ("Malezas de hoja ancha y arbustivas de potrero, solo o con picloram.", "hoja len", ""),
+  "PA": ("Malezas de hoja ancha y arbustivas de potrero, solo o con picloram.", "hoja len", "pri"),
   "FO": ("Hoja ancha en preplantío y entre filas de eucalipto y pino, dirigido.", "hoja", "solo sec")},
  "ametrina": {
   "AG": ("Pre y postemergente de hoja ancha y gramíneas en caña de azúcar.", "hoja gram pre", ""),
@@ -27,7 +29,7 @@ USO_RUBRO = {
   "HO": ("Graminicida post en hortalizas de hoja ancha (cebolla, zanahoria, tomate, poroto).", "gram", "solo")},
  "clopiralida": {
   "AG": ("Hoja ancha (compuestas, leguminosas) en trigo, maíz y canola.", "hoja", ""),
-  "PA": ("Hoja ancha de potrero (compuestas y leguminosas invasoras).", "hoja", "")},
+  "PA": ("Hoja ancha de potrero (compuestas y leguminosas invasoras).", "hoja", "pri")},
  "dicamba": {
   "AG": ("Hoja ancha y buva en barbecho y en soja o algodón tolerantes; volátil, cuidar deriva.", "hoja", ""),
   "PA": ("Malezas de hoja ancha y arbustivas en potreros.", "hoja len", "")},
@@ -48,7 +50,7 @@ USO_RUBRO = {
   "HO": ("Preemergente de hoja ancha en papa y zanahoria.", "pre hoja", "")},
  "fluroxipir": {
   "AG": ("Hoja ancha en barbecho (buva), maíz y trigo.", "hoja", ""),
-  "PA": ("Hoja ancha y leñosas de potrero, solo o con picloram o triclopir.", "hoja len", "")},
+  "PA": ("Hoja ancha y leñosas de potrero, solo o con picloram o triclopir.", "hoja len", "pri")},
  "glifosato": {
   "AG": ("Sistémico total: barbecho, desecación y post en cultivos RR. Hay malezas resistentes (capim amargoso, buva, caruru, pata de gallina).", "total gram hoja", ""),
   "PA": ("Desecación para implantar o renovar pasturas y control de manchones de malezas.", "total gram hoja", "solo sec"),
@@ -65,13 +67,13 @@ USO_RUBRO = {
   "FO": ("Graminicida en plantaciones forestales jóvenes (pastos entre filas).", "gram", "solo sec")},
  "hexazinona": {
   "AG": ("Pre y postemergente en caña de azúcar.", "pre hoja gram", ""),
-  "FO": ("Pre y postemergente en plantaciones de eucalipto y pino.", "pre hoja gram len", "")},
+  "FO": ("Pre y postemergente en plantaciones de eucalipto y pino.", "pre hoja gram len", "pri")},
  "imazapir": {
   "AG": ("Maíz y girasol tolerantes (Clearfield).", "gram hoja", ""),
-  "FO": ("Control total y residual en preplantío forestal y áreas no cultivadas.", "total gram hoja len", "solo")},
+  "FO": ("Control total y residual en preplantío forestal y áreas no cultivadas.", "total gram hoja len", "solo pri")},
  "isoxaflutol": {
   "AG": ("Preemergente de hoja ancha y gramíneas en maíz y caña.", "pre hoja gram", ""),
-  "FO": ("Preemergente en eucalipto.", "pre hoja gram", "solo")},
+  "FO": ("Preemergente en eucalipto.", "pre hoja gram", "solo pri")},
  "linuron": {
   "AG": ("Pre y postemergente en soja.", "pre hoja", ""),
   "HO": ("Pre y postemergente en zanahoria y papa.", "pre hoja", "")},
@@ -80,7 +82,7 @@ USO_RUBRO = {
   "HO": ("Pre y post de hoja ancha en papa y tomate.", "pre hoja", "solo")},
  "metsulfuron": {
   "AG": ("Hoja ancha en trigo y barbecho.", "hoja", ""),
-  "PA": ("Malezas de hoja ancha y arbustivas de potrero.", "hoja len", "")},
+  "PA": ("Malezas de hoja ancha y arbustivas de potrero.", "hoja len", "pri")},
  "oxifluorfen": {
   "HO": ("Pre y post de hoja ancha en cebolla, ajo y frutales (dirigido).", "pre hoja", ""),
   "FO": ("Preemergente en eucalipto y pino.", "pre hoja", ""),
@@ -118,7 +120,7 @@ USO_RUBRO = {
   "AG": ("Preemergente en caña de azúcar, con otros herbicidas.", "pre", "")},
  "tebutiuron": {
   "AG": ("Preemergente en caña de azúcar.", "pre hoja", ""),
-  "PA": ("Control de leñosas y arbustivas en potreros.", "len hoja", "")},
+  "PA": ("Control de leñosas y arbustivas en potreros.", "len hoja", "pri")},
  "triclopir": {
   "PA": ("Leñosas y arbustivas de potrero, solo o con picloram o fluroxipir.", "len hoja", ""),
   "FO": ("Rebrotes y leñosas en preplantío forestal y aceiros.", "len hoja", ""),
@@ -145,7 +147,7 @@ USO_RUBRO = {
   "HO": ("Antracnosis, manchas y podredumbres en frutales y hortalizas.", "antr manch podr", "solo")},
  "clorotalonil": {
   "AG": ("Multisitio: roya y manchas; socio antirresistencia.", "roya manch", ""),
-  "HO": ("Multisitio: tizones, manchas, mildiu y antracnosis en tomate, papa y cucurbitáceas.", "manch antr mild", "")},
+  "HO": ("Multisitio: tizones, manchas, mildiu y antracnosis en tomate, papa y cucurbitáceas.", "manch antr mild", "pri")},
  "cobre": {
   "HO": ("Multisitio: bacteriosis, mildiu y manchas en hortalizas, frutales y cítricos.", "bact mild manch", ""),
   "AG": ("Bacteriosis y manchas en soja y otros cultivos; multisitio.", "bact manch", "")},
@@ -154,7 +156,7 @@ USO_RUBRO = {
   "AG": ("Desinfección de herramientas y equipos.", "bact", "")},
  "difenoconazol": {
   "AG": ("Manchas y roya en soja y cereales; semillas.", "manch roya suelf", ""),
-  "HO": ("Manchas, oídio, sarna y roya en hortalizas y frutales.", "manch oidio roya", "")},
+  "HO": ("Manchas, oídio, sarna y roya en hortalizas y frutales.", "manch oidio roya", "pri")},
  "diniconazol": {
   "AG": ("Manchas y oídio en cereales.", "manch oidio", ""),
   "HO": ("Oídio y manchas en frutales y hortalizas.", "oidio manch", "")},
@@ -187,13 +189,13 @@ USO_RUBRO = {
   "AG": ("Manchas y oídio en cereales y soja.", "manch oidio", "")},
  "mancozeb": {
   "AG": ("Multisitio: roya asiática y manchas; principal socio antirresistencia.", "roya manch", ""),
-  "HO": ("Multisitio: tizones, mildiu, antracnosis y manchas en papa, tomate, cebolla y frutales.", "mild manch antr", "")},
+  "HO": ("Multisitio: tizones, mildiu, antracnosis y manchas en papa, tomate, cebolla y frutales.", "mild manch antr", "pri")},
  "metalaxil": {
   "AG": ("Semillas: Pythium y Phytophthora.", "suelf", ""),
-  "HO": ("Mildiu, tizón tardío y Phytophthora en papa, tomate, cebolla, cucurbitáceas y cítricos.", "mild suelf", "")},
+  "HO": ("Mildiu, tizón tardío y Phytophthora en papa, tomate, cebolla, cucurbitáceas y cítricos.", "mild suelf", "pri")},
  "metalaxil_m": {
   "AG": ("Semillas: Pythium y Phytophthora.", "suelf", ""),
-  "HO": ("Mildiu, tizón tardío y Phytophthora en papa, tomate, cebolla, cucurbitáceas y cítricos.", "mild suelf", "")},
+  "HO": ("Mildiu, tizón tardío y Phytophthora en papa, tomate, cebolla, cucurbitáceas y cítricos.", "mild suelf", "pri")},
  "nano_plata": {
   "HO": ("Bacteriosis y hongos (desinfectante).", "bact", ""),
   "AG": ("Bacteriosis y hongos (desinfectante).", "bact", "")},
@@ -282,7 +284,7 @@ USO_RUBRO = {
  "deltametrina": {
   "AG": ("Lagartas y chinches.", "lag chin", ""),
   "HO": ("Lagartas en hortalizas.", "lag", "solo"),
-  "AL": ("Protección de granos almacenados (gorgojos, polillas), con o sin butóxido de piperonilo.", "alm", "")},
+  "AL": ("Protección de granos almacenados (gorgojos, polillas), con o sin butóxido de piperonilo.", "alm", "pri")},
  "diafentiuron": {
   "HO": ("Mosca blanca y ácaros en hortalizas.", "mbla acar", ""),
   "AG": ("Mosca blanca y ácaros en algodón y soja.", "mbla acar", "")},
@@ -303,7 +305,7 @@ USO_RUBRO = {
   "AG": ("Lagartas en soja y maíz.", "lag", ""),
   "HO": ("Trips, minadores y lagartas en hortalizas.", "trips minad lag", "")},
  "espinosad": {
-  "HO": ("Trips, lagartas y mosca de la fruta.", "trips lag", ""),
+  "HO": ("Trips, lagartas y mosca de la fruta.", "trips lag", "pri"),
   "AG": ("Lagartas.", "lag", ""),
   "AL": ("Protección de granos almacenados.", "alm", "solo")},
  "espirotetramato": {
@@ -314,8 +316,8 @@ USO_RUBRO = {
   "AG": ("Ácaros y lagartas.", "acar lag", "")},
  "fipronil": {
   "AG": ("Plagas de suelo, picudo del algodón y tratamiento de semillas.", "suelo coleo", ""),
-  "FO": ("Hormigas cortadoras (cebo).", "horm", "f:GB"),
-  "PA": ("Hormigas cortadoras (cebo).", "horm", "f:GB")},
+  "FO": ("Hormigas cortadoras (cebo).", "horm", "f:GB pri"),
+  "PA": ("Hormigas cortadoras (cebo).", "horm", "f:GB pri")},
  "flubendiamida": {
   "AG": ("Lagartas.", "lag", ""),
   "HO": ("Lagartas en hortalizas.", "lag", "solo")},
@@ -338,7 +340,7 @@ USO_RUBRO = {
   "HO": ("Lagartas en hortalizas.", "lag", "solo")},
  "malation": {
   "HO": ("Pulgones y mosca de la fruta (cebo tóxico).", "pulg", ""),
-  "AL": ("Protección de granos almacenados y depósitos.", "alm", ""),
+  "AL": ("Protección de granos almacenados y depósitos.", "alm", "pri"),
   "AG": ("Pulgones.", "pulg", "")},
  "metomil": {
   "AG": ("Lagartas.", "lag", ""),
@@ -360,7 +362,7 @@ USO_RUBRO = {
   "AG": ("Mosca blanca y ácaros en soja y algodón.", "mbla acar", "")},
  "sulfluramida": {
   "FO": ("Hormigas cortadoras (cebo).", "horm", ""),
-  "PA": ("Hormigas cortadoras (cebo).", "horm", ""),
+  "PA": ("Hormigas cortadoras (cebo).", "horm", "pri"),
   "AG": ("Hormigas cortadoras (cebo).", "horm", "")},
  "sulfoxaflor": {
   "AG": ("Chinches, pulgones y mosca blanca.", "chin pulg mbla", ""),
@@ -399,7 +401,7 @@ USO_RUBRO = {
   "HO": ("Cuaje y tamaño de frutos.", "regu", "")},
  "pbo": {
   "AG": ("Sinergista de piretroides.", "sine", ""),
-  "AL": ("Sinergista de piretroides para granos almacenados.", "sine", "")},
+  "AL": ("Sinergista de piretroides para granos almacenados.", "sine", "pri")},
  "feromona": {
   "HO": ("Confusión sexual y monitoreo de plagas en frutales y hortalizas.", "lag", ""),
   "AG": ("Monitoreo y confusión sexual (picudo, lagartas).", "lag", "")},
@@ -408,7 +410,7 @@ USO_RUBRO = {
  "bio_bt": {
   "AG": ("Lagartas (Bacillus thuringiensis).", "lag", ""),
   "HO": ("Lagartas en hortalizas (Bacillus thuringiensis).", "lag", ""),
-  "FO": ("Lagartas defoliadoras del eucalipto (Bacillus thuringiensis).", "lag", "")},
+  "FO": ("Lagartas defoliadoras del eucalipto (Bacillus thuringiensis).", "lag", "pri")},
  "bio_bacillus": {
   "AG": ("Enfermedades foliares y de suelo; nematodos (Bacillus).", "manch suelf nema", ""),
   "HO": ("Enfermedades foliares y de suelo; nematodos (Bacillus).", "manch suelf nema", "")},
@@ -417,7 +419,7 @@ USO_RUBRO = {
   "HO": ("Enfermedades de suelo en almácigos y promotor de crecimiento.", "suelf", "")},
  "bio_trichoderma": {
   "AG": ("Hongos de suelo y moho blanco (Trichoderma).", "suelf scle", ""),
-  "HO": ("Hongos de suelo en almácigos y hortalizas (Trichoderma).", "suelf", ""),
+  "HO": ("Hongos de suelo en almácigos y hortalizas (Trichoderma).", "suelf", "pri"),
   "FO": ("Hongos de suelo en viveros forestales (Trichoderma).", "suelf", "")},
  "bio_hongo_entomo": {
   "AG": ("Mosca blanca, chinches y lagartas (Beauveria, Metarhizium, Cordyceps).", "mbla chin lag", ""),
