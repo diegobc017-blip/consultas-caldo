@@ -217,6 +217,14 @@ ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 
 
 /* Campos, historial, rotación */
+.grid-campos{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+@media (max-width:920px){.grid-campos{grid-template-columns:minmax(0,1fr)}}
+.map-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.map-tools .sep{width:1px;height:22px;background:var(--line)}
+.ap-map{height:280px;margin-top:8px}
+.vtx{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #28598A;box-shadow:0 0 0 1px #0004}
+.vtx-mid{width:12px;height:12px;border-radius:50%;background:#28598Acc;border:2px solid #fff;color:#fff;font:700 10px/8px sans-serif;text-align:center}
+.drop-hint{outline:3px dashed var(--accent);outline-offset:-6px}
 .map{height:min(62vh,520px);border-radius:8px;border:1px solid var(--line);background:var(--sunk);z-index:0}
 .lote-tip{background:rgba(255,255,255,.85);border:0;box-shadow:none;font-weight:700;font-size:.72rem;color:#18221D;padding:1px 5px}
 .lote-tip::before{display:none}
@@ -308,6 +316,8 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
               <label class="f">Superficie a aplicar (ha)<input id="sup" type="number" min="0" step="0.5"></label>
             </div>
             <div class="row" id="apLotes" style="gap:5px"></div>
+            <div class="row" style="gap:6px"><button class="btn sm" id="apMapBtn" type="button">Elegir lotes en el mapa</button><span class="note" id="apMapNote"></span></div>
+            <div id="apMap" class="map ap-map" hidden></div>
             <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
               <label class="f">Cultivo actual<select id="cuAct"></select></label>
               <label class="f">Momento de la aplicación<select id="cuMom"></select></label>
@@ -407,6 +417,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
 
 <script src="vendor/leaflet.js"></script>
 <script src="vendor/shp.min.js"></script>
+<script src="vendor/proj4.js"></script>
 <script src="data.js"></script>
 <script>
 "use strict";
@@ -700,6 +711,7 @@ function bindInputs(){
     el.addEventListener(txt?"change":"input", e=>{ S.caldo[k] = txt ? (e.target.value||null) : numOrNull(e.target.value); upd(); }); });
   $("#btnAhora").onclick=()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); S.caldo.fecha_hora=d.toISOString().slice(0,16); fillInputs(); upd(); };
   [["cuAct","actual"],["cuSig","siguiente"],["cuMom","momento"],["cuSiA","siembra_act"],["cuSiS","siembra_sig"]].forEach(([id,k])=>{ $("#"+id).onchange=e=>{ S.cult[k]=e.target.value||null; if(k==="momento"){ S.cult.momento=S.cult.momento||"barbecho"; $("#cuSiAW").hidden=S.cult.momento!=="barbecho"; } upd(); }; });
+  $("#apMapBtn").onclick=()=>{ const b=$("#apMap"); b.hidden=!b.hidden; $("#apMapBtn").textContent=b.hidden?"Elegir lotes en el mapa":"Ocultar mapa"; if(!window.L){ toast("El mapa no está disponible en esta vista"); b.hidden=true; return; } refreshApMap(); };
   $("#apCampo").onchange=e=>{ S.ap={campo:e.target.value||null, lotes:[]}; S.supManual=false; upd(); };
   $("#agitacion").onchange=e=>{S.caldo.agitacion=e.target.value;upd()};
   $("#portador").onchange=e=>{S.caldo.portador=e.target.value;upd()};
@@ -1185,14 +1197,20 @@ function itemSnap(r, dosis){
     ais: p.k.filter(c => c[0] === "ai" || c[0] === "bio").map(c => { const o = compObj(c[0], c[1]) || {}; return {id: c[1], nombre: o.nombre || c[4] || c[1], grupo: o.grupo || null, clase: o.clase || (c[0] === "bio" ? "biologico" : null)}; })};
 }
 function crearEjemplo(){
-  const lat0 = -25.79, lon0 = -55.105, H = 800, gap = 30;
+  const lat0 = -25.79, lon0 = -55.105, H = 800, gap = 160;
   const mLat = m => m / 111320, mLon = m => m / (111320 * Math.cos(lat0 * Math.PI / 180));
   const defs = [["Lote 1", 80, "Soja", "maiz", 150], ["Lote 2", 70, "Soja", "maiz", 150], ["Lote 3", 65, "Soja", "maiz", 150], ["Lote 4", 60, "Soja", "maiz", 150], ["Lote 5", 75, "Soja", "maiz", 150], ["Lote 6", 50, "Maíz", "soja", 20], ["Lote 7", 55, "Maíz", "soja", 20], ["Lote 8", 45, "Pastura (Brachiaria)", "soja", 30]];
   const lotes = []; let x = 0, row = 0;
   defs.forEach((d, i) => {
     if(i === 4){ x = 0; row = 1; }
     const w = d[1] * 10000 / H, y0 = -row * (H + gap);
-    const ring = [[x, y0], [x + w, y0], [x + w, y0 - H], [x, y0 - H], [x, y0]].map(([mx, my]) => [+(lon0 + mLon(mx)).toFixed(6), +(lat0 + mLat(my)).toFixed(6)]);
+    // contornos irregulares (como lotes reales): esquinas corridas y quiebres en los bordes, escalados al área del lote
+    const J = [[.06, .02], [-.04, .07], [-.08, -.03], [.05, -.06]][i % 4], sem = (i * 37) % 7 / 7;
+    let pts = [[x + w * J[0], y0 - H * .02], [x + w * (.45 + .1 * sem), y0 - H * (.05 + .05 * sem)], [x + w * (1 - Math.abs(J[1])), y0], [x + w, y0 - H * (.5 + .1 * J[0])],
+      [x + w * (1 - .07 * sem), y0 - H], [x + w * (.3 + .1 * sem), y0 - H * (.94 - .04 * sem)], [x, y0 - H * (1 - Math.abs(J[1]) * .8)], [x + w * .05, y0 - H * (.45 + .1 * sem)]];
+    const cx = x + w / 2, cy = y0 - H / 2, shoe = q => Math.abs(q.reduce((s, p, k) => { const n = q[(k + 1) % q.length]; return s + p[0] * n[1] - n[0] * p[1]; }, 0) / 2);
+    const f = Math.sqrt(d[1] * 10000 / shoe(pts)); pts = pts.map(([px, py]) => [cx + (px - cx) * f, cy + (py - cy) * f]);
+    const ring = pts.concat([pts[0]]).map(([mx, my]) => [+(lon0 + mLon(mx)).toFixed(6), +(lat0 + mLat(my)).toFixed(6)]);
     lotes.push({id: "ej-l" + (i + 1), nombre: d[0], cultivo: d[2], cultivo_sig: d[3], siembra_sig: fechaMas(d[4]), geom: {type: "Polygon", coordinates: [ring]}, ha: d[1]});
     x += w + gap;
   });
@@ -1254,15 +1272,33 @@ function renderAplicarEn(){
   S.ap.lotes = S.ap.lotes.filter(id => findLote(c, id));
   box.innerHTML = `<span class="note">Lotes:</span>` + c.lotes.map(l => `<button class="chip" data-l="${esc(l.id)}" aria-pressed="${S.ap.lotes.includes(l.id)}" style="font-size:.78rem;padding:2px 9px">${esc(l.nombre)} · ${fmt(loteHa(l), 1)} ha</button>`).join("") +
     `<button class="chip" data-l="*" style="font-size:.78rem;padding:2px 9px">${S.ap.lotes.length === c.lotes.length ? "Ninguno" : "Todos"}</button>`;
-  box.querySelectorAll("button").forEach(b => b.onclick = () => {
-    const id = b.dataset.l;
+  box.querySelectorAll("button").forEach(b => b.onclick = () => toggleLoteAp(b.dataset.l));
+  refreshApMap();
+}
+function toggleLoteAp(id){
+    const c = findCampo(S.ap.campo); if(!c) return;
     if(id === "*") S.ap.lotes = S.ap.lotes.length === c.lotes.length ? [] : c.lotes.map(l => l.id);
     else { const i = S.ap.lotes.indexOf(id); if(i >= 0) S.ap.lotes.splice(i, 1); else S.ap.lotes.push(id); }
     if(!S.supManual) S.sup = Math.round(S.ap.lotes.reduce((s, x) => s + loteHa(findLote(c, x)), 0) * 10) / 10 || null;
     const l0 = findLote(c, S.ap.lotes[0]);
     if(l0){ const ca = cultCode(l0.cultivo); if(ca && !S.cult.actual) S.cult.actual = ca; if(l0.cultivo_sig && !S.cult.siguiente) S.cult.siguiente = l0.cultivo_sig; if(l0.siembra_sig && !S.cult.siembra_sig) S.cult.siembra_sig = l0.siembra_sig; fillInputs(); }
     $("#sup").value = S.sup ?? ""; S.ejemplo = false; save(); renderCaldo();
-  });
+}
+let APMAP = null, APLAYER = null, APBASE = null;
+function refreshApMap(){
+  const box = $("#apMap"); if(!box || box.hidden || !window.L) return;
+  const c = findCampo(S.ap.campo);
+  if(!APMAP){ APMAP = L.map("apMap", {zoomControl: true}).setView([-25.5, -55.5], 7); APBASE = baseLayer(load("mapa_base", "sat")); if(APBASE) APBASE.addTo(APMAP); }
+  if(APLAYER) APMAP.removeLayer(APLAYER);
+  APLAYER = L.featureGroup();
+  if(c) c.lotes.forEach(l => { if(!l.geom) return; const on = S.ap.lotes.includes(l.id);
+    const lay = L.geoJSON({type: "Feature", geometry: l.geom}, {style: {color: on ? cssVar("--accent") : "#ffffff", weight: on ? 3 : 1.5, fillColor: on ? cssVar("--accent") : "#9aa59f", fillOpacity: on ? .45 : .2}});
+    lay.bindTooltip(`${on ? "✓ " : ""}${l.nombre} · ${fmt(loteHa(l), 0)} ha`, {permanent: true, direction: "center", className: "lote-tip"});
+    lay.on("click", () => toggleLoteAp(l.id)); APLAYER.addLayer(lay); });
+  APLAYER.addTo(APMAP);
+  const sin = c ? c.lotes.filter(l => !l.geom).length : 0;
+  $("#apMapNote").textContent = !c ? "Elegí un campo primero." : sin ? `${sin} lotes sin mapa: marcalos con los botones.` : "Tocá un lote para marcarlo o desmarcarlo.";
+  setTimeout(() => { APMAP.invalidateSize(); if(APLAYER.getLayers().length && APMAP._fitCampo !== S.ap.campo){ APMAP.fitBounds(APLAYER.getBounds(), {padding: [15, 15]}); APMAP._fitCampo = S.ap.campo; } }, 30);
 }
 
 /* ---------- Condiciones ambientales ---------- */
@@ -1608,12 +1644,71 @@ function kml(fc, nombre){
   return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(nombre)}</name>\n${pm}\n</Document></kml>`;
 }
 function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", [])}; }
+function bajarBin(nombre, blob){
+  if(enIframe){ toast("En esta vista no se pueden descargar archivos: usá la app publicada o instalada"); return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function shapefileZip(fc, base){
+  const feats = fc.features;
+  const sarea = r => r.reduce((s, p, i) => { const q = r[(i + 1) % r.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0);
+  const recs = feats.map(f => { const parts = polysOf(f.geometry).flatMap(p => p.map((r, k) => { let rr = r.slice(); const a = rr[0], z = rr[rr.length - 1]; if(a[0] !== z[0] || a[1] !== z[1]) rr.push(a);
+      const cw = sarea(rr) < 0; if((k === 0) !== cw) rr = rr.reverse(); return rr; })); // exterior en sentido horario, huecos al revés (norma Shapefile)
+    const pts = parts.flat(); const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    return {parts, n: pts.length, box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]}; });
+  const all = recs.flatMap(r => [[r.box[0], r.box[1]], [r.box[2], r.box[3]]]);
+  const bb = [Math.min(...all.map(p => p[0])), Math.min(...all.map(p => p[1])), Math.max(...all.map(p => p[0])), Math.max(...all.map(p => p[1]))];
+  const recLen = r => 4 + 32 + 4 + 4 + 4 * r.parts.length + 16 * r.n;
+  const shpLen = 100 + recs.reduce((s, r) => s + 8 + recLen(r), 0);
+  const shp = new DataView(new ArrayBuffer(shpLen)), shx = new DataView(new ArrayBuffer(100 + 8 * recs.length));
+  const head = (dv, len) => { dv.setInt32(0, 9994); dv.setInt32(24, len / 2); dv.setInt32(28, 1000, true); dv.setInt32(32, 5, true); bb.forEach((v, i) => dv.setFloat64(36 + 8 * i, v, true)); };
+  head(shp, shpLen); head(shx, 100 + 8 * recs.length);
+  let o = 100;
+  recs.forEach((r, i) => {
+    shx.setInt32(100 + 8 * i, o / 2); shx.setInt32(104 + 8 * i, recLen(r) / 2);
+    shp.setInt32(o, i + 1); shp.setInt32(o + 4, recLen(r) / 2); o += 8;
+    shp.setInt32(o, 5, true); r.box.forEach((v, k) => shp.setFloat64(o + 4 + 8 * k, v, true)); shp.setInt32(o + 36, r.parts.length, true); shp.setInt32(o + 40, r.n, true); o += 44;
+    let acc = 0; r.parts.forEach(pt => { shp.setInt32(o, acc, true); o += 4; acc += pt.length; });
+    r.parts.forEach(pt => pt.forEach(([x, y]) => { shp.setFloat64(o, x, true); shp.setFloat64(o + 8, y, true); o += 16; }));
+  });
+  // DBF (texto UTF-8, campos de hasta 10 caracteres)
+  const keys = [...new Set(feats.flatMap(f => Object.keys(f.properties)))];
+  const enc = new TextEncoder(), usados = new Set();
+  const fld = keys.map(k => { let n = sinTildes(k).replace(/[^a-z0-9_]/gi, "_").slice(0, 10).toUpperCase() || "CAMPO"; let m = n, i = 1; while(usados.has(m)) m = n.slice(0, 8) + "_" + (i++); usados.add(m);
+    const num = feats.every(f => f.properties[k] == null || f.properties[k] === "" || typeof f.properties[k] === "number");
+    const len = num ? 18 : Math.min(254, Math.max(10, ...feats.map(f => enc.encode(String(f.properties[k] ?? "")).length)));
+    return {k, n: m, num, len}; });
+  const recSize = 1 + fld.reduce((s, f) => s + f.len, 0), hdr = 32 + 32 * fld.length + 1;
+  const dbf = new Uint8Array(hdr + recSize * feats.length + 1); const dd = new DataView(dbf.buffer);
+  const hoy = new Date(); dbf[0] = 3; dbf[1] = hoy.getFullYear() - 1900; dbf[2] = hoy.getMonth() + 1; dbf[3] = hoy.getDate();
+  dd.setUint32(4, feats.length, true); dd.setUint16(8, hdr, true); dd.setUint16(10, recSize, true); dbf[29] = 0x57;
+  fld.forEach((f, i) => { const b = 32 + 32 * i; enc.encode(f.n).forEach((c, j) => dbf[b + j] = c); dbf[b + 11] = (f.num ? "N" : "C").charCodeAt(0); dbf[b + 16] = f.len; dbf[b + 17] = f.num ? 3 : 0; });
+  dbf[hdr - 1] = 0x0D;
+  feats.forEach((ft, r) => { let p = hdr + r * recSize; dbf[p++] = 0x20;
+    fld.forEach(f => { const v = ft.properties[f.k]; let s = v == null ? "" : f.num ? (v === "" ? "" : Number(v).toFixed(3)) : String(v); let b = enc.encode(s);
+      if(b.length > f.len) b = b.slice(0, f.len); const pad = new Uint8Array(f.len).fill(0x20); if(f.num) pad.set(b, f.len - b.length); else pad.set(b, 0); dbf.set(pad, p); p += f.len; }); });
+  dbf[dbf.length - 1] = 0x1A;
+  const prj = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+  return zipStore([[base + ".shp", new Uint8Array(shp.buffer)], [base + ".shx", new Uint8Array(shx.buffer)], [base + ".dbf", dbf], [base + ".prj", enc.encode(prj)], [base + ".cpg", enc.encode("UTF-8")]]);
+}
+function gpxDe(fc){
+  const x = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Consultas de Caldo" xmlns="http://www.topografix.com/GPX/1/1">\n` +
+    fc.features.map(f => `<trk><name>${x(f.properties.lote)}</name><desc>${x(f.properties.campo)} · ${x(f.properties.ha)} ha</desc>${polysOf(f.geometry).map(p => `<trkseg>${p[0].map(c => `<trkpt lat="${c[1]}" lon="${c[0]}"/>`).join("")}</trkseg>`).join("")}</trk>`).join("\n") + `\n</gpx>`;
+}
+function verticesFilas(fc){
+  const out = [];
+  fc.features.forEach(f => polysOf(f.geometry).forEach((p, pi) => p[0].forEach((c, i) => out.push({campo: f.properties.campo, lote: f.properties.lote, parte: pi + 1, orden: i + 1, latitud: c[1], longitud: c[0]}))));
+  return out;
+}
 const EXPORTS = {
   lotes_geojson: () => bajar(`lotes_${hoyTxt()}.geojson`, JSON.stringify(lotesFC(CAMPOS), null, 1), "application/geo+json"),
   lotes_kml: () => bajar(`lotes_${hoyTxt()}.kml`, kml(lotesFC(CAMPOS), "Lotes"), "application/vnd.google-earth.kml+xml"),
   hist_csv: () => bajar(`historial_${hoyTxt()}.csv`, csv(histFilas(HIST).map(r => r.props)), "text/csv"),
   hist_geojson: () => bajar(`historial_${hoyTxt()}.geojson`, JSON.stringify({type: "FeatureCollection", name: "historial_aplicaciones", features: histFilas(HIST).filter(r => r.l && r.l.geom).map(r => ({type: "Feature", properties: r.props, geometry: r.l.geom}))}, null, 1), "application/geo+json"),
   respaldo: () => bajar(`respaldo_consultas_${hoyTxt()}.json`, JSON.stringify(respaldo()), "application/json"),
+  lotes_shp: () => { const fc = lotesFC(CAMPOS); if(!fc.features.length){ toast("No hay lotes con mapa para exportar"); return; } bajarBin(`lotes_${hoyTxt()}.zip`, shapefileZip(fc, "lotes"), "application/zip"); },
+  lotes_gpx: () => bajar(`lotes_${hoyTxt()}.gpx`, gpxDe(lotesFC(CAMPOS)), "application/gpx+xml"),
+  lotes_csv: () => bajar(`lotes_vertices_${hoyTxt()}.csv`, csv(verticesFilas(lotesFC(CAMPOS))), "text/csv"),
 };
 function kmlAGeo(txt){
   const doc = new DOMParser().parseFromString(txt, "application/xml");
@@ -1649,47 +1744,240 @@ function poligonos(gj){
   return out;
 }
 function stripZ(g){ const r = ring => ring.map(p => [+p[0], +p[1]]); return g.type === "Polygon" ? g.coordinates.map(r) : g.coordinates.map(p => p.map(r)); }
-async function importarArchivo(file){
-  const name = file.name.toLowerCase();
-  try {
-    let gj;
-    if(name.endsWith(".zip")){
-      if(!window.shp){ toast("No se pudo cargar el lector de Shapefile"); return; }
-      gj = await window.shp(await file.arrayBuffer());
-    } else {
-      const txt = await file.text();
-      if(name.endsWith(".kml")) gj = kmlAGeo(txt);
-      else if(name.endsWith(".gpx")) gj = gpxAGeo(txt);
-      else { const j = JSON.parse(txt); if(j.app === "consultas-caldo"){ restaurar(j); return; } gj = j; }
-    }
-    const feats = poligonos(gj);
-    if(!feats.length){ toast("El archivo no tiene polígonos de lotes"); return; }
-    const proyectado = feats.some(f => polysOf(f.geom).some(p => p[0].some(c => Math.abs(c[0]) > 180 || Math.abs(c[1]) > 90)));
-    previewImport(feats, file.name, proyectado);
-  } catch(e){ console.error(e); toast("No se pudo leer el archivo: " + (e.message || e)); }
+/* ---------- Importar archivos SIG ---------- */
+const CRS_OPC = [
+  ["EPSG:4326", "Latitud/longitud WGS 84 (EPSG:4326)"],
+  ["EPSG:32721", "UTM 21 Sur WGS 84 (EPSG:32721) · este de Paraguay"],
+  ["EPSG:32720", "UTM 20 Sur WGS 84 (EPSG:32720) · Chaco occidental"],
+  ["EPSG:31981", "UTM 21 Sur SIRGAS 2000 (EPSG:31981)"],
+  ["EPSG:31980", "UTM 20 Sur SIRGAS 2000 (EPSG:31980)"],
+  ["EPSG:3857", "Web Mercator (EPSG:3857)"],
+];
+if(window.proj4){
+  proj4.defs("EPSG:32721", "+proj=utm +zone=21 +south +datum=WGS84 +units=m +no_defs");
+  proj4.defs("EPSG:32720", "+proj=utm +zone=20 +south +datum=WGS84 +units=m +no_defs");
+  proj4.defs("EPSG:31981", "+proj=utm +zone=21 +south +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+  proj4.defs("EPSG:31980", "+proj=utm +zone=20 +south +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+  proj4.defs("EPSG:4674", "+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs");
 }
-function previewImport(feats, fname, proyectado){
-  const keys = [...new Set(feats.flatMap(f => Object.keys(f.props)))];
-  const guess = keys.find(k => /^(nombre|name|lote|denominaci|parcela|id)$/i.test(k)) || keys[0] || "";
+const GEOGRAFICOS = new Set(["EPSG:4326", "EPSG:4674", "CRS84", "OGC:CRS84", "EPSG:4258", "EPSG:4269"]);
+function crsDeTexto(s){
+  if(!s) return null; s = String(s);
+  if(/CRS84/i.test(s)) return "EPSG:4326";
+  const m = s.match(/EPSG[:]{1,2}(\d{4,5})/i) || s.match(/^(\d{4,5})$/); return m ? "EPSG:" + m[1] : null;
+}
+function reproyectar(geom, crs){
+  if(!crs || GEOGRAFICOS.has(crs)) return geom;
+  if(!window.proj4) throw new Error("falta el conversor de coordenadas");
+  const f = proj4(crs, "EPSG:4326");
+  const r = ring => ring.map(p => f.forward([p[0], p[1]]).map(v => +v.toFixed(7)));
+  return {type: geom.type, coordinates: geom.type === "Polygon" ? geom.coordinates.map(r) : geom.coordinates.map(pl => pl.map(r))};
+}
+const pareceProyectado = feats => feats.some(f => polysOf(f.geom).some(p => p[0].some(c => Math.abs(c[0]) > 180 || Math.abs(c[1]) > 90)));
+function adivinarUTM(feats){ // x entre 160000 y 840000, y alrededor de 7 millones (hemisferio sur)
+  const c = polysOf(feats[0].geom)[0][0][0]; if(!c) return "EPSG:32721";
+  if(c[0] > 1e6 || c[1] < 5e6) return "EPSG:3857";
+  return "EPSG:32721";
+}
+// ZIP: lectura con DecompressionStream y escritura sin compresión
+async function unzip(buf){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), out = {};
+  let eocd = -1; for(let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--){ if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; } }
+  if(eocd < 0) throw new Error("ZIP no válido");
+  let p = dv.getUint32(eocd + 16, true); const n = dv.getUint16(eocd + 10, true);
+  for(let k = 0; k < n; k++){
+    const met = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl));
+    const lnl = dv.getUint16(off + 26, true), lel = dv.getUint16(off + 28, true), start = off + 30 + lnl + lel;
+    const data = u8.subarray(start, start + csize);
+    if(!name.endsWith("/")){
+      if(met === 0) out[name] = data;
+      else if(met === 8){ const ds = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw")); out[name] = new Uint8Array(await new Response(ds).arrayBuffer()); }
+    }
+    p += 46 + nl + el + cl;
+  }
+  return out;
+}
+const CRC_T = (() => { const t = new Uint32Array(256); for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for(let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zipStore(files){ // files: [[nombre, Uint8Array]]
+  const enc = new TextEncoder(), partes = [], central = []; let off = 0;
+  files.forEach(([name, data]) => {
+    const nb = enc.encode(name), crc = crc32(data), h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(8, 0, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, nb.length, true);
+    partes.push(new Uint8Array(h.buffer), nb, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, nb.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), nb); off += 30 + nb.length + data.length;
+  });
+  const csz = central.reduce((s, x) => s + x.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csz, true); e.setUint32(16, off, true);
+  return new Blob([...partes, ...central, new Uint8Array(e.buffer)], {type: "application/zip"});
+}
+// GeoPackage (QGIS) con sql.js
+let SQLP = null;
+function cargarSQL(){
+  if(SQLP) return SQLP;
+  SQLP = new Promise((res, rej) => {
+    const ini = () => {
+      const opts = window.SQL_WASM_B64 ? {wasmBinary: Uint8Array.from(atob(window.SQL_WASM_B64), ch => ch.charCodeAt(0))} : {locateFile: f => "vendor/" + f};
+      window.initSqlJs(opts).then(res, rej);
+    };
+    if(window.initSqlJs) return ini();
+    const s = document.createElement("script"); s.src = "vendor/sql-wasm.js"; s.onload = ini; s.onerror = () => rej(new Error("no se pudo cargar el lector de GeoPackage (necesita la app instalada o publicada)")); document.head.appendChild(s);
+  });
+  SQLP.catch(() => { SQLP = null; });
+  return SQLP;
+}
+function leerWKB(u8, off){
+  const dv = new DataView(u8.buffer, u8.byteOffset); let p = off;
+  function geom(){
+    const le = dv.getUint8(p) === 1; p += 1;
+    let tipo = dv.getUint32(p, le); p += 4;
+    let dims = 2;
+    if(tipo & 0x80000000){ dims++; } if(tipo & 0x40000000){ dims++; } if(tipo & 0x20000000){ p += 4; }
+    tipo = tipo & 0xFFFF;
+    if(tipo > 3000){ dims = 4; tipo -= 3000; } else if(tipo > 2000){ dims = 3; tipo -= 2000; } else if(tipo > 1000){ dims = 3; tipo -= 1000; }
+    const pt = () => { const x = dv.getFloat64(p, le), y = dv.getFloat64(p + 8, le); p += 8 * dims; return [x, y]; };
+    const ring = () => { const n = dv.getUint32(p, le); p += 4; const r = []; for(let i = 0; i < n; i++) r.push(pt()); return r; };
+    const poly = () => { const n = dv.getUint32(p, le); p += 4; const rs = []; for(let i = 0; i < n; i++) rs.push(ring()); return rs; };
+    if(tipo === 3) return {type: "Polygon", coordinates: poly()};
+    if(tipo === 6){ const n = dv.getUint32(p, le); p += 4; const ps = []; for(let i = 0; i < n; i++){ const g = geom(); if(g && g.type === "Polygon") ps.push(g.coordinates); } return {type: "MultiPolygon", coordinates: ps}; }
+    if(tipo === 2){ const r = ring(); return r.length >= 3 ? {type: "Polygon", coordinates: [r.concat([r[0]])]} : null; }
+    if(tipo === 5){ const n = dv.getUint32(p, le); p += 4; let g = null; for(let i = 0; i < n; i++){ const x = geom(); if(!g && x) g = x; } return g; }
+    if(tipo === 1){ pt(); return null; }
+    if(tipo === 7){ const n = dv.getUint32(p, le); p += 4; const ps = []; for(let i = 0; i < n; i++){ const g = geom(); if(g && g.type === "Polygon") ps.push(g.coordinates); else if(g && g.type === "MultiPolygon") ps.push(...g.coordinates); } return ps.length ? {type: "MultiPolygon", coordinates: ps} : null; }
+    return null;
+  }
+  return geom();
+}
+function gpkgGeom(b){
+  if(!b || b[0] !== 0x47 || b[1] !== 0x50) return null;
+  const flags = b[3], env = (flags >> 1) & 7, envBytes = [0, 32, 48, 48, 64][env] || 0;
+  return leerWKB(b, 8 + envBytes);
+}
+async function gpkgAGeo(buf){
+  const SQL = await cargarSQL();
+  const db = new SQL.Database(new Uint8Array(buf));
+  const capas = db.exec("SELECT g.table_name, g.column_name, g.srs_id, s.organization, s.organization_coordsys_id, s.definition FROM gpkg_geometry_columns g LEFT JOIN gpkg_spatial_ref_sys s ON s.srs_id = g.srs_id");
+  const out = [];
+  if(capas.length) for(const [tabla, col, srs, org, orgId, def] of capas[0].values){
+    let crs = org && /epsg/i.test(org) ? "EPSG:" + orgId : null;
+    if(crs && window.proj4 && !proj4.defs(crs) && def){ try { proj4.defs(crs, def); } catch(e){} }
+    const res = db.exec(`SELECT * FROM "${String(tabla).replace(/"/g, '""')}"`);
+    if(!res.length) continue;
+    const cols = res[0].columns, gi = cols.indexOf(col);
+    res[0].values.forEach(row => {
+      const g = gpkgGeom(row[gi]); if(!g || !/Polygon/.test(g.type)) return;
+      const props = {}; cols.forEach((k, i) => { if(i !== gi && row[i] != null && !(row[i] instanceof Uint8Array)) props[k] = row[i]; });
+      props._capa = tabla;
+      out.push({props, geom: g, crs});
+    });
+  }
+  db.close();
+  return out;
+}
+// CSV de vértices: una fila por punto, con columna de lote
+function csvAGeo(txt){
+  const lineas = txt.replace(/^﻿/, "").split(/\r?\n/).filter(l => l.trim());
+  if(lineas.length < 4) throw new Error("el CSV tiene pocas filas");
+  const sep = (lineas[0].match(/;/g) || []).length >= (lineas[0].match(/,/g) || []).length ? ";" : (lineas[0].includes("\t") ? "\t" : ",");
+  const cab = lineas[0].split(sep).map(h => sinTildes(h.trim().replace(/"/g, "")));
+  const iLat = cab.findIndex(h => /^(lat|latitud|latitude|y)$/.test(h)), iLon = cab.findIndex(h => /^(lon|lng|long|longitud|longitude|x)$/.test(h));
+  const iLote = cab.findIndex(h => /^(lote|name|nombre|parcela|id|poligono|campo)$/.test(h));
+  if(iLat < 0 || iLon < 0) throw new Error("no encuentro las columnas de latitud y longitud");
+  const num = s => Number(String(s).replace(/"/g, "").trim().replace(sep === ";" ? "," : "\u0000", "."));
+  const grupos = new Map();
+  lineas.slice(1).forEach(l => { const c = l.split(sep); const k = iLote >= 0 ? (c[iLote] || "").replace(/"/g, "").trim() : "Lote 1"; const x = num(c[iLon]), y = num(c[iLat]); if(isNaN(x) || isNaN(y)) return; if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push([x, y]); });
+  const feats = [];
+  grupos.forEach((pts, k) => { if(pts.length < 3) return; const r = pts.slice(); const a = r[0], z = r[r.length - 1]; if(a[0] !== z[0] || a[1] !== z[1]) r.push(a); feats.push({type: "Feature", properties: {lote: k}, geometry: {type: "Polygon", coordinates: [r]}}); });
+  return {type: "FeatureCollection", features: feats};
+}
+async function leerArchivo(file){
+  const name = file.name.toLowerCase();
+  if(name.endsWith(".gpkg")) return {feats: await gpkgAGeo(await file.arrayBuffer())};
+  if(name.endsWith(".kmz")){
+    const z = await unzip(await file.arrayBuffer()); const k = Object.keys(z).find(n => n.toLowerCase().endsWith(".kml"));
+    if(!k) throw new Error("el KMZ no tiene un KML adentro");
+    return {feats: poligonos(kmlAGeo(new TextDecoder().decode(z[k]))), crs: "EPSG:4326"};
+  }
+  if(name.endsWith(".zip")){
+    const z = await unzip(await file.arrayBuffer()); const names = Object.keys(z).map(n => n.toLowerCase());
+    if(names.some(n => n.endsWith(".gpkg"))){ const k = Object.keys(z).find(n => n.toLowerCase().endsWith(".gpkg")); return {feats: await gpkgAGeo(z[k].buffer.slice(z[k].byteOffset, z[k].byteOffset + z[k].length))}; }
+    if(names.some(n => n.endsWith(".kml"))){ const k = Object.keys(z).find(n => n.toLowerCase().endsWith(".kml")); return {feats: poligonos(kmlAGeo(new TextDecoder().decode(z[k]))), crs: "EPSG:4326"}; }
+    if(!window.shp) throw new Error("no se pudo cargar el lector de Shapefile");
+    const tienePrj = names.some(n => n.endsWith(".prj"));
+    return {feats: poligonos(await window.shp(await file.arrayBuffer())), crs: tienePrj ? "EPSG:4326" : null};
+  }
+  if(name.endsWith(".shp")) throw new Error("un Shapefile son varios archivos: comprimí .shp, .shx, .dbf y .prj en un .zip");
+  const txt = await file.text();
+  if(name.endsWith(".kml")) return {feats: poligonos(kmlAGeo(txt)), crs: "EPSG:4326"};
+  if(name.endsWith(".gpx")) return {feats: poligonos(gpxAGeo(txt)), crs: "EPSG:4326"};
+  if(name.endsWith(".csv") || name.endsWith(".txt")) return {feats: poligonos(csvAGeo(txt))};
+  const j = JSON.parse(txt);
+  if(j.app === "consultas-caldo"){ restaurar(j); return null; }
+  return {feats: poligonos(j), crs: crsDeTexto(j.crs && j.crs.properties && j.crs.properties.name)};
+}
+async function importarArchivos(files){
+  const todos = []; let crsArch = null;
+  for(const f of files){
+    try {
+      toast("Leyendo " + f.name + "…");
+      const r = await leerArchivo(f); if(!r) return;
+      r.feats.forEach(x => { x.crs = x.crs || r.crs || null; x.archivo = f.name; todos.push(x); });
+    } catch(e){ console.error(e); toast("No se pudo leer " + f.name + ": " + (e.message || e)); }
+  }
+  if(!todos.length){ toast("Los archivos no tienen polígonos de lotes"); return; }
+  previewImport(todos, files.length === 1 ? files[0].name : files.length + " archivos");
+}
+async function importarArchivo(file){ return importarArchivos([file]); }
+function previewImport(raw, fname){
+  const keys = [...new Set(raw.flatMap(f => Object.keys(f.props)).filter(k => k !== "_capa"))];
+  const guess = keys.find(k => /^(nombre|name|lote|denominaci|parcela|id)$/i.test(k)) || keys.find(k => /lote|nombre|name/i.test(k)) || keys[0] || "";
   const gCult = keys.find(k => /cultivo|crop/i.test(k)) || "";
   const base = fname.replace(/\.[^.]+$/, "");
+  const sinCrs = raw.filter(f => !f.crs);
+  const proy = pareceProyectado(sinCrs.length ? sinCrs : []);
+  let crsElegido = proy ? adivinarUTM(sinCrs) : "EPSG:4326";
+  const convertir = () => raw.map(f => { try { return {props: f.props, geom: reproyectar(f.geom, f.crs || crsElegido)}; } catch(e){ return null; } }).filter(Boolean);
+  let feats = convertir();
+  const dentro = fs => fs.every(f => polysOf(f.geom).every(p => p[0].every(c => Math.abs(c[0]) <= 180 && Math.abs(c[1]) <= 90)));
   openDrawer(`<div class="stack"><span class="eyebrow">Importar lotes</span><h2>${esc(fname)}</h2>
-    ${proyectado ? `<p class="rnote">Las coordenadas parecen proyectadas (UTM u otra). Exportá desde QGIS en EPSG:4326 (WGS 84) o usá un Shapefile .zip con su archivo .prj.</p>` : ""}
-    <p>${feats.length} polígonos · ${fmt(feats.reduce((s, f) => s + geomHa(f.geom), 0), 1)} ha en total.</p>
+    <div id="iCrsBox"></div>
+    <p id="iRes"></p>
     <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
-      <label class="f">Agregar al campo<select id="iCampo"><option value="__nuevo">Campo nuevo</option>${CAMPOS.map(c => `<option value="${esc(c.id)}">${esc(c.nombre)}</option>`).join("")}</select></label>
+      <label class="f">Agregar al campo<select id="iCampo"><option value="__nuevo">Campo nuevo</option>${CAMPOS.map(c => `<option value="${esc(c.id)}"${c.id === CAMPO_SEL && !c.ejemplo ? " selected" : ""}>${esc(c.nombre)}</option>`).join("")}</select></label>
       <label class="f" id="iNuevoWrap">Nombre del campo nuevo<input id="iNuevo" value="${esc(base)}"></label>
-      <label class="f">Campo con el nombre del lote<select id="iNom">${keys.map(k => `<option${k === guess ? " selected" : ""}>${esc(k)}</option>`).join("")}<option value="">(numerar Lote 1, 2…)</option></select></label>
-      <label class="f">Campo con el cultivo<select id="iCult"><option value="">(ninguno)</option>${keys.map(k => `<option${k === gCult ? " selected" : ""}>${esc(k)}</option>`).join("")}</select></label>
+      <label class="f">Columna con el nombre del lote<select id="iNom">${keys.map(k => `<option${k === guess ? " selected" : ""}>${esc(k)}</option>`).join("")}<option value="">(numerar Lote 1, 2…)</option></select></label>
+      <label class="f">Columna con el cultivo<select id="iCult"><option value="">(ninguno)</option>${keys.map(k => `<option${k === gCult ? " selected" : ""}>${esc(k)}</option>`).join("")}</select></label>
     </div>
-    <div class="tw"><table><thead><tr><th>#</th><th>Atributos</th><th style="text-align:right">ha</th></tr></thead><tbody>${feats.slice(0, 25).map((f, i) => `<tr><td>${i + 1}</td><td class="note">${esc(Object.entries(f.props).slice(0, 4).map(([k, v]) => k + ": " + v).join(" · "))}</td><td class="n">${fmt(geomHa(f.geom), 1)}</td></tr>`).join("")}</tbody></table></div>
-    <div class="row"><button class="btn pri" id="iOk">Importar ${feats.length} lotes</button></div></div>`);
+    <div class="map ap-map" id="iMap"></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Atributos</th><th style="text-align:right">ha</th></tr></thead><tbody id="iTab"></tbody></table></div>
+    <div class="row"><button class="btn pri" id="iOk">Importar</button></div></div>`);
+  let pmap = null, play = null;
+  const pintar = () => {
+    const ok = dentro(feats);
+    $("#iCrsBox").innerHTML = proy ? `<div class="panel stack" style="gap:6px"><p class="note">Las coordenadas del archivo están proyectadas y no traen el sistema de referencia. Elegí cuál es (en Paraguay suele ser UTM 21 Sur; en el Chaco occidental, 20 Sur).</p>
+      <label class="f">Sistema de coordenadas del archivo<select id="iCrs">${CRS_OPC.map(([k, n]) => `<option value="${k}"${k === crsElegido ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label></div>` : "";
+    if($("#iCrs")) $("#iCrs").onchange = e => { crsElegido = e.target.value; feats = convertir(); pintar(); };
+    $("#iRes").innerHTML = ok ? `${feats.length} polígonos · ${fmt(feats.reduce((s, f) => s + geomHa(f.geom), 0), 1)} ha en total.` : `<span class="rnote">Las coordenadas no caen en el mapa con este sistema: probá con otro.</span>`;
+    $("#iTab").innerHTML = feats.slice(0, 40).map((f, i) => `<tr><td>${i + 1}</td><td class="note">${esc(Object.entries(f.props).filter(([k]) => k !== "_capa").slice(0, 4).map(([k, v]) => k + ": " + v).join(" · "))}</td><td class="n">${ok ? fmt(geomHa(f.geom), 1) : "—"}</td></tr>`).join("");
+    $("#iOk").textContent = `Importar ${feats.length} lotes`; $("#iOk").disabled = !ok;
+    if(window.L && ok){
+      if(!pmap){ pmap = L.map("iMap"); const b = baseLayer(load("mapa_base", "sat")); if(b) b.addTo(pmap); }
+      if(play) pmap.removeLayer(play);
+      play = L.geoJSON({type: "FeatureCollection", features: feats.map(f => ({type: "Feature", properties: {}, geometry: f.geom}))}, {style: {color: "#ffb000", weight: 2, fillOpacity: .25}}).addTo(pmap);
+      setTimeout(() => { pmap.invalidateSize(); pmap.fitBounds(play.getBounds(), {padding: [15, 15]}); }, 60);
+    } else $("#iMap").hidden = !window.L || !ok;
+  };
+  pintar();
+  $("#iNuevoWrap").hidden = $("#iCampo").value !== "__nuevo";
   $("#iCampo").onchange = e => { $("#iNuevoWrap").hidden = e.target.value !== "__nuevo"; };
   $("#iOk").onclick = () => {
     let c = findCampo($("#iCampo").value);
     if(!c){ c = {id: uid("c"), nombre: $("#iNuevo").value || base, ubicacion: "", lotes: []}; CAMPOS.push(c); }
     const kn = $("#iNom").value, kc = $("#iCult").value;
-    feats.forEach((f, i) => c.lotes.push({id: uid("l"), nombre: String((kn && f.props[kn]) || "Lote " + (c.lotes.length + 1)), cultivo: kc ? String(f.props[kc] || "") : "", geom: f.geom, ha: Math.round(geomHa(f.geom) * 10) / 10}));
+    feats.forEach(f => c.lotes.push({id: uid("l"), nombre: String((kn && f.props[kn]) || "Lote " + (c.lotes.length + 1)), cultivo: kc ? String(f.props[kc] || "") : "", geom: f.geom, ha: Math.round(geomHa(f.geom) * 10) / 10}));
     saveCampos(); CAMPO_SEL = c.id; closeDrawer(); toast(`${feats.length} lotes importados`); renderCampos(true);
   };
 }
@@ -1715,6 +2003,125 @@ function rotLote(loteId){
   return {level: hs.length ? (max >= 3 ? 2 : max === 2 ? 1 : 0) : null, rep, cnt, n: hs.length};
 }
 
+/* ---------- Herramientas del mapa ---------- */
+let LOCMARK = null;
+function miUbicacion(){
+  if(!navigator.geolocation){ toast("Este dispositivo no da la ubicación"); return; }
+  toast("Buscando tu ubicación…");
+  navigator.geolocation.getCurrentPosition(pos => {
+    const ll = [pos.coords.latitude, pos.coords.longitude];
+    if(LOCMARK) MAP.removeLayer(LOCMARK);
+    LOCMARK = L.layerGroup([L.circle(ll, {radius: pos.coords.accuracy, weight: 1, color: "#1e88e5", fillOpacity: .12}), L.circleMarker(ll, {radius: 7, color: "#fff", weight: 2, fillColor: "#1e88e5", fillOpacity: 1})]).addTo(MAP);
+    MAP.setView(ll, Math.max(MAP.getZoom(), 16));
+  }, err => toast(err.code === 1 ? "Permiso de ubicación denegado (se activa en el navegador)" : "No se pudo obtener la ubicación"), {enableHighAccuracy: true, timeout: 15000});
+}
+function irCoordenadas(){
+  const m = $("#mIrTxt").value.replace(/;/g, ",").match(/(-?\d+(?:[.]\d+)?)\s*[, ]\s*(-?\d+(?:[.]\d+)?)/);
+  if(!m){ toast("Escribí latitud y longitud, por ejemplo -25.79, -55.10"); return; }
+  let a = +m[1], b = +m[2]; if(Math.abs(a) > 90){ [a, b] = [b, a]; }
+  MAP.setView([a, b], 16); if(LOCMARK) MAP.removeLayer(LOCMARK); LOCMARK = L.circleMarker([a, b], {radius: 7, color: "#fff", weight: 2, fillColor: "#e53935", fillOpacity: 1}).addTo(MAP);
+  $("#mIrBar").hidden = true; $("#mTools").hidden = false;
+}
+const distM = (a, b) => { const R = 6371000, r = Math.PI / 180, dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r; const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+function empezarGPS(lote){
+  if(!MAP){ toast("El mapa no está disponible"); return; }
+  if(!navigator.geolocation){ toast("Este dispositivo no da la ubicación"); return; }
+  if(!findCampo(CAMPO_SEL)){ editarCampo(null); toast("Primero creá el campo"); return; }
+  if(DRAW) cancelarDibujo();
+  DRAW = {pts: [], lote, temp: null, modo: "gps"};
+  $("#mDrawBar").hidden = false; $("#mTools").hidden = true; $("#mModo").textContent = "Recorriendo el borde con GPS";
+  $("#mNote").textContent = "Caminá o andá en vehículo por el borde del lote. Se agrega un punto cada 5 m. Al volver al inicio tocá “Terminar”. También podés tocar el mapa para agregar puntos a mano.";
+  DRAW.watch = navigator.geolocation.watchPosition(pos => {
+    if(!DRAW || DRAW.modo !== "gps") return;
+    const p = [pos.coords.longitude, pos.coords.latitude];
+    if(pos.coords.accuracy > 25){ $("#mNote").textContent = `Señal GPS débil (±${Math.round(pos.coords.accuracy)} m): esperá un momento.`; return; }
+    const u = DRAW.pts[DRAW.pts.length - 1];
+    if(!u || distM(u, p) >= 5){ DRAW.pts.push(p); dibujarTemp(); MAP.panTo([p[1], p[0]]); }
+  }, err => { toast(err.code === 1 ? "Permiso de ubicación denegado" : "Sin señal GPS"); }, {enableHighAccuracy: true, maximumAge: 0, timeout: 20000});
+}
+// Editar límites: arrastrar vértices, tocar (+) para agregar, doble toque para borrar
+function editarLimites(l){
+  if(!MAP || !l.geom) return;
+  if(DRAW) cancelarDibujo();
+  const multi = l.geom.type === "MultiPolygon";
+  const ring = (multi ? l.geom.coordinates[0][0] : l.geom.coordinates[0]).slice(0, -1).map(p => p.slice());
+  DRAW = {modo: "editar", lote: l, ring, edit: [], temp: null, pts: []};
+  $("#mDrawBar").hidden = false; $("#mTools").hidden = true; $("#mUndo").hidden = true; $("#mModo").textContent = "Editando " + l.nombre;
+  $("#mNote").textContent = "Arrastrá los puntos blancos para mover el límite. Tocá un (+) para agregar un punto. Doble toque en un punto para borrarlo. Después tocá “Terminar”.";
+  const pinta = () => {
+    DRAW.edit.forEach(m => MAP.removeLayer(m)); DRAW.edit = [];
+    if(DRAW.temp) MAP.removeLayer(DRAW.temp);
+    DRAW.temp = L.polygon(DRAW.ring.map(p => [p[1], p[0]]), {color: cssVar("--accent"), weight: 2, fillOpacity: .2}).addTo(MAP);
+    DRAW.ring.forEach((p, i) => {
+      const m = L.marker([p[1], p[0]], {draggable: true, icon: L.divIcon({className: "", html: '<div class="vtx"></div>', iconSize: [14, 14], iconAnchor: [7, 7]})}).addTo(MAP);
+      m.on("drag", e => { const ll = e.target.getLatLng(); DRAW.ring[i] = [ll.lng, ll.lat]; DRAW.temp.setLatLngs(DRAW.ring.map(q => [q[1], q[0]])); });
+      m.on("dragend", pinta);
+      m.on("dblclick", () => { if(DRAW.ring.length > 3){ DRAW.ring.splice(i, 1); pinta(); } else toast("Un lote necesita al menos 3 puntos"); });
+      DRAW.edit.push(m);
+      const q = DRAW.ring[(i + 1) % DRAW.ring.length], mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+      const mm = L.marker([mid[1], mid[0]], {icon: L.divIcon({className: "", html: '<div class="vtx-mid">+</div>', iconSize: [12, 12], iconAnchor: [6, 6]})}).addTo(MAP);
+      mm.on("click", () => { DRAW.ring.splice(i + 1, 0, mid); pinta(); });
+      DRAW.edit.push(mm);
+    });
+    $("#mModo").textContent = `Editando ${l.nombre} · ${fmt(geomHa({type: "Polygon", coordinates: [DRAW.ring.concat([DRAW.ring[0]])]}), 1)} ha`;
+  };
+  DRAW.pinta = pinta; pinta();
+  MAP.fitBounds(DRAW.temp.getBounds(), {padding: [30, 30]});
+}
+// Dividir un lote con una línea de dos puntos
+const aPlano = (p, k) => [p[0] * k, p[1]], dePlano = (p, k) => [p[0] / k, p[1]];
+function cortarSemiplano(ring, a, b, lado){
+  const s = p => lado * ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]));
+  const out = [];
+  for(let i = 0; i < ring.length; i++){
+    const P = ring[i], Q = ring[(i + 1) % ring.length], sp = s(P), sq = s(Q);
+    if(sp >= 0) out.push(P);
+    if((sp >= 0) !== (sq >= 0)){ const t = sp / (sp - sq); out.push([P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])]); }
+  }
+  return out;
+}
+function dividirGeom(geom, p1, p2){
+  const ring0 = (geom.type === "MultiPolygon" ? geom.coordinates[0][0] : geom.coordinates[0]).slice(0, -1);
+  const k = Math.cos(ring0[0][1] * Math.PI / 180);
+  const ring = ring0.map(p => aPlano(p, k)), a = aPlano(p1, k), b = aPlano(p2, k);
+  return [1, -1].map(lado => { const r = cortarSemiplano(ring, a, b, lado).map(p => dePlano(p, k)); return r.length >= 3 ? {type: "Polygon", coordinates: [r.concat([r[0]])]} : null; });
+}
+function empezarDivision(l){
+  if(!MAP || !l.geom) return;
+  if(DRAW) cancelarDibujo();
+  DRAW = {modo: "dividir", lote: l, pts: [], temp: null, partes: null};
+  $("#mDrawBar").hidden = false; $("#mTools").hidden = true; $("#mModo").textContent = "Dividiendo " + l.nombre;
+  $("#mNote").textContent = "Tocá dos puntos para trazar la línea de corte (puede pasar por fuera del lote). Después tocá “Terminar”.";
+  const g = L.geoJSON({type: "Feature", geometry: l.geom}); MAP.fitBounds(g.getBounds(), {padding: [30, 30]});
+}
+function previewDivision(){
+  if(DRAW.temp) MAP.removeLayer(DRAW.temp);
+  DRAW.pts = DRAW.pts.slice(-2);
+  const grp = L.featureGroup();
+  if(DRAW.pts.length === 2){
+    const [p1, p2] = DRAW.pts, dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+    const e1 = [p1[0] - dx * 50, p1[1] - dy * 50], e2 = [p2[0] + dx * 50, p2[1] + dy * 50];
+    DRAW.partes = dividirGeom(DRAW.lote.geom, p1, p2);
+    const cols = ["#ffb000", "#00b0ff"];
+    DRAW.partes.forEach((g, i) => { if(g) grp.addLayer(L.geoJSON({type: "Feature", geometry: g}, {style: {color: cols[i], weight: 2, fillOpacity: .35}})); });
+    grp.addLayer(L.polyline([[e1[1], e1[0]], [e2[1], e2[0]]], {color: "#e53935", weight: 2, dashArray: "6 4"}));
+    const ok = DRAW.partes.every(Boolean);
+    $("#mNote").textContent = ok ? `Parte A: ${fmt(geomHa(DRAW.partes[0]), 1)} ha · Parte B: ${fmt(geomHa(DRAW.partes[1]), 1)} ha. Tocá “Terminar” para confirmar o marcá otros dos puntos.` : "La línea no corta el lote: marcá otros dos puntos.";
+  } else DRAW.pts.forEach(p => grp.addLayer(L.circleMarker([p[1], p[0]], {radius: 5, color: "#e53935"})));
+  DRAW.temp = grp.addTo(MAP);
+}
+function terminarDivision(){
+  const l = DRAW.lote, partes = DRAW.partes;
+  if(!partes || !partes.every(Boolean)){ toast("Marcá una línea que corte el lote"); return; }
+  const c = findCampo(CAMPO_SEL); cancelarDibujo();
+  const nuevo = Object.assign(clone(l), {id: uid("l"), nombre: l.nombre + " B", geom: partes[1], ha: Math.round(geomHa(partes[1]) * 10) / 10});
+  Object.assign(l, {nombre: l.nombre + " A", geom: partes[0], ha: Math.round(geomHa(partes[0]) * 10) / 10});
+  c.lotes.splice(c.lotes.indexOf(l) + 1, 0, nuevo);
+  // el historial del lote original queda en las dos partes
+  (HIST || []).forEach(h => { const i = h.loteIds.indexOf(l.id); if(i >= 0 && !h.loteIds.includes(nuevo.id)){ h.loteIds.push(nuevo.id); h.loteNombres.push(nuevo.nombre); } });
+  saveCampos(); saveHist(); renderCampos(); refreshMap(false); toast("Lote dividido en " + l.nombre + " y " + nuevo.nombre);
+}
+
 /* ---------- Campos y lotes (mapa) ---------- */
 let MAP_FIT = null;
 let CAMPO_SEL = load("campo_sel", null), MAP = null, MAPLAYER = null, DRAW = null, BASE = null, COLOR_POR = "rotacion";
@@ -1730,25 +2137,37 @@ function renderCampos(force){
   if(!el.dataset.built || force){
     el.dataset.built = 1;
     el.innerHTML = `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><h2>Campos y lotes</h2><p class="lead">Cargá tus campos dibujando los lotes en el mapa o importándolos desde QGIS, Google Earth o un GPS. Cada aplicación registrada queda en el historial del lote y alimenta el control de rotación.</p></div>
-      <div class="row" style="gap:6px"><button class="btn" id="cNuevo">Nuevo campo</button><label class="btn" for="cFile">Importar lotes</label><input id="cFile" type="file" accept=".geojson,.json,.kml,.zip,.gpx" hidden></div></div>
+      <div class="row" style="gap:6px"><button class="btn" id="cNuevo">Nuevo campo</button><label class="btn" for="cFile">Importar lotes</label><input id="cFile" type="file" accept=".geojson,.json,.kml,.kmz,.zip,.shp,.gpkg,.gpx,.csv,.txt" multiple hidden></div></div>
       <div id="cTop"></div>
-      <div class="grid2" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)">
+      <div class="grid2 grid-campos">
         <div class="panel" style="padding:10px"><div class="row" style="justify-content:space-between;margin-bottom:8px;gap:6px">
-          <span class="row" style="gap:6px"><button class="btn sm" id="mDraw">Dibujar lote</button><span id="mDrawBar" class="row" style="gap:6px" hidden><button class="btn pri sm" id="mFin">Terminar</button><button class="btn sm" id="mUndo">Deshacer punto</button><button class="btn sm" id="mCancel">Cancelar</button></span></span>
+          <span class="map-tools" style="margin:0"><span id="mTools" class="map-tools" style="margin:0"><button class="btn sm" id="mDraw">Dibujar lote</button><button class="btn sm" id="mGps">Recorrer el borde con GPS</button><button class="btn sm" id="mLoc">Mi ubicación</button><button class="btn sm" id="mIr">Ir a coordenadas</button></span>
+          <span id="mDrawBar" class="map-tools" style="margin:0" hidden><b id="mModo" class="note"></b><button class="btn pri sm" id="mFin">Terminar</button><button class="btn sm" id="mUndo">Deshacer punto</button><button class="btn sm" id="mCancel">Cancelar</button></span>
+          <span id="mIrBar" class="map-tools" style="margin:0" hidden><input id="mIrTxt" placeholder="-25.79, -55.10" style="width:160px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--paper)"><button class="btn pri sm" id="mIrOk">Ir</button><button class="btn sm" id="mIrX">Cerrar</button></span></span>
           <span class="row" style="gap:6px"><label class="f" style="flex-direction:row;align-items:center;gap:6px">Mapa base<select id="mBase"><option value="sat">Satélite</option><option value="osm">Calles</option><option value="none">Sin mapa</option></select></label>
           <label class="f" style="flex-direction:row;align-items:center;gap:6px">Color<select id="mColor"><option value="rotacion">Rotación</option><option value="ultima">Última aplicación</option><option value="cultivo">Cultivo</option></select></label></span></div>
-          <div id="map" class="map"></div><p class="note" id="mNote" style="margin-top:6px"></p><div id="mLeyenda" class="row" style="gap:8px;margin-top:6px"></div></div>
+          <div id="map" class="map" title="También podés arrastrar acá un archivo de lotes"></div><p class="note" id="mNote" style="margin-top:6px"></p><div id="mLeyenda" class="row" style="gap:8px;margin-top:6px"></div></div>
         <div class="stack" id="cList"></div>
       </div>
       <div class="panel"><div class="panel-h"><h3>Exportar e intercambiar</h3><span class="note">Coordenadas en WGS 84 (EPSG:4326)</span></div>
-        <div class="row" style="gap:6px"><button class="btn sm" data-x="lotes_geojson">Lotes · GeoJSON (QGIS)</button><button class="btn sm" data-x="lotes_kml">Lotes · KML (Google Earth, GPS)</button><button class="btn sm" data-x="hist_geojson">Historial con lotes · GeoJSON</button><button class="btn sm" data-x="hist_csv">Historial · CSV (Excel)</button><button class="btn sm" data-x="respaldo">Respaldo completo</button><label class="btn sm" for="cRest">Restaurar respaldo</label><input id="cRest" type="file" accept=".json" hidden></div>
-        <p class="note" style="margin-top:8px">Importa: GeoJSON, KML, Shapefile comprimido en .zip (con .shp, .dbf y .prj) y GPX. En QGIS: clic derecho en la capa → Exportar → Guardar objetos como… → GeoJSON, SRC EPSG:4326. El respaldo guarda campos, historial, dosis de etiqueta y caldos para pasarlos a otro dispositivo.</p></div>`;
+        <div class="row" style="gap:6px"><button class="btn sm" data-x="lotes_geojson">Lotes · GeoJSON (QGIS)</button><button class="btn sm" data-x="lotes_kml">Lotes · KML (Google Earth)</button><button class="btn sm" data-x="lotes_shp">Lotes · Shapefile .zip (QGIS, ArcGIS, monitores)</button><button class="btn sm" data-x="lotes_gpx">Lotes · GPX (GPS)</button><button class="btn sm" data-x="lotes_csv">Lotes · CSV de vértices</button><button class="btn sm" data-x="hist_geojson">Historial con lotes · GeoJSON</button><button class="btn sm" data-x="hist_csv">Historial · CSV (Excel)</button><button class="btn sm" data-x="respaldo">Respaldo completo</button><label class="btn sm" for="cRest">Restaurar respaldo</label><input id="cRest" type="file" accept=".json" hidden></div>
+        <p class="note" style="margin-top:8px"><b>Importa</b> (botón “Importar lotes” o arrastrando el archivo sobre el mapa): GeoPackage .gpkg y Shapefile .zip (QGIS, ArcGIS), GeoJSON, KML y KMZ (Google Earth, Google My Maps), GPX (GPS, Avenza, apps de medición), CSV de vértices (latitud, longitud y lote). Si el archivo está en UTM (zona 20S o 21S, WGS 84 o SIRGAS 2000) la app lo convierte sola o te pregunta la zona.</p>
+        <p class="note"><b>Desde QGIS:</b> clic derecho en la capa → Exportar → Guardar objetos como… → GeoPackage, Shapefile o GeoJSON. <b>Desde Google Earth:</b> clic derecho en la carpeta o polígono → Guardar lugar como… → KMZ. <b>Exporta</b> en WGS 84 (EPSG:4326), que abren QGIS, Google Earth, ArcGIS, los GPS y los monitores de siembra y pulverización que leen Shapefile. El respaldo guarda todo para pasarlo a otro dispositivo.</p></div>`;
     $("#cNuevo").onclick = () => editarCampo(null);
-    $("#cFile").onchange = e => { const f = e.target.files[0]; if(f) importarArchivo(f); e.target.value = ""; };
+    $("#cFile").onchange = e => { const fs = [...e.target.files]; if(fs.length) importarArchivos(fs); e.target.value = ""; };
     $("#cRest").onchange = async e => { const f = e.target.files[0]; if(f){ try { const j = JSON.parse(await f.text()); if(j.app === "consultas-caldo") restaurar(j); else toast("No es un respaldo de esta app"); } catch(err){ toast("Archivo inválido"); } } e.target.value = ""; };
     el.querySelectorAll("[data-x]").forEach(b => b.onclick = () => EXPORTS[b.dataset.x]());
     $("#mDraw").onclick = () => empezarDibujo(null);
-    $("#mFin").onclick = terminarDibujo; $("#mUndo").onclick = () => { if(DRAW){ DRAW.pts.pop(); dibujarTemp(); } }; $("#mCancel").onclick = cancelarDibujo;
+    $("#mGps").onclick = () => empezarGPS(null);
+    $("#mLoc").onclick = miUbicacion;
+    $("#mIr").onclick = () => { $("#mIrBar").hidden = false; $("#mTools").hidden = true; $("#mIrTxt").focus(); };
+    $("#mIrX").onclick = () => { $("#mIrBar").hidden = true; $("#mTools").hidden = false; };
+    $("#mIrOk").onclick = irCoordenadas; $("#mIrTxt").onkeydown = e => { if(e.key === "Enter") irCoordenadas(); };
+    const mp = $("#map");
+    ["dragenter", "dragover"].forEach(ev => mp.addEventListener(ev, e => { e.preventDefault(); mp.classList.add("drop-hint"); }));
+    ["dragleave", "drop"].forEach(ev => mp.addEventListener(ev, e => { e.preventDefault(); mp.classList.remove("drop-hint"); }));
+    mp.addEventListener("drop", e => { const fs = [...(e.dataTransfer?.files || [])]; if(fs.length) importarArchivos(fs); });
+    $("#mFin").onclick = () => DRAW && DRAW.modo === "dividir" ? terminarDivision() : terminarDibujo(); $("#mUndo").onclick = () => { if(DRAW){ DRAW.pts.pop(); dibujarTemp(); } }; $("#mCancel").onclick = cancelarDibujo;
     $("#mBase").value = load("mapa_base", "sat"); $("#mBase").onchange = e => { store("mapa_base", e.target.value); setBase(e.target.value); };
     $("#mColor").value = COLOR_POR; $("#mColor").onchange = e => { COLOR_POR = e.target.value; refreshMap(false); leyenda(); };
     initMap();
@@ -1787,16 +2206,21 @@ function initMap(){
   if(!window.L){ $("#map").innerHTML = `<p class="note" style="padding:16px">El mapa necesita la biblioteca de mapas, que no se pudo cargar. Los lotes igual se pueden cargar sin mapa o importar.</p>`; return; }
   MAP = L.map("map", {zoomControl: true, attributionControl: true}).setView([-25.5, -55.5], 7);
   setBase(load("mapa_base", "sat"));
-  MAP.on("click", e => { if(!DRAW) return; DRAW.pts.push([e.latlng.lng, e.latlng.lat]); dibujarTemp(); });
+  MAP.on("click", e => { if(!DRAW || DRAW.modo === "editar") return; DRAW.pts.push([e.latlng.lng, e.latlng.lat]); dibujarTemp(); });
+  MAP.doubleClickZoom.disable();
 }
 let tileErr = 0;
+function baseLayer(v){
+  if(v === "none" || !window.L) return null;
+  return v === "osm" ? L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}) :
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {maxZoom: 19, attribution: "Imágenes © Esri"});
+}
 function setBase(v){
   if(!MAP) return;
   if(BASE){ MAP.removeLayer(BASE); BASE = null; }
   $("#mNote").textContent = "";
   if(v === "none") return;
-  BASE = v === "osm" ? L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}) :
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {maxZoom: 19, attribution: "Imágenes © Esri"});
+  BASE = baseLayer(v);
   tileErr = 0;
   BASE.on("tileerror", () => { if(++tileErr === 3) $("#mNote").textContent = "El mapa base necesita internet (en la vista previa de Claude no se carga). Los lotes se ven igual."; });
   BASE.addTo(MAP);
@@ -1817,19 +2241,28 @@ function refreshMap(fit){
 function empezarDibujo(lote){
   if(!MAP){ toast("El mapa no está disponible"); return; }
   if(!findCampo(CAMPO_SEL)){ editarCampo(null); toast("Primero creá el campo"); return; }
-  DRAW = {pts: [], lote, temp: null}; $("#mDrawBar").hidden = false; $("#mDraw").hidden = true;
-  $("#mNote").textContent = "Tocá el mapa en cada esquina del lote. Después tocá “Terminar”.";
+  DRAW = {pts: [], lote, temp: null, modo: "dibujo"}; $("#mDrawBar").hidden = false; $("#mTools").hidden = true; $("#mModo").textContent = lote ? "Redibujando " + lote.nombre : "Nuevo lote";
+  $("#mNote").textContent = "Tocá el mapa en cada esquina del lote (podés acercar con la rueda o dos dedos). Después tocá “Terminar”.";
   document.getElementById("map").scrollIntoView({block: "center"});
 }
 function dibujarTemp(){
+  if(DRAW.modo === "dividir") return previewDivision();
   if(DRAW.temp) MAP.removeLayer(DRAW.temp);
   const ll = DRAW.pts.map(p => [p[1], p[0]]);
   DRAW.temp = ll.length >= 3 ? L.polygon(ll, {color: cssVar("--accent"), weight: 2, dashArray: "5 4"}) : L.polyline(ll, {color: cssVar("--accent"), weight: 2});
   DRAW.temp.addTo(MAP);
   $("#mNote").textContent = `${DRAW.pts.length} puntos${DRAW.pts.length >= 3 ? " · " + fmt(geomHa({type: "Polygon", coordinates: [DRAW.pts.concat([DRAW.pts[0]])]}), 1) + " ha" : ""}`;
 }
-function cancelarDibujo(){ if(DRAW && DRAW.temp) MAP.removeLayer(DRAW.temp); DRAW = null; $("#mDrawBar").hidden = true; $("#mDraw").hidden = false; $("#mNote").textContent = ""; }
+function cancelarDibujo(){
+  if(DRAW){ if(DRAW.temp) MAP.removeLayer(DRAW.temp); if(DRAW.prev) MAP.removeLayer(DRAW.prev); if(DRAW.watch != null) navigator.geolocation.clearWatch(DRAW.watch); if(DRAW.edit) DRAW.edit.forEach(m => MAP.removeLayer(m)); }
+  DRAW = null; $("#mDrawBar").hidden = true; $("#mTools").hidden = false; $("#mUndo").hidden = false; $("#mNote").textContent = ""; refreshMap(false);
+}
 function terminarDibujo(){
+  if(DRAW && DRAW.modo === "editar"){
+    const l = DRAW.lote, geom = {type: "Polygon", coordinates: [DRAW.ring.concat([DRAW.ring[0]])]};
+    if(l.geom.type === "MultiPolygon"){ l.geom.coordinates[0] = geom.coordinates; } else l.geom = geom;
+    l.ha = Math.round(geomHa(l.geom) * 10) / 10; cancelarDibujo(); saveCampos(); renderCampos(); toast("Límites guardados · " + fmt(l.ha, 1) + " ha"); return;
+  }
   if(!DRAW || DRAW.pts.length < 3){ toast("Marcá al menos 3 puntos"); return; }
   const geom = {type: "Polygon", coordinates: [DRAW.pts.concat([DRAW.pts[0]])]};
   const lote = DRAW.lote; cancelarDibujo();
@@ -1869,7 +2302,7 @@ function abrirLote(c, l){
   histLotes([l.id]).forEach(h => h.items.forEach(it => it.ais.forEach(a => { if(!a.grupo) return; const k = a.clase || "otros"; porClase[k] = porClase[k] || {}; porClase[k][a.grupo] = (porClase[k][a.grupo] || new Set()).add(h.id); })));
   openDrawer(`<div class="stack"><span class="eyebrow">${esc(c.nombre)}</span><h2>${esc(l.nombre)}</h2>
     <div class="row">${pill(r.level, r.level == null ? "Sin aplicaciones" : r.level === 2 ? "Necesita rotar" : r.level === 1 ? "Atención: grupo repetido" : "Rotación OK")}<span class="note">${fmt(loteHa(l), 1)} ha · ${esc(l.cultivo || "sin cultivo")}</span></div>
-    <div class="row"><button class="btn pri" id="lUsar">Usar en el caldo</button><button class="btn" id="lEdit">Editar</button><button class="btn" id="lRedraw">${l.geom ? "Redibujar" : "Dibujar"} en el mapa</button><button class="btn" id="lDel">Borrar lote</button></div>
+    <div class="row"><button class="btn pri" id="lUsar">Usar en el caldo</button><button class="btn" id="lEdit">Editar</button>${l.geom ? `<button class="btn" id="lEditGeo">Editar límites</button><button class="btn" id="lDiv">Dividir</button>` : ""}<button class="btn" id="lRedraw">${l.geom ? "Redibujar" : "Dibujar"} en el mapa</button><button class="btn" id="lGps">Recorrer con GPS</button><button class="btn" id="lDel">Borrar lote</button></div>
     ${carryLoteHTML(l)}
     <div class="panel"><h4>Modos de acción usados en 12 meses</h4>${Object.keys(porClase).length ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Clase</th><th>Grupo</th><th style="text-align:right">Aplicaciones</th></tr></thead><tbody>${Object.entries(porClase).flatMap(([k, gs]) => Object.entries(gs).sort((a, b) => b[1].size - a[1].size).map(([g, s]) => `<tr><td>${esc(CLASES[k] || k)}</td><td><span class="mono">${esc(g)}</span> <span class="note">${esc(GRUPO_DESC[g] || "")}</span></td><td class="n">${s.size >= 3 ? pill(2, s.size + "") : s.size === 2 ? pill(1, s.size + "") : s.size}</td></tr>`)).join("")}</tbody></table></div>` : `<p class="note">Sin aplicaciones registradas.</p>`}</div>
     <h3>Historial del lote</h3>
@@ -1877,6 +2310,9 @@ function abrirLote(c, l){
   $("#lUsar").onclick = () => { S.ap = {campo: c.id, lotes: [l.id]}; S.supManual = false; S.sup = loteHa(l); S.ejemplo = false; save(); fillInputs(); closeDrawer(); setView("caldo"); };
   $("#lEdit").onclick = () => editarLote(c, l, null);
   $("#lRedraw").onclick = () => { closeDrawer(); CAMPO_SEL = c.id; setView("campos"); empezarDibujo(l); };
+  $("#lGps").onclick = () => { closeDrawer(); CAMPO_SEL = c.id; setView("campos"); empezarGPS(l); };
+  if($("#lEditGeo")) $("#lEditGeo").onclick = () => { closeDrawer(); CAMPO_SEL = c.id; setView("campos"); editarLimites(l); };
+  if($("#lDiv")) $("#lDiv").onclick = () => { closeDrawer(); CAMPO_SEL = c.id; setView("campos"); empezarDivision(l); };
   $("#lDel").onclick = e => { const b = e.target; if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Borrar? Tocá de nuevo"; return; } c.lotes = c.lotes.filter(x => x !== l); saveCampos(); closeDrawer(); renderCampos(); refreshMap(false); };
 }
 function ambTxt(a){
@@ -1998,7 +2434,7 @@ function helpHTML(){
 
   <div class="panel"><h3>Las demás pestañas</h3>
     <dl class="faq">
-      <dt>Campos y lotes</dt><dd>El mapa de tus campos. Dibujá cada lote tocando sus esquinas o importalos desde QGIS (GeoJSON o Shapefile .zip), Google Earth (KML) o un GPS (GPX). Cada lote muestra su última aplicación y el estado de rotación; tocá un lote para ver su historial.</dd>
+      <dt>Campos y lotes</dt><dd>El mapa de tus campos. Cada lote es un polígono con la forma real del lote, con todos los puntos que haga falta. Se puede cargar de cuatro maneras: <b>dibujarlo</b> tocando el mapa en cada quiebre del límite; <b>recorrer el borde con GPS</b> desde el celular; <b>importarlo</b> desde QGIS (GeoPackage, Shapefile .zip, GeoJSON), Google Earth (KML o KMZ), un GPS (GPX) o un CSV de vértices, también arrastrando el archivo sobre el mapa; o cargarlo <b>sin mapa</b>, solo con nombre y hectáreas. El mapa es opcional: nada de la app se bloquea si un lote no tiene límites. En la ficha de cada lote: <b>Editar límites</b> (arrastrar puntos, agregar con +, borrar con doble toque), <b>Dividir</b> con una línea y su <b>historial de pulverizaciones</b> propio. En “Armar caldo” los lotes se marcan con botones o tocándolos en el mapa.</dd>
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
       <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo.</dd>
       <dt>Caso práctico</dt><dd>Un ejemplo agrícola completo: la mezcla tal como se planeó, qué medidas se aplicaron y cómo quedó. Se puede abrir en el armador para probarlo.</dd>
@@ -2055,7 +2491,9 @@ const TOUR = [
   {v:"caldo", sel:"#pOrden", t:"Orden de carga", d:"El orden en que van los productos según su presentación, cómo cargar cada uno y cuánto va por tanque."},
   {v:"caldo", sel:"#pJarra", t:"Prueba de jarra", d:"Elegí el tamaño del recipiente (de 250 mL a un balde de 20 L, u otro) y la app calcula cuánto poner de cada producto, en orden, para probar la mezcla antes de cargar el tanque."},
   {v:"caldo", sel:"#btnRegistrar", t:"Registrar la aplicación", d:"Después de aplicar, guardá fecha, lotes, productos, dosis y condiciones en el historial. “Guardar este caldo” guarda solo la receta para reusarla."},
-  {v:"campos", sel:"#map", t:"Campos y lotes en el mapa", d:"Dibujá o importá tus lotes (QGIS, Google Earth, GPS). El color muestra el estado de rotación o la última aplicación; tocá un lote para ver su historial."},
+  {v:"campos", sel:"#map", t:"Campos y lotes en el mapa", d:"Cada lote es un polígono con su forma real. Tocá un lote para ver su historial de pulverizaciones, editar sus límites o dividirlo. El color muestra la rotación, la última aplicación o el cultivo."},
+  {v:"campos", sel:"#mTools", t:"Marcar los límites", d:"“Dibujar lote”: tocá el mapa en cada quiebre del borde. “Recorrer el borde con GPS”: caminá o andá en vehículo por el límite con el celular. “Mi ubicación” e “Ir a coordenadas” te llevan al lugar. Es opcional: un lote también puede cargarse sin mapa."},
+  {v:"campos", sel:'label[for="cFile"]', t:"Importar desde QGIS, Google Earth o GPS", d:"GeoPackage, Shapefile .zip, GeoJSON, KML, KMZ, GPX o CSV de vértices. También podés arrastrar el archivo sobre el mapa. Si está en UTM, la app lo convierte."},
   {v:"campos", sel:"#cTop", t:"Campo de ejemplo", d:"El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan."},
   {v:"caldo", sel:'#tabs [data-v="historial"]', t:"Historial", d:"Todas las aplicaciones registradas, con filtros y exportación a Excel (CSV) y QGIS (GeoJSON)."},
   {v:"caldo", sel:'#tabs [data-v="rotacion"]', t:"Rotación", d:"Para qué se usa cada activo, su grupo de modo de acción y qué grupos alternar para el mismo objetivo."},

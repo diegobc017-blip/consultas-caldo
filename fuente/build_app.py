@@ -21,6 +21,9 @@ tpl = open(os.path.join(FUENTE, "template.html"), encoding="utf-8").read()
 leaflet_js = open(os.path.join(FUENTE, "vendor", "leaflet.js"), encoding="utf-8").read()
 leaflet_css = open(os.path.join(FUENTE, "vendor", "leaflet.css"), encoding="utf-8").read()
 shp_js = open(os.path.join(FUENTE, "vendor", "shp.min.js"), encoding="utf-8").read()
+proj4_js = open(os.path.join(FUENTE, "vendor", "proj4.js"), encoding="utf-8").read()
+sql_js = open(os.path.join(FUENTE, "vendor", "sql-wasm.js"), encoding="utf-8").read()
+sql_wasm_b64 = base64.b64encode(open(os.path.join(FUENTE, "vendor", "sql-wasm.wasm"), "rb").read()).decode()
 
 FONTS = [
     ("Atkinson Hyperlegible", "400", "normal", "atkinson-hyperlegible-latin-400-normal.woff2"),
@@ -63,7 +66,7 @@ def documento(head_extra, body_extra, **kw):
 icon64 = base64.b64encode(open(os.path.join(FUENTE, "icons", "favicon-64.png"), "rb").read()).decode()
 unico = documento(f'<link rel="icon" href="data:image/png;base64,{icon64}">\n', "",
                   fonts_css=fontface(True), leaflet_css_txt=leaflet_css,
-                  libs=f"<script>{leaflet_js}</script>\n<script>{shp_js}</script>", data_tag="<script>\n" + data_js + "\n</script>")
+                  libs=f"<script>{leaflet_js}</script>\n<script>{shp_js}</script>\n<script>{proj4_js}</script>\n<script>window.SQL_INLINE=true;</script>\n<script>{sql_js}</script>\n<script>window.SQL_WASM_B64=\"{sql_wasm_b64}\";</script>", data_tag="<script>\n" + data_js + "\n</script>")
 open(os.path.join(REPO, "consultas_caldo.html"), "w", encoding="utf-8").write(unico)
 if os.path.exists(os.path.join(ARRIBA, "base_quimica_caldo.json")):
     open(os.path.join(ARRIBA, "consultas_caldo.html"), "w", encoding="utf-8").write(unico)
@@ -72,7 +75,7 @@ if os.path.exists(os.path.join(ARRIBA, "base_quimica_caldo.json")):
 for sub in ("fonts", "icons"):
     shutil.copytree(os.path.join(FUENTE, sub), os.path.join(REPO, sub), dirs_exist_ok=True)
 os.makedirs(os.path.join(REPO, "vendor"), exist_ok=True)
-for f in ("leaflet.js", "leaflet.css", "shp.min.js"):
+for f in ("leaflet.js", "leaflet.css", "shp.min.js", "proj4.js", "sql-wasm.js", "sql-wasm.wasm"):
     shutil.copy(os.path.join(FUENTE, "vendor", f), os.path.join(REPO, "vendor", f))
 open(os.path.join(REPO, "data.js"), "w", encoding="utf-8").write(data_js)
 pwa_head = """<link rel="manifest" href="manifest.webmanifest">
@@ -91,7 +94,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 </script>
 """
 index = documento(pwa_head, sw_reg, fonts_css=fontface(False), leaflet_css_txt="",
-                  libs='<script src="vendor/leaflet.js"></script>\n<script src="vendor/shp.min.js"></script>', data_tag='<script src="data.js"></script>')
+                  libs='<script src="vendor/leaflet.js"></script>\n<script src="vendor/shp.min.js"></script>\n<script src="vendor/proj4.js"></script>', data_tag='<script src="data.js"></script>')
 open(os.path.join(REPO, "index.html"), "w", encoding="utf-8").write(index)
 
 manifest = {
@@ -107,7 +110,7 @@ manifest = {
 }
 open(os.path.join(REPO, "manifest.webmanifest"), "w", encoding="utf-8").write(json.dumps(manifest, ensure_ascii=False, indent=1))
 
-assets = ["./", "index.html", "data.js", "manifest.webmanifest", "vendor/leaflet.js", "vendor/leaflet.css", "vendor/shp.min.js"] + \
+assets = ["./", "index.html", "data.js", "manifest.webmanifest", "vendor/leaflet.js", "vendor/leaflet.css", "vendor/shp.min.js", "vendor/proj4.js", "vendor/sql-wasm.js", "vendor/sql-wasm.wasm"] + \
     [f"icons/{f}" for f in sorted(os.listdir(os.path.join(REPO, "icons")))] + \
     [f"fonts/{f}" for f in sorted(os.listdir(os.path.join(REPO, "fonts")))]
 version = hashlib.sha1((index + data_js).encode()).hexdigest()[:10]
@@ -141,7 +144,7 @@ open(os.path.join(REPO, ".nojekyll"), "w").write("")
 # 3) versión para la vista previa de Claude (opcional)
 if "--artifact" in sys.argv:
     art = fill(tpl, fonts_css=fontface(True), leaflet_css_txt=leaflet_css,
-               libs='<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.min.js"></script>',
+               libs='<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.min.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/proj4@2.12.1/dist/proj4.js"></script>',
                data_tag="<script>\n" + data_js + "\n</script>")
     open(os.path.join(FUENTE, "artifact.html"), "w", encoding="utf-8").write(art)
 print("App lista (versión", version + "): index.html y consultas_caldo.html")

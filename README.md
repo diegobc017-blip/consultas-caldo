@@ -12,9 +12,11 @@ App para preparar caldos fitosanitarios con los productos registrados en el SENA
   - Orden de carga según la presentación del producto y prueba de jarra.
 - **Calculadora de dosis:** compara la dosis de etiqueta con la que se va a aplicar y calcula el activo por hectárea, el total para la superficie, la cantidad por tanque y el número de tanques.
 - **Condiciones ambientales:** temperatura, humedad, viento, Delta T y lluvia prevista. Controla los límites de la Ley 3742/09 (art. 63) y el riesgo de deriva.
-- **Campos y lotes en mapa:**
-  - Se dibujan en el mapa o se importan desde QGIS, Google Earth o un GPS (GeoJSON, KML, Shapefile .zip, GPX).
-  - Se exportan a GeoJSON, KML y CSV, y se puede hacer un respaldo completo.
+- **Campos y lotes en mapa:** cada lote es un polígono con su forma real (opcional: también se pueden cargar lotes sin mapa).
+  - Se dibujan tocando el mapa, se recorre el borde con el GPS del celular, se editan los límites (mover, agregar o borrar puntos) y se dividen con una línea; cada parte conserva el historial.
+  - En “Armar caldo” los lotes se eligen con botones o tocándolos en el mapa.
+  - Importa GeoPackage, Shapefile .zip, GeoJSON, KML, KMZ, GPX y CSV de vértices (también arrastrando el archivo al mapa). Convierte UTM 20S/21S (WGS 84 y SIRGAS 2000).
+  - Exporta Shapefile .zip, GeoJSON, KML, GPX y CSV de vértices en WGS 84, además del historial y un respaldo completo.
 - **Cultivos y carry-over:** se elige el cultivo actual, el momento (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo tolera cada herbicida y cuántos días esperar para sembrar, también por residuos de aplicaciones anteriores del lote.
 - **Historial de aplicaciones por lote**, con productos, dosis, condiciones y semáforo.
 - **Rotación de modos de acción:**
