@@ -94,7 +94,7 @@ PROBLEMAS_EXTRA = [
   "productos_y_condiciones_de_riesgo": "2,4-D, dicamba, picloram, triclopir, clomazona, glifosato y desecantes cerca de cultivos sensibles; organosiliconados; volúmenes bajos.",
   "prevencion": ["Respetar la Ley 3742/09: T ≤ 32 °C, HR ≥ 60 %, viento ≤ 10 km/h", "Viento de 3 a 10 km/h, alejándose de lo sensible", "Pastillas de inducción de aire y antideriva", "Botalón a 50 cm", "Zonas de amortiguamiento junto a cultivos sensibles, viviendas y agua"],
   "que_hacer_si_ocurre": ["Suspender la aplicación", "Registrar condiciones, productos y hora", "Avisar al vecino afectado y lavar el equipo"],
-  "reglas_relacionadas": ["AMB01", "DR01", "DR02", "DR03", "DR04", "DR05", "EV01"]},
+  "reglas_relacionadas": ["AMB01", "DR01", "DR02", "DR03", "DR04", "DR05", "EV01", "EV03"]},
  {"id": "PR33", "nombre": "Evaporación de gotas y lavado por lluvia", "categoria": "equipo_seguridad",
   "que_es": "El producto no llega o no permanece en el blanco: las gotas se evaporan en el aire o la lluvia lo lava antes de que actúe.",
   "mecanismo": "Con Delta T alto (calor y aire seco) las gotas pierden agua en segundos y se vuelven más finas; con lluvia cercana el activo se lava antes de secarse o absorberse.",

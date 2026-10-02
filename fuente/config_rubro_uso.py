@@ -26,7 +26,7 @@ USO_RUBRO = {
   "HO": ("Malezas en piña, banana y cítricos, dirigido al suelo.", "hoja gram pre", "solo sec")},
  "cletodim": {
   "AG": ("Graminicida post en soja, algodón y girasol: capim amargoso, maíz guacho.", "gram", ""),
-  "HO": ("Graminicida post en hortalizas de hoja ancha (cebolla, zanahoria, tomate, poroto).", "gram", "solo")},
+  "HO": ("Graminicida post en hortalizas (cebolla, zanahoria, tomate, poroto).", "gram", "solo")},
  "clopiralida": {
   "AG": ("Hoja ancha (compuestas, leguminosas) en trigo, maíz y canola.", "hoja", ""),
   "PA": ("Hoja ancha de potrero (compuestas y leguminosas invasoras).", "hoja", "pri")},
@@ -39,9 +39,6 @@ USO_RUBRO = {
  "diuron": {
   "AG": ("Pre y postemergente en algodón y caña; desecante en mezcla.", "pre hoja gram", ""),
   "HO": ("Preemergente en cítricos, piña y banana, dirigido al suelo.", "pre hoja gram", "solo sec")},
- "fluchloraminopyr": {
-  "AG": ("Hoja ancha en barbecho (auxínico nuevo).", "hoja", ""),
-  "PA": ("Hoja ancha y leñosas de potrero.", "hoja len", "")},
  "flumioxazin": {
   "AG": ("Preemergente de hoja ancha y desecación (buva, caruru) en soja.", "pre hoja total", ""),
   "FO": ("Preemergente en plantaciones de eucalipto y pino.", "pre hoja", "solo")},
@@ -75,10 +72,10 @@ USO_RUBRO = {
   "AG": ("Preemergente de hoja ancha y gramíneas en maíz y caña.", "pre hoja gram", ""),
   "FO": ("Preemergente en eucalipto.", "pre hoja gram", "solo pri")},
  "linuron": {
-  "AG": ("Pre y postemergente en soja.", "pre hoja", ""),
+  "AG": ("Preemergente en soja (en post la daña).", "pre hoja", ""),
   "HO": ("Pre y postemergente en zanahoria y papa.", "pre hoja", "")},
  "metribuzina": {
-  "AG": ("Pre y post de hoja ancha en soja y trigo.", "pre hoja", ""),
+  "AG": ("Preemergente de hoja ancha en soja (en post la daña); pre y post en trigo.", "pre hoja", ""),
   "HO": ("Pre y post de hoja ancha en papa y tomate.", "pre hoja", "solo")},
  "metsulfuron": {
   "AG": ("Hoja ancha en trigo y barbecho.", "hoja", ""),
@@ -117,7 +114,7 @@ USO_RUBRO = {
   "FO": ("Preemergente en eucalipto.", "pre hoja cip", "solo")},
  "sulfometuron": {
   "FO": ("Control total y preemergente en plantaciones forestales y áreas no cultivadas.", "pre total", ""),
-  "AG": ("Preemergente en caña de azúcar, con otros herbicidas.", "pre", "")},
+  "AG": ("Madurador de caña de azúcar a dosis baja.", "regu", "")},
  "tebutiuron": {
   "AG": ("Preemergente en caña de azúcar.", "pre hoja", ""),
   "PA": ("Control de leñosas y arbustivas en potreros.", "len hoja", "pri")},
@@ -404,7 +401,7 @@ USO_RUBRO = {
   "AL": ("Sinergista de piretroides para granos almacenados.", "sine", "pri")},
  "feromona": {
   "HO": ("Confusión sexual y monitoreo de plagas en frutales y hortalizas.", "lag", ""),
-  "AG": ("Monitoreo y confusión sexual (picudo, lagartas).", "lag", "")},
+  "AG": ("Monitoreo y confusión sexual (picudo del algodón, lagartas).", "lag coleo", "")},
 
  # ---------------- BIOLÓGICOS Y BOTÁNICOS ----------------
  "bio_bt": {
@@ -422,8 +419,8 @@ USO_RUBRO = {
   "HO": ("Hongos de suelo en almácigos y hortalizas (Trichoderma).", "suelf", "pri"),
   "FO": ("Hongos de suelo en viveros forestales (Trichoderma).", "suelf", "")},
  "bio_hongo_entomo": {
-  "AG": ("Mosca blanca, chinches y lagartas (Beauveria, Metarhizium, Cordyceps).", "mbla chin lag", ""),
-  "HO": ("Mosca blanca y lagartas en hortalizas (Beauveria, Cordyceps).", "mbla lag", ""),
+  "AG": ("Mosca blanca, chinches y lagartas (Beauveria, Metarhizium, Cordyceps); nematodos (Pochonia, Purpureocillium).", "mbla chin lag nema", ""),
+  "HO": ("Mosca blanca y lagartas en hortalizas (Beauveria, Cordyceps); nematodos (Pochonia, Purpureocillium).", "mbla lag nema", ""),
   "PA": ("Salivazo de las pasturas (Metarhizium).", "chich", ""),
   "FO": ("Chinche bronceada y lagartas del eucalipto (Beauveria).", "chin lag", "")},
  "bio_virus": {

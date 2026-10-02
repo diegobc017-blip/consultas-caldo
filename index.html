@@ -488,7 +488,8 @@ const FERTS = ["calcio","magnesio","fosfato","fosfito","sulfato","boro","urea","
 const RESID = [["hormonal","Hormonal (2,4-D, dicamba…)"],["sulfonilurea","Sulfonilurea"],["imidazolinona","Imidazolinona"],["hppd","HPPD (mesotriona…)"]];
 
 /* ---------- Estado ---------- */
-const fechaMas = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const ymdLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;   // fecha local, no UTC
+const fechaMas = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymdLocal(d); };
 const EJEMPLO = {
   items:[{r:"3140",dosis:2.0},{r:"539",dosis:1.0},{r:"121",dosis:0.45},{r:"4039",dosis:0.035},{r:"4466",dosis:0.5}],
   vol:70, tanque:3000,
@@ -613,8 +614,10 @@ function caldoDerived(xs, inp){
 /* Delta T = T - temperatura de bulbo húmedo (fórmula de Stull, 2011) */
 function deltaT(T, HR){
   if(T==null || HR==null || HR<=0) return null;
+  HR = Math.min(100, HR);
   const tw = T*Math.atan(0.151977*Math.sqrt(HR+8.313659)) + Math.atan(T+HR) - Math.atan(HR-1.676331) + 0.00391838*Math.pow(HR,1.5)*Math.atan(0.023101*HR) - 4.686035;
-  return Math.round((T-tw)*10)/10;
+  const r = Math.round((T-tw)*10)/10;
+  return r > 0 ? r : 0;
 }
 /* Ley 3742/09, art. 63: no aplicar con T > 32 °C, HR < 60 % o viento > 10 km/h */
 function fueraLey(c){
@@ -1025,6 +1028,7 @@ function productHTML(p){
     <span class="eyebrow">Registro SENAVE N° ${esc(p.r)} · ${esc(p.c)}</span>
     <h2>${esc(p.n)}</h2>
     <div class="row">${famChip(p.f)}${rubBadges(p.s, p.s2)}${secRubro(p)?`<span class="tag">Uso secundario en ${esc(D.rubros[RUBRO].nombre)}</span>`:!inRubro(p)?`<span class="tag">Fuera del rubro ${esc(D.rubros[RUBRO].nombre)}</span>`:""}${p.m?`<span class="tag">Mantenimiento vencido: verificar si está en el mercado</span>`:""}${p.u!=="pulverizacion"?`<span class="tag">${p.u==="tratamiento_semillas"?"Tratamiento de semillas":"No va en caldo"}</span>`:""}</div>
+    ${p.nt?`<p class="rnote">${esc(p.nt)}</p>`:""}
     <div class="row"><button class="btn pri" id="addFromDrawer">Agregar al caldo</button></div>
     <div class="tw"><table><tbody>
       <tr><th style="width:34%">Principio activo (SENAVE)</th><td>${esc(p.pa)}</td></tr>
@@ -1296,7 +1300,7 @@ const saveEtq = () => store("etiquetas", ETQ);
 const uid = p => p + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const findCampo = id => (CAMPOS || []).find(c => c.id === id);
 const findLote = (c, id) => c && c.lotes.find(l => l.id === id);
-const fmtFecha = s => s ? new Date(s).toLocaleDateString("es-PY") : "—";
+const fmtFecha = s => s ? (typeof s === "string" && s.length === 10 ? new Date(s + "T12:00") : new Date(s)).toLocaleDateString("es-PY") : "—";
 const fmtFH = s => s ? new Date(s).toLocaleString("es-PY", {dateStyle: "short", timeStyle: "short"}) : "—";
 function isoLocal(d){ const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 16); }
 function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
@@ -1313,10 +1317,22 @@ function ringArea(ring){
   return Math.abs(a * R_T * R_T / 2);
 }
 function polysOf(g){ return !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []; }
+/* Área sobre el elipsoide WGS 84: proyección azimutal equivalente de Lambert centrada en el lote
+   (conserva áreas); sin proj4 se usa la fórmula esférica. */
+function ringAreaLaea(ring, pj){
+  let a = 0; const q = ring.map(p => pj.forward([p[0], p[1]]));
+  for(let i = 0; i < q.length - 1; i++) a += q[i][0] * q[i + 1][1] - q[i + 1][0] * q[i][1];
+  return Math.abs(a / 2);
+}
 function geomHa(g){
   let a = 0;
-  polysOf(g).forEach(p => { const close = r => (r.length && (r[0][0] !== r[r.length-1][0] || r[0][1] !== r[r.length-1][1])) ? r.concat([r[0]]) : r;
-    a += ringArea(close(p[0])); for(let i = 1; i < p.length; i++) a -= ringArea(close(p[i])); });
+  const ps = polysOf(g); if(!ps.length || !ps[0][0] || !ps[0][0].length) return 0;
+  let pj = null;
+  if(typeof proj4 !== "undefined"){ try { const r0 = ps[0][0]; const lon = r0.reduce((s, p) => s + p[0], 0) / r0.length, lat = r0.reduce((s, p) => s + p[1], 0) / r0.length;
+    pj = proj4("EPSG:4326", `+proj=laea +lat_0=${lat} +lon_0=${lon} +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs`); } catch(e){ pj = null; } }
+  const area = r => pj ? ringAreaLaea(r, pj) : ringArea(r);
+  ps.forEach(p => { const close = r => (r.length && (r[0][0] !== r[r.length-1][0] || r[0][1] !== r[r.length-1][1])) ? r.concat([r[0]]) : r;
+    a += area(close(p[0])); for(let i = 1; i < p.length; i++) a -= area(close(p[i])); });
   return a / 10000;
 }
 const loteHa = l => l.ha != null ? l.ha : (l.geom ? Math.round(geomHa(l.geom) * 10) / 10 : 0);
@@ -1342,7 +1358,11 @@ function crearEjemplo(){
       [x + w * (1 - .07 * sem), y0 - H], [x + w * (.3 + .1 * sem), y0 - H * (.94 - .04 * sem)], [x, y0 - H * (1 - Math.abs(J[1]) * .8)], [x + w * .05, y0 - H * (.45 + .1 * sem)]];
     const cx = x + w / 2, cy = y0 - H / 2, shoe = q => Math.abs(q.reduce((s, p, k) => { const n = q[(k + 1) % q.length]; return s + p[0] * n[1] - n[0] * p[1]; }, 0) / 2);
     const f = Math.sqrt(d[1] * 10000 / shoe(pts)); pts = pts.map(([px, py]) => [cx + (px - cx) * f, cy + (py - cy) * f]);
-    const ring = pts.concat([pts[0]]).map(([mx, my]) => [+(lon0 + mLon(mx)).toFixed(6), +(lat0 + mLat(my)).toFixed(6)]);
+    let ring = pts.concat([pts[0]]).map(([mx, my]) => [+(lon0 + mLon(mx)).toFixed(6), +(lat0 + mLat(my)).toFixed(6)]);
+    // ajuste fino para que la superficie real (elipsoide) sea la del lote
+    const f2 = Math.sqrt(d[1] / geomHa({type: "Polygon", coordinates: [ring]}));
+    if(isFinite(f2)){ const c0 = ring[0]; const cxg = ring.slice(0, -1).reduce((s, p) => s + p[0], 0) / (ring.length - 1), cyg = ring.slice(0, -1).reduce((s, p) => s + p[1], 0) / (ring.length - 1);
+      ring = ring.map(([a, b]) => [+(cxg + (a - cxg) * f2).toFixed(6), +(cyg + (b - cyg) * f2).toFixed(6)]); }
     lotes.push({id: "ej-l" + (i + 1), nombre: d[0], cultivo: d[2], cultivo_sig: d[3], siembra_sig: fechaMas(d[4]), geom: {type: "Polygon", coordinates: [ring]}, ha: d[1]});
     x += w + gap;
   });
@@ -1378,7 +1398,7 @@ function cargarEjemplo(){
   const e = crearEjemplo();
   CAMPOS.unshift(e.campo); HIST = e.hist.concat(HIST);
   Object.entries(e.etq).forEach(([r, v]) => { if(!ETQ[r]) ETQ[r] = v; });
-  saveCampos(); saveHist(); saveEtq(); store("ejemplo_borrado", false); store("ejemplo_v", 2);
+  saveCampos(); saveHist(); saveEtq(); store("ejemplo_borrado", false); store("ejemplo_v", 3);
 }
 function eliminarEjemplo(silencioso){
   CAMPOS = (CAMPOS || []).filter(c => !c.ejemplo);
@@ -1390,9 +1410,21 @@ function eliminarEjemplo(silencioso){
 }
 function initDatos(){
   if(CAMPOS === null || HIST === null){ CAMPOS = CAMPOS || []; HIST = HIST || []; if(!load("ejemplo_borrado", false)) cargarEjemplo(); else { saveCampos(); saveHist(); } }
-  else if(CAMPOS.some(c => c.ejemplo) && load("ejemplo_v", 1) < 2) cargarEjemplo(); // actualiza el ejemplo (lotes con contorno real); no toca los datos propios
+  else if(CAMPOS.some(c => c.ejemplo) && load("ejemplo_v", 1) < 3) cargarEjemplo(); // actualiza el ejemplo (contorno real y superficie elipsoidal); no toca los datos propios
 }
 initDatos();
+/* Superficie: desde 02/10/2026 se calcula sobre el elipsoide. Los lotes con superficie calculada por la
+   versión anterior (fórmula esférica, ~0,4 % más) se recalculan; las escritas a mano no se tocan. */
+(function migrarArea(){
+  if(load("area_v", 1) >= 2) return;
+  let n = 0;
+  (CAMPOS || []).forEach(c => c.lotes.forEach(l => { if(!l.geom || l.ha == null) return;
+    let vieja = 0; polysOf(l.geom).forEach(p => { const cl = r => (r.length && (r[0][0] !== r[r.length-1][0] || r[0][1] !== r[r.length-1][1])) ? r.concat([r[0]]) : r;
+      vieja += ringArea(cl(p[0])); for(let i = 1; i < p.length; i++) vieja -= ringArea(cl(p[i])); });
+    if(Math.abs(l.ha - Math.round(vieja / 1000) / 10) < 0.051){ const nueva = Math.round(geomHa(l.geom) * 10) / 10; if(nueva !== l.ha){ l.ha = nueva; n++; } } }));
+  if(n) saveCampos();
+  store("area_v", 2);
+})();
 const hayEjemplo = () => (CAMPOS || []).some(c => c.ejemplo) || (HIST || []).some(h => h.ejemplo);
 
 /* ---------- Aplicar en (campo y lotes) ---------- */
@@ -1496,14 +1528,14 @@ function bindDosis(ev){
     const el = e.target, v = numOrNull(el.value), k = el.dataset.k;
     if(k === "min" || k === "max"){ const r = el.dataset.r; ETQ[r] = Object.assign({}, ETQ[r] || {}, {[k]: v, ej: false}); saveEtq(); }
     else { const x = ev.xs[+el.dataset.i]; const hat = haPorTanque(ev);
-      if(k === "dosis") x.item.dosis = v; else if(k === "tanque" && hat) x.item.dosis = v != null ? Math.round(v / hat * 10000) / 10000 : null;
+      if(k === "dosis") x.item.dosis = v; else if(k === "tanque" && hat) x.item.dosis = v != null ? v / hat : null;
       S.ejemplo = false; save(); }
     renderCaldo();
   }));
 }
 
 /* ---------- Rotación de modos de acción ---------- */
-const LOW_RISK = g => !g || /^FRAC (M|P)/.test(g) || g === "IRAC UN" || g === "HRAC 0";
+const LOW_RISK = g => !g || /^FRAC (M|P)/.test(g) || /^IRAC UN/.test(g) || g === "HRAC 0";
 const GRUPO_DESC = {}; D.activos.forEach(a => { if(a.grupo && !GRUPO_DESC[a.grupo]) GRUPO_DESC[a.grupo] = (a.modo_accion || "").split("–").slice(1).join("–").trim(); });
 const grupoTxt = g => g ? `${g}${GRUPO_DESC[g] ? " · " + GRUPO_DESC[g] : ""}` : "Sin grupo";
 const CNT = {};
@@ -1602,6 +1634,7 @@ function carryDias(aiId, crop){
   return {d, conf: c.c, n: c.n};
 }
 const sumaDias = (f, d) => { const x = new Date(f); x.setDate(x.getDate() + d); return x; };
+const diaN = d => { if(!d) return d; const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };   // fecha sin hora (hora local)
 const aFecha = s => s ? new Date(s + (s.length === 10 ? "T12:00" : "")) : null;
 function chequeoSiembra(aiId, crop, aplic, siembra){
   if(!crop) return {level: null, txt: "Elegí el cultivo"};
@@ -1609,11 +1642,11 @@ function chequeoSiembra(aiId, crop, aplic, siembra){
   if(!k) return {level: 0, txt: "Sin efecto residual"};
   if(k.d == null) return {level: 1, txt: "Sin dato: ver la etiqueta", k};
   if(k.d === 0) return {level: 0, txt: "Sin restricción", k};
-  const desde = sumaDias(aplic, k.d), sem = aFecha(siembra);
+  const desde = diaN(sumaDias(aplic, k.d)), sem = diaN(aFecha(siembra));
   const plazo = k.d >= 60 ? Math.round(k.d / 30) + " meses" : k.d + " días";
   if(!sem) return {level: 1, txt: `Sembrar desde el ${fmtFecha(desde)} (${plazo})`, k, desde};
   if(sem < desde) return {level: 2, txt: `Siembra prevista ${fmtFecha(sem)}: antes de tiempo. Esperar al ${fmtFecha(desde)} (${plazo})`, k, desde};
-  const margen = (sem - desde) / 864e5;
+  const margen = Math.round((sem - desde) / 864e5);
   return {level: margen < 15 || k.conf === "baja" ? 1 : 0, txt: `OK: siembra ${fmtFecha(sem)}, mínimo ${fmtFecha(desde)} (${plazo})${margen < 15 ? ", con poco margen" : ""}`, k, desde};
 }
 function chequeoSelect(aiId, crop, momento){
@@ -1630,11 +1663,11 @@ function chequeoSelect(aiId, crop, momento){
 function herbCaldo(ev){ return aisCaldo(ev).filter(a => a.o.clase === "herbicida"); }
 function residuosHist(loteIds, crop, siembra){
   if(!crop || !loteIds.length) return [];
-  const out = [], hoy = new Date(), sem = aFecha(siembra);
+  const out = [], hoy = diaN(new Date()), sem = diaN(aFecha(siembra));
   histLotes(loteIds, 1095).forEach(h => h.items.forEach(it => it.ais.forEach(a => {
     if(a.clase !== "herbicida") return;
     const k = carryDias(a.id, crop); if(!k || !k.d) return;
-    const desde = sumaDias(h.fecha, k.d);
+    const desde = diaN(sumaDias(h.fecha, k.d));
     if(sem ? desde <= sem : desde <= hoy) return;
     out.push({a, it, h, desde, level: sem ? 2 : 1});
   })));
@@ -1736,7 +1769,7 @@ function bajar(nombre, texto, tipo){
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
 }
-const hoyTxt = () => new Date().toISOString().slice(0, 10);
+const hoyTxt = () => ymdLocal(new Date());
 const slug = s => (s || "campo").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40);
 function resumenLote(c, l){
   const hs = histLotes([l.id]);
@@ -2175,8 +2208,10 @@ function empezarGPS(lote){
   }, err => { toast(err.code === 1 ? "Permiso de ubicación denegado" : "Sin señal GPS"); }, {enableHighAccuracy: true, maximumAge: 0, timeout: 20000});
 }
 // Editar límites: arrastrar vértices, tocar (+) para agregar, doble toque para borrar
+const geomCompleja = g => !!g && ((g.type === "MultiPolygon" && g.coordinates.length > 1) || polysOf(g).some(p => p.length > 1));
 function editarLimites(l){
   if(!MAP || !l.geom) return;
+  if(geomCompleja(l.geom)){ toast("Este lote tiene huecos o varias partes: editalo en QGIS o redibujalo"); return; }
   if(DRAW) cancelarDibujo();
   const multi = l.geom.type === "MultiPolygon";
   const ring = (multi ? l.geom.coordinates[0][0] : l.geom.coordinates[0]).slice(0, -1).map(p => p.slice());
@@ -2219,10 +2254,14 @@ function dividirGeom(geom, p1, p2){
   const ring0 = (geom.type === "MultiPolygon" ? geom.coordinates[0][0] : geom.coordinates[0]).slice(0, -1);
   const k = Math.cos(ring0[0][1] * Math.PI / 180);
   const ring = ring0.map(p => aPlano(p, k)), a = aPlano(p1, k), b = aPlano(p2, k);
+  const lado = p => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+  let cruces = 0; for(let i = 0; i < ring.length; i++) if((lado(ring[i]) >= 0) !== (lado(ring[(i + 1) % ring.length]) >= 0)) cruces++;
+  if(cruces > 2) return {cruces};
   return [1, -1].map(lado => { const r = cortarSemiplano(ring, a, b, lado).map(p => dePlano(p, k)); return r.length >= 3 ? {type: "Polygon", coordinates: [r.concat([r[0]])]} : null; });
 }
 function empezarDivision(l){
   if(!MAP || !l.geom) return;
+  if(geomCompleja(l.geom)){ toast("Este lote tiene huecos o varias partes: dividilo en QGIS o redibujalo"); return; }
   if(DRAW) cancelarDibujo();
   DRAW = {modo: "dividir", lote: l, pts: [], temp: null, partes: null};
   $("#mDrawBar").hidden = false; $("#mTools").hidden = true; $("#mModo").textContent = "Dividiendo " + l.nombre;
@@ -2237,6 +2276,9 @@ function previewDivision(){
     const [p1, p2] = DRAW.pts, dx = p2[0] - p1[0], dy = p2[1] - p1[1];
     const e1 = [p1[0] - dx * 50, p1[1] - dy * 50], e2 = [p2[0] + dx * 50, p2[1] + dy * 50];
     DRAW.partes = dividirGeom(DRAW.lote.geom, p1, p2);
+    if(!Array.isArray(DRAW.partes)){ DRAW.partes = null; grp.addLayer(L.polyline([[e1[1], e1[0]], [e2[1], e2[0]]], {color: "#e53935", weight: 2, dashArray: "6 4"}));
+      $("#mNote").textContent = "La línea cruza el borde del lote más de dos veces (lote con entrantes o en forma de U). Marcá una línea que lo corte una sola vez de lado a lado; si hace falta, dividí en dos pasos.";
+      DRAW.temp = grp.addTo(MAP); return; }
     const cols = ["#ffb000", "#00b0ff"];
     DRAW.partes.forEach((g, i) => { if(g) grp.addLayer(L.geoJSON({type: "Feature", geometry: g}, {style: {color: cols[i], weight: 2, fillOpacity: .35}})); });
     grp.addLayer(L.polyline([[e1[1], e1[0]], [e2[1], e2[0]]], {color: "#e53935", weight: 2, dashArray: "6 4"}));

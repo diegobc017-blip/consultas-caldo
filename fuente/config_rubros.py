@@ -22,7 +22,7 @@ AI_RUBROS = {
  "cihalofop":"AG", "cletodim":"AG HO", "clodinafop":"AG", "clomazona":"AG", "clopiralida":"AG PA",
  "cloransulam":"AG", "clorimuron":"AG", "clorsulfuron":"AG", "dicamba":"AG PA", "diclosulam":"AG",
  "diquat":"AG HO", "diuron":"AG HO", "epyrifenacil":"AG", "fenoxaprop":"AG", "florpirauxifen":"AG",
- "flucarbazona":"AG", "fluchloraminopyr":"AG PA", "flufenoximacil":"AG", "flumetsulam":"AG",
+ "flucarbazona":"AG", "fluchloraminopyr":"AG", "flufenoximacil":"AG", "flumetsulam":"AG",
  "flumioxazin":"AG FO", "fluometuron":"AG", "flurocloridona":"AG HO", "fluroxipir":"AG PA",
  "fomesafen":"AG", "glifosato":"AG PA FO HO", "glufosinato":"AG HO", "glufosinato_p":"AG HO",
  "halauxifen":"AG", "haloxifop":"AG FO", "hexazinona":"AG FO", "imazapic":"AG", "imazapir":"AG FO",

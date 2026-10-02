@@ -6,6 +6,7 @@ from config_inertes import FAMILIAS, FORM_FAMILIA, INERTES, IMPUREZAS, SENALES_M
 from config_usos import OBJETIVOS, USOS, RESISTENCIA, PRINCIPIOS_ROTACION
 from config_carryover import CULTIVOS, GRAM, HOJA, CARRY, SELECT, MOMENTOS
 from config_rubro_uso import USO_RUBRO
+import config_correcciones as CORR
 from config_reglas_extra import REGLAS_EXTRA, SEMAFORO_EXTRA, MEDIDAS_EXTRA, PROBLEMAS_EXTRA
 import re
 
@@ -22,6 +23,25 @@ d = json.load(open(SRC, encoding="utf-8"))
 _HAB = os.path.join(os.path.dirname(SRC), "habilitacion_senave.json")
 if not os.path.exists(_HAB): _HAB = os.path.join(_AQUI, "..", "datos", "habilitacion_senave.json")
 HAB = json.load(open(_HAB, encoding="utf-8"))["habilitacion"] if os.path.exists(_HAB) else {}
+
+# ---- correcciones de la revisión (config_correcciones.py) ----
+_todos = {x["id"]: x for x in d["principios_activos"] + d["biologicos"] + d["extractos_botanicos"]}
+for _id, campos in CORR.ACTIVOS.items():
+    assert _id in _todos, _id
+    for k, v in campos.items():
+        if k == "_nota": _todos[_id].setdefault("notas", []).append(v)
+        else: _todos[_id][k] = v
+for _p in d["productos"] + d["productos_mantenimiento_vencido"]:
+    for _c in _p["componentes"]:
+        if _p["registro"] in CORR.COMPONENTES and _c["id"] in CORR.COMPONENTES[_p["registro"]]:
+            _c["concentracion_pct"] = CORR.COMPONENTES[_p["registro"]][_c["id"]]
+_reg = {r["id"]: r for r in d["reglas_compatibilidad"]}
+for _id, campos in CORR.REGLAS.items():
+    assert _id in _reg, _id
+    _reg[_id].update(campos)
+for _o in d["orden_carga"]:
+    if _o["paso"] in CORR.ORDEN_CARGA: _o["descripcion"] = CORR.ORDEN_CARGA[_o["paso"]]
+d["reglas_compatibilidad"] = d["reglas_compatibilidad"] + CORR.REGLAS_NUEVAS
 
 def nopat(x):
     return {k: v for k, v in x.items() if k != "patron"}
@@ -97,7 +117,7 @@ def compact(p, mant):
         "pa": (p.get("principio_activo_senave") or "").strip(),
         "k": [[c["tipo"], c["id"], c.get("forma"), c.get("concentracion_pct"), c.get("nombre_original")] for c in p["componentes"]],
         "d": p["derivado"], "s": rp[0], "s2": rp[1], "es": especificos(p, rp[0]), "m": mant,
-        "ha": HAB.get(p["registro"]),
+        "ha": HAB.get(p["registro"]), **({"nt": CORR.NOTAS_PRODUCTO[p["registro"]]} if p["registro"] in CORR.NOTAS_PRODUCTO else {}),
         "v": p.get("vencimiento_registro"), "mh": p.get("mantenimiento_hasta"),
     }
 
@@ -105,7 +125,7 @@ prods = [compact(p, 0) for p in d["productos"]] + [compact(p, 1) for p in d["pro
 
 # grupo de modo de acción normalizado (HRAC/IRAC/FRAC + código)
 def grupo(moa):
-    m = re.match(r"^(HRAC|IRAC|FRAC)\s+(M\d+|P\d+|UN|\d+(?:\.\d)?[A-Z]?)", moa or "")
+    m = re.match(r"^(HRAC|IRAC|FRAC)\s+(M\d+|P\d+|UN[A-Z]?|\d+(?:\.\d)?[A-Z]?)", moa or "")
     return f"{m.group(1)} {m.group(2)}" if m else None
 activos = [nopat(x) for x in d["principios_activos"]]
 for a in activos:
@@ -149,8 +169,12 @@ for x in diag:
     if x["sintoma"].startswith("El caldo se ve normal"):
         x["problemas"] = x["problemas"] + ["PR33"]
 reglas = d["reglas_compatibilidad"] + REGLAS_EXTRA
-REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA)
-MEDIDAS_ALL = dict(MEDIDAS); MEDIDAS_ALL.update(MEDIDAS_EXTRA)
+REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS)
+for _id, v in CORR.SEMAFORO_MOD.items():
+    assert _id in REGLAS_ALL, _id
+    REGLAS_ALL[_id] = v
+MEDIDAS_ALL = {k: dict(v) for k, v in MEDIDAS.items()}; MEDIDAS_ALL.update(MEDIDAS_EXTRA)
+for _id, campos in CORR.MEDIDAS.items(): MEDIDAS_ALL[_id].update(campos)
 
 DB = {
     "meta": {k: d["meta"][k] for k in ("titulo", "version", "fecha_generacion", "fuente_productos", "criterio_productos_actuales", "advertencias", "estadisticas", "fuentes_datos_quimicos")},
