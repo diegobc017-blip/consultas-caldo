@@ -206,6 +206,19 @@ ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .rb i.sec{color:var(--accent);border-style:dashed;opacity:.75}
 .rbedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .tag.esp{color:var(--accent);border-color:var(--accent);font-weight:700}
+.iso{display:inline-block;min-width:2.4em;text-align:center;border-radius:4px;padding:0 4px;font-family:var(--mono);font-size:.76rem;font-weight:700;border:1px solid rgba(0,0,0,.3);vertical-align:1px}
+.eqgrid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.eqgrid{grid-template-columns:minmax(0,1fr)}}
+.eqlist{display:flex;flex-direction:column;gap:8px}
+.eqcard{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel);cursor:pointer;width:100%;font:inherit;color:inherit}
+.eqcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.eqcard .t{font-weight:700}
+.cwgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.cwgrid label{display:flex;flex-direction:column;font-size:.72rem;color:var(--muted);gap:2px}
+.cwgrid input{width:100%}
+.cwgrid input.bad{border-color:var(--s3);background:var(--s3-bg)}
+.chklist{display:flex;flex-direction:column;gap:6px}
+.chklist label{display:flex;gap:8px;align-items:flex-start;font-size:.88rem}
 .tag.mio{color:var(--ink);background:var(--sunk)}
 .pfx{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 .pfchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -285,6 +298,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" data-v="caldo" aria-selected="true">Armar caldo</button>
       <button role="tab" data-v="campos" aria-selected="false">Campos y lotes</button>
+      <button role="tab" data-v="equipos" aria-selected="false">Equipos y calibración</button>
       <button role="tab" data-v="historial" aria-selected="false">Historial</button>
       <button role="tab" data-v="rotacion" aria-selected="false">Rotación</button>
       <button role="tab" data-v="caso" aria-selected="false">Caso práctico</button>
@@ -333,9 +347,14 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
               <label class="f">Siembra del siguiente<input id="cuSiS" type="date"></label>
             </div>
           </div>
+          <div class="fields" style="grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);margin-bottom:10px" id="apEqRow">
+            <label class="f">Equipo<select id="apEquipo"></select></label>
+            <div class="f"><span>Modo de aplicación</span><div class="row" id="apModo" style="gap:5px"></div></div>
+          </div>
+          <p class="note" id="apEqNote" style="margin:-4px 0 10px"></p>
           <div class="fields">
-            <label class="f">Volumen (L/ha)<input id="vol" type="number" min="5" step="5"></label>
-            <label class="f">Tanque (L)<input id="tanque" type="number" min="10" step="100"></label>
+            <label class="f">Volumen (L/ha)<input id="vol" type="number" min="1" step="1"></label>
+            <label class="f"><span id="tanqueLbl">Tanque (L)</span><input id="tanque" type="number" min="1" step="1"></label>
             <label class="f">Horas en el tanque<input id="horas" type="number" min="0" step="0.5"></label>
             <label class="f">Agitación<select id="agitacion"><option value="normal">Moderada</option><option value="excesiva">Excesiva</option></select></label>
             <label class="f">Portador<select id="portador"><option value="agua">Agua</option><option value="fertilizante_liquido">Fertilizante líquido</option></select></label>
@@ -386,6 +405,8 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
 
   <!-- CAMPOS -->
   <section class="view" id="v-campos" hidden></section>
+  <!-- EQUIPOS -->
+  <section class="view" id="v-equipos" hidden></section>
   <!-- HISTORIAL -->
   <section class="view" id="v-historial" hidden></section>
   <!-- ROTACIÓN -->
@@ -495,7 +516,7 @@ const EJEMPLO = {
   vol:70, tanque:3000,
   agua:{pH:7.8,dureza_ppm_CaCO3:220,temperatura_C:18,turbidez:"baja",Ca:62,Mg:16,Na:35,K:4,Fe_mg_L:0.1,HCO3_mg_L:260,conductividad_uS_cm:650,cloro_mg_L:0},
   caldo:{horas_en_tanque:3,temperatura_ambiente_C:28,HR:65,viento_kmh:8,rafagas_kmh:14,viento_dir:"NE",nubosidad:"Parcial",lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null},
-  sup:350, ap:{campo:"ej-campo", lotes:["ej-l1","ej-l2","ej-l3","ej-l4","ej-l5"]},
+  sup:350, ap:{campo:"ej-campo", lotes:["ej-l1","ej-l2","ej-l3","ej-l4","ej-l5"]}, equipo:"ej-eq1", modo:"terrestre",
   cult:{actual:"soja", momento:"barbecho", siembra_act:fechaMas(10), siguiente:"maiz", siembra_sig:fechaMas(150)},
   medidas:[], ejemplo:true
 };
@@ -506,6 +527,9 @@ function migrar(s){
   s.caldo = Object.assign({horas_en_tanque:null,temperatura_ambiente_C:null,HR:null,viento_kmh:null,rafagas_kmh:null,viento_dir:null,nubosidad:null,lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null}, s.caldo||{});
   if(!s.ap) s.ap = {campo:null, lotes:[]};
   s.cult = Object.assign({actual:null, momento:"barbecho", siembra_act:null, siguiente:null, siembra_sig:null}, s.cult||{});
+  if(!s.modo) s.modo = "terrestre";
+  if(s.equipo === undefined) s.equipo = null;
+  s.vuelo = Object.assign({vel:null, faja:null, alt:null, gota:null, chk:[]}, s.vuelo||{});
   if(s.sup===undefined) s.sup = null;
   s.medidas = s.medidas||[]; s.items = s.items||[]; s.agua = s.agua||{};
   return s;
@@ -534,10 +558,12 @@ function virtualItems(state){
   if(state.caldo.fertilizantes.length) out.push({fert:true});
   return out;
 }
+let CUR_AEREO = false;   // aplicación con drone o avión (la medida "subir el volumen a 100 L/ha" no corresponde)
 function effInputs(state){
   const agua = {...state.agua}, caldo = {...state.caldo}; let vol = state.vol;
   const m = new Set(state.medidas);
-  if(m.has("vol")) vol = Math.max(vol||0,100);
+  const modo = state.modo || "terrestre", aereo = modo === "drone" || modo === "avion";
+  if(m.has("vol") && !aereo) vol = Math.max(vol||0,100);
   if(m.has("inmed") && caldo.horas_en_tanque!=null) caldo.horas_en_tanque = Math.min(caldo.horas_en_tanque,0.5);
   if(m.has("aguatemp") && agua.temperatura_C!=null && (agua.temperatura_C<15||agua.temperatura_C>25)) agua.temperatura_C = 20;
   if(m.has("agualimpia") && agua.turbidez) agua.turbidez = "baja";
@@ -545,7 +571,7 @@ function effInputs(state){
   if(m.has("horario") && caldo.temperatura_ambiente_C!=null) caldo.temperatura_ambiente_C = Math.min(caldo.temperatura_ambiente_C,25);
   if(m.has("agitmod")) caldo.agitacion = "normal";
   if(agua.dureza_ppm_CaCO3==null && agua.Ca!=null) agua.dureza_ppm_CaCO3 = 2.497*agua.Ca + 4.118*(agua.Mg||0);
-  return {agua,caldo,vol};
+  return {agua,caldo,vol,modo,aereo};
 }
 const PROPMAP = {efecto_pH:"efecto_pH_caldo"};
 function propVals(x, key){ // valores de una propiedad en el producto y sus componentes
@@ -598,7 +624,7 @@ function caldoDerived(xs, inp){
   const ranges = xs.map(x=>x.d.pH_optimo).filter(Boolean);
   let lo=-Infinity, hi=Infinity; ranges.forEach(([a,b])=>{lo=Math.max(lo,a);hi=Math.min(hi,b)});
   return {
-    ...inp.caldo, volumen_L_ha: inp.vol,
+    ...inp.caldo, volumen_L_ha: inp.vol, modo: inp.modo,
     n_productos: reales.length,
     n_oleosos: xs.filter(x=>x.d.oleoso && !x.virt).length,
     activo_duplicado: Object.values(ais).some(s=>s.size>1),
@@ -631,13 +657,14 @@ function levelOf(rid, act){
   const cfg = SEM[rid] || [null,0,{}]; const r = RULE[rid];
   const base = cfg[0]!=null ? cfg[0] : SEV[r.severidad];
   const piso = Math.min(cfg[1], base);
-  let red = 0; const meds = Object.entries(cfg[2]).map(([m,st])=>{ const on = act.has(m); if(on) red+=st; return {m,st,on}; });
+  let red = 0; const meds = Object.entries(cfg[2]).filter(([m])=>!(CUR_AEREO && m==="vol")).map(([m,st])=>{ const on = act.has(m); if(on) red+=st; return {m,st,on}; });
   return {base, piso, level: Math.max(piso, base-red), meds};
 }
 function evaluate(state){
   const items = state.items.concat(virtualItems(state));
   const xs = items.map(expandItem).filter(Boolean);
   const inp = effInputs(state);
+  CUR_AEREO = inp.aereo;
   const cal = caldoDerived(xs, inp);
   const act = activeMedidas(state);
   // estabilizadores presentes en productos reales también cuentan como medida activa
@@ -860,7 +887,7 @@ function renderResult(){
   const worst = ev.fired.filter(f=>f.level===o);
   const ph = phTarget(ev), tmax = maxTime(ev), ams = amsKg1000(ev.inp.agua);
   const allMeds = Object.entries(MED);
-  const pract = allMeds.filter(([k,v])=>v.tipo!=="producto");
+  const pract = allMeds.filter(([k,v])=>v.tipo!=="producto" && !(ev.inp.aereo && k==="vol") && !(!ev.inp.aereo && (k==="premezcla")));
   const prodM = allMeds.filter(([k,v])=>v.tipo==="producto");
   el.innerHTML = `
   <div class="panel" id="pSemaforo">
@@ -879,10 +906,12 @@ function renderResult(){
       <div><b>${tmax!=null?fmt(tmax,1)+" h":"—"}</b><span>Tiempo máximo en el tanque</span></div>
       <div><b>${ev.cal.concentracion_formulados_pct!=null?fmt(ev.cal.concentracion_formulados_pct,1)+" %":"—"}</b><span>Formulados en el caldo (alerta > 5 %)</span></div>
       <div><b>${ev.inp.vol?fmt(ev.inp.vol,0)+" L/ha":"—"}</b><span>Volumen${S.medidas.includes("vol")&&S.vol<100?" (ajustado)":""}</span></div>
-      <div><b>${S.tanque&&ev.inp.vol?fmt(S.tanque/ev.inp.vol,1)+" ha":"—"}</b><span>Hectáreas por tanque</span></div>
+      <div><b>${S.tanque&&ev.inp.vol?fmt(S.tanque/ev.inp.vol,1)+" ha":"—"}</b><span>Hectáreas por ${ev.inp.aereo?"carga":"tanque"}</span></div>
+      ${ev.inp.aereo&&ev.inp.vol?`<div><b>${fmt(100/ev.inp.vol,1)} veces</b><span>Más concentrado que a 100 L/ha</span></div>`:""}
       <div><b>${ams!=null?fmt(ams,2)+" kg":"—"}</b><span>AMS mínimo por 1000 L (por cationes)</span></div>
     </div>
   </div>
+  ${equipoPanelHTML(ev)}
   <div class="panel" id="pAlertas">
     <div class="panel-h"><h3>Alertas y cómo bajarlas</h3><span class="note">Tocá una medida para aplicarla; al lado se ve el color que queda.</span></div>
     <div class="alerts">${ev.fired.length?ev.fired.map(f=>alertHTML(f,ev,false)).join(""):`<p class="note">Sin alertas activas.</p>`}</div>
@@ -916,7 +945,7 @@ function renderResult(){
   </div>`;
   el.querySelectorAll(".med").forEach(b=>b.onclick=()=>{ const m=b.dataset.m; const i=S.medidas.indexOf(m); if(i>=0) S.medidas.splice(i,1); else S.medidas.push(m); S.ejemplo=false; save(); renderCaldo(); });
   el.querySelectorAll(".pg").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
-  bindDosis(ev); bindRotacion(); bindJarra(ev);
+  bindDosis(ev); bindRotacion(); bindJarra(ev); bindEquipoPanel(ev);
 }
 function orderTable(ev){
   const rows = orderPlan(ev);
@@ -1294,6 +1323,8 @@ function renderCaso(){
 let CAMPOS = load("campos", null);
 let HIST = load("historial", null);
 let ETQ = load("etiquetas", {});
+let EQUIPOS = load("equipos", null);
+const saveEquipos = () => store("equipos", EQUIPOS);
 const saveCampos = () => store("campos", CAMPOS);
 const saveHist = () => store("historial", HIST);
 const saveEtq = () => store("etiquetas", ETQ);
@@ -1393,16 +1424,31 @@ function crearEjemplo(){
   const etq = {"3140": {min: 1.5, max: 3.5, ej: true}, "539": {min: 0.8, max: 1.5, ej: true}, "121": {min: 0.35, max: 0.45, ej: true}, "4039": {min: 0.025, max: 0.05, ej: true}, "4466": {min: 0.5, max: 1.0, ej: true}};
   return {campo, hist, etq};
 }
+function ejemploEquipos(){
+  return [
+    {id: "ej-eq1", ejemplo: true, nombre: "Autopropulsada 3000 L (ejemplo)", tipo: "autopropulsada", marca: "", tanque: 3000, remanente: 30,
+     n_pastillas: 54, espaciado: 50, ancho: 27, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 2.6, vel: 16, altura: 50, bomba: 250, eficiencia: 60,
+     calibraciones: [{fecha: fechaMas(-20), tipo: "terrestre", V_obj: 70, V_real: 70.4, error: 0.5, apto: true, det: {vel: 16.2, P: 2.6, media: 0.95, cv: 3.1, n: 54, fuera: []}}],
+     inspeccion: {fecha: fechaMas(-20), ok: D.equipos.check_insp.map((_, i) => i), total: D.equipos.check_insp.length}},
+    {id: "ej-eq2", ejemplo: true, nombre: "Drone DJI Agras T40 (ejemplo)", tipo: "drone", modelo: "dji_t40", tanque: 40, remanente: 0.5, faja: 7, vel: 6, alt: 2.5,
+     caudal_max: 12, atom: "centrifugo", n_atom: 2, gota: 300, autonomia: 10, baterias: 3, calibraciones: []},
+    {id: "ej-eq3", ejemplo: true, nombre: "Avión Air Tractor AT-502B (ejemplo)", tipo: "avion", modelo: "at502b", tanque: 1893, remanente: 20, faja: 28, vel: 210, alt: 4,
+     atom: "rotativo", n_atom: 8, gota: 250, calibraciones: []},
+  ];
+}
 function cargarEjemplo(){
   eliminarEjemplo(true);
   const e = crearEjemplo();
   CAMPOS.unshift(e.campo); HIST = e.hist.concat(HIST);
+  EQUIPOS = ejemploEquipos().concat((EQUIPOS || []).filter(q => !q.ejemplo)); saveEquipos();
   Object.entries(e.etq).forEach(([r, v]) => { if(!ETQ[r]) ETQ[r] = v; });
   saveCampos(); saveHist(); saveEtq(); store("ejemplo_borrado", false); store("ejemplo_v", 3);
 }
 function eliminarEjemplo(silencioso){
   CAMPOS = (CAMPOS || []).filter(c => !c.ejemplo);
   HIST = (HIST || []).filter(h => !h.ejemplo);
+  EQUIPOS = (EQUIPOS || []).filter(q => !q.ejemplo); saveEquipos();
+  if(!silencioso && S.equipo && String(S.equipo).startsWith("ej-")){ S.equipo = null; save(); }
   Object.keys(ETQ).forEach(r => { if(ETQ[r] && ETQ[r].ej) delete ETQ[r]; });
   if(!silencioso && S.ap && S.ap.campo === "ej-campo"){ S.ap = {campo: null, lotes: []}; S.sup = null; save(); }
   saveCampos(); saveHist(); saveEtq();
@@ -1411,6 +1457,7 @@ function eliminarEjemplo(silencioso){
 function initDatos(){
   if(CAMPOS === null || HIST === null){ CAMPOS = CAMPOS || []; HIST = HIST || []; if(!load("ejemplo_borrado", false)) cargarEjemplo(); else { saveCampos(); saveHist(); } }
   else if(CAMPOS.some(c => c.ejemplo) && load("ejemplo_v", 1) < 3) cargarEjemplo(); // actualiza el ejemplo (contorno real y superficie elipsoidal); no toca los datos propios
+  if(EQUIPOS === null){ EQUIPOS = CAMPOS.some(c => c.ejemplo) ? ejemploEquipos() : []; saveEquipos(); }
 }
 initDatos();
 /* Superficie: desde 02/10/2026 se calcula sobre el elipsoide. Los lotes con superficie calculada por la
@@ -1729,6 +1776,7 @@ function openRegistrar(){
       <label class="f">Observaciones<textarea id="rObs" rows="2"></textarea></label>
       <div class="panel"><h4>Resumen</h4><ul class="clean note" style="margin-top:6px">
         ${reales.map(x => `<li>${esc(x.n)}: ${x.dosis != null ? fmt(x.dosis, 3) + " " + unitOf(x) + "/ha" : "sin dosis"}</li>`).join("")}
+        <li>${esc(MODOS[S.modo || "terrestre"])}${findEq(S.equipo) ? " con " + esc(findEq(S.equipo).nombre) : ""}</li>
         <li>Volumen ${fmt(ev.inp.vol, 0)} L/ha · semáforo ${ev.overall == null ? "sin alertas" : NIV[ev.overall].nombre.toLowerCase()}</li>
         <li>Condiciones: ${S.caldo.temperatura_ambiente_C ?? "—"} °C · HR ${S.caldo.HR ?? "—"} % · viento ${S.caldo.viento_kmh ?? "—"} km/h ${esc(S.caldo.viento_dir || "")} · Delta T ${a.dT ?? "—"}</li>
       </ul>${a.ley === true ? `<p class="rnote" style="margin-top:6px">Las condiciones cargadas están fuera de la Ley 3742/09. Se puede registrar igual (queda marcado).</p>` : a.ley == null ? `<p class="note" style="margin-top:6px">Faltan datos de condiciones ambientales (panel 4).</p>` : ""}</div>
@@ -1744,7 +1792,8 @@ function openRegistrar(){
     const amb = {temperatura_ambiente_C: S.caldo.temperatura_ambiente_C, HR: S.caldo.HR, viento_kmh: S.caldo.viento_kmh, rafagas_kmh: S.caldo.rafagas_kmh, viento_dir: S.caldo.viento_dir, nubosidad: S.caldo.nubosidad, lluvia_h: S.caldo.lluvia_h, delta_T: a.dT, fuera_ley: a.ley};
     const rec = {id: uid("h"), fecha: $("#rFecha").value, campoId: c ? c.id : null, campoNombre: c ? c.nombre : "", loteIds, loteNombres: loteIds.map(id => findLote(c, id).nombre),
       ha: c ? Math.round(loteIds.reduce((s, id) => s + loteHa(findLote(c, id)), 0) * 10) / 10 : S.sup, objetivo: $("#rObj").value, operador: $("#rOper").value, obs: $("#rObs").value,
-      vol: ev.inp.vol, tanque: S.tanque, items: reales.map(x => itemSnap(x.p.r, x.dosis)), medidas: [...ev.act], semaforo: ev.overall, alertas: ev.fired.map(f => f.r.id), amb, cult: clone(S.cult)};
+      vol: ev.inp.vol, tanque: S.tanque, modo: S.modo || "terrestre", equipo: (q => q ? {id: q.id, nombre: q.nombre, tipo: q.tipo} : null)(findEq(S.equipo)),
+      vuelo: ev.inp.aereo ? vueloDatos(ev) : null, items: reales.map(x => itemSnap(x.p.r, x.dosis)), medidas: [...ev.act], semaforo: ev.overall, alertas: ev.fired.map(f => f.r.id), amb, cult: clone(S.cult)};
     HIST.unshift(rec); saveHist();
     if(c){ loteIds.forEach(id => { const l = findLote(c, id); if(!l) return; if(S.cult.actual) l.cultivo = D.cultivos[S.cult.actual]; if(S.cult.siguiente) l.cultivo_sig = S.cult.siguiente; if(S.cult.siembra_sig) l.siembra_sig = S.cult.siembra_sig; }); saveCampos(); }
     openDrawer(`<div class="stack"><h2>Aplicación registrada</h2><p>${esc(fmtFH(rec.fecha))} · ${esc(rec.campoNombre)} ${esc(rec.loteNombres.join(", "))} · ${fmt(rec.ha, 1)} ha</p>
@@ -1792,6 +1841,7 @@ function histFilas(hs){
       out.push({h, l, props: {fecha: h.fecha, campo: h.campoNombre || "", lote: l ? l.nombre : (h.loteNombres[i] || ""), lote_id: lid || "", ha_lote: l ? loteHa(l) : "", objetivo: h.objetivo || "",
         productos: h.items.map(it => `${it.n} ${it.dosis ?? ""} ${it.u}/ha`).join(" + "), activos: [...new Set(h.items.flatMap(it => it.ais.map(a => a.nombre)))].join(", "),
         grupos: [...new Set(h.items.flatMap(it => it.ais.map(a => a.grupo)).filter(Boolean))].join(", "), vol_L_ha: h.vol ?? "",
+        modo: MODOS[h.modo || "terrestre"] || "", equipo: h.equipo ? h.equipo.nombre : "", vuelo: h.vuelo ? `${h.vuelo.vel ?? ""} ${h.vuelo.ud || ""}; faja ${h.vuelo.faja ?? ""} m; altura ${h.vuelo.alt ?? ""} m; gota ${h.vuelo.gota ?? ""} µm` : "",
         temp_C: h.amb?.temperatura_ambiente_C ?? "", HR: h.amb?.HR ?? "", viento_kmh: h.amb?.viento_kmh ?? "", viento_dir: h.amb?.viento_dir ?? "", delta_T: h.amb?.delta_T ?? "",
         ley_3742: h.amb?.fuera_ley === true ? "fuera" : h.amb?.fuera_ley === false ? "ok" : "", semaforo: h.semaforo == null ? "" : NIV[h.semaforo].nombre, operador: h.operador || "", obs: h.obs || "",
         cultivo_actual: h.cult && h.cult.actual ? D.cultivos[h.cult.actual] : "", momento: h.cult && h.cult.momento ? D.momentos[h.cult.momento] : "", cultivo_siguiente: h.cult && h.cult.siguiente ? D.cultivos[h.cult.siguiente] : ""}}); }); });
@@ -1811,7 +1861,7 @@ function kml(fc, nombre){
     return `<Placemark><name>${x(f.properties.lote || f.properties.nombre || "")}</name><ExtendedData>${Object.entries(f.properties).map(([k, v]) => `<Data name="${x(k)}"><value>${x(v)}</value></Data>`).join("")}</ExtendedData>${ps.length > 1 ? `<MultiGeometry>${ps.map(poly).join("")}</MultiGeometry>` : ps.map(poly).join("")}</Placemark>`; }).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(nombre)}</name>\n${pm}\n</Document></kml>`;
 }
-function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", []), rubros_corregidos: RUBOVR}; }
+function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", []), rubros_corregidos: RUBOVR, equipos: EQUIPOS}; }
 function bajarBin(nombre, blob){
   if(enIframe){ toast("En esta vista no se pueden descargar archivos: usá la app publicada o instalada"); return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
@@ -2151,14 +2201,15 @@ function previewImport(raw, fname){
 }
 function restaurar(j){
   openDrawer(`<div class="stack"><span class="eyebrow">Respaldo</span><h2>Restaurar respaldo</h2>
-    <p>Del ${esc(fmtFH(j.fecha))}: ${j.campos?.length || 0} campos, ${j.historial?.length || 0} aplicaciones, ${j.guardados?.length || 0} caldos guardados.</p>
+    <p>Del ${esc(fmtFH(j.fecha))}: ${j.campos?.length || 0} campos, ${j.historial?.length || 0} aplicaciones, ${j.equipos?.length || 0} equipos, ${j.guardados?.length || 0} caldos guardados.</p>
     <div class="row"><button class="btn pri" id="rsAdd">Agregar a lo que tengo</button><button class="btn" id="rsRep">Reemplazar todo</button></div>
     <p class="note">“Agregar” suma los campos y aplicaciones que no estén. “Reemplazar” borra lo de este dispositivo y deja solo el respaldo.</p></div>`);
-  const fin = () => { saveCampos(); saveHist(); saveEtq(); store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; closeDrawer(); toast("Respaldo restaurado"); renderAll(); };
+  const fin = () => { saveCampos(); saveHist(); saveEtq(); saveEquipos(); store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; closeDrawer(); toast("Respaldo restaurado"); renderAll(); };
   $("#rsAdd").onclick = () => { const ids = new Set(CAMPOS.map(c => c.id)), hids = new Set(HIST.map(h => h.id));
     (j.campos || []).forEach(c => { if(!ids.has(c.id)) CAMPOS.push(c); }); (j.historial || []).forEach(h => { if(!hids.has(h.id)) HIST.push(h); });
+    const eids = new Set(EQUIPOS.map(q => q.id)); (j.equipos || []).forEach(q => { if(!eids.has(q.id)) EQUIPOS.push(q); });
     ETQ = Object.assign({}, j.etiquetas || {}, ETQ); RUBOVR = Object.assign({}, j.rubros_corregidos || {}, RUBOVR); store("guardados", load("guardados", []).concat(j.guardados || [])); fin(); };
-  $("#rsRep").onclick = () => { CAMPOS = j.campos || []; HIST = j.historial || []; ETQ = j.etiquetas || {}; RUBOVR = j.rubros_corregidos || {}; store("guardados", j.guardados || []); fin(); };
+  $("#rsRep").onclick = () => { CAMPOS = j.campos || []; HIST = j.historial || []; EQUIPOS = j.equipos || []; ETQ = j.etiquetas || {}; RUBOVR = j.rubros_corregidos || {}; store("guardados", j.guardados || []); fin(); };
 }
 
 /* ---------- Rotación por lote ---------- */
@@ -2521,7 +2572,7 @@ function renderHistorial(){
     <p class="note">${lista.length} aplicaciones · ${fmt(ha, 1)} ha aplicadas</p>
     ${lista.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Campo · lotes</th><th>Productos</th><th>Grupos</th><th>Condiciones</th><th>Semáforo</th><th></th></tr></thead><tbody>${lista.map(h => `<tr>
       <td class="mono">${esc(fmtFH(h.fecha))}${h.ejemplo ? `<br><span class="tag">ejemplo</span>` : ""}</td>
-      <td>${esc(h.campoNombre || "—")}<br><span class="note">${esc(h.loteNombres.join(", "))} · ${fmt(h.ha, 1)} ha</span></td>
+      <td>${esc(h.campoNombre || "—")}<br><span class="note">${esc(h.loteNombres.join(", "))} · ${fmt(h.ha, 1)} ha</span>${h.modo && h.modo !== "terrestre" || h.equipo ? `<br><span class="note">${esc(MODOS[h.modo || "terrestre"])}${h.equipo ? " · " + esc(h.equipo.nombre) : ""}</span>` : ""}</td>
       <td>${h.items.map(i => `${esc(i.n)} <span class="note">${fmt(i.dosis, 3)} ${i.u}/ha</span>`).join("<br>")}${h.objetivo ? `<br><span class="note">Objetivo: ${esc(h.objetivo)}</span>` : ""}</td>
       <td class="mono note">${esc([...new Set(h.items.flatMap(i => i.ais.map(a => a.grupo)).filter(Boolean))].join(", "))}</td>
       <td class="note">${ambTxt(h.amb)}</td><td>${h.semaforo == null ? pill(null, "Sin alertas") : pill(h.semaforo)}</td>
@@ -2625,6 +2676,8 @@ function helpHTML(){
 
   <div class="panel"><h3>Las demás pestañas</h3>
     <dl class="faq">
+      <dt>Equipos y calibración</dt><dd>Cargá cada pulverizadora (autopropulsada, de arrastre o montada), mochila, drone o avión con sus medidas: tanque, barra, número y separación de pastillas, tipo y tamaño ISO (color), presión, velocidad, altura; en drones y aviones, faja, velocidad, altura de vuelo, caudal máximo y atomizadores (hay modelos cargados de DJI, XAG, Air Tractor, Embraer y Thrush). <b>Regulación:</b> para el volumen y la velocidad que buscás, el caudal por pastilla y la presión de cada tamaño ISO, en verde los que trabajan dentro de su rango. <b>Calibración a campo:</b> velocidad con el tiempo en 50 m, caudal de cada pastilla con jarra (marca en rojo las que se apartan más de 10 % del nominal, o 15 % si tiran menos de 1 L/min), coeficiente de variación y volumen real; con más de 5 % de error indica qué presión o velocidad usar. Para drones y aviones: caudal medido, faja verificada con tarjetas e impactos por cm². Las calibraciones quedan en el historial del equipo y el estado avisa cuando pasaron más de 180 días.</dd>
+      <dt>Caldo para drone y avión</dt><dd>En “2 · Aplicación” elegí el equipo o el modo (Terrestre, Mochila, Drone, Avión). Con drone o avión aparece el <b>plan de vuelo</b>: caudal necesario frente al máximo del equipo, hectáreas por carga, cargas para la superficie, minutos por carga, baterías, gota recomendada según los productos, revisión del viento, la temperatura, la humedad y el Delta T, recomendaciones de vuelo, la lista de control antes de volar y la normativa (Ley 3742/09: franja de 200 m y aviso al SENAVE 24 h antes; DINAC R 1103 para drones). El semáforo suma reglas propias: el tanque del drone casi no agita, más de 2 productos a bajo volumen, polvos mojables y hormonales por aire.</dd>
       <dt>Campos y lotes</dt><dd>El mapa de tus campos. Cada lote es un polígono con la forma real del lote, con todos los puntos que haga falta. Se puede cargar de cuatro maneras: <b>dibujarlo</b> tocando el mapa en cada quiebre del límite; <b>recorrer el borde con GPS</b> desde el celular; <b>importarlo</b> desde QGIS (GeoPackage, Shapefile .zip, GeoJSON), Google Earth (KML o KMZ), un GPS (GPX) o un CSV de vértices, también arrastrando el archivo sobre el mapa; o cargarlo <b>sin mapa</b>, solo con nombre y hectáreas. El mapa es opcional: nada de la app se bloquea si un lote no tiene límites. En la ficha de cada lote: <b>Editar límites</b> (arrastrar puntos, agregar con +, borrar con doble toque), <b>Dividir</b> con una línea y su <b>historial de pulverizaciones</b> propio. En “Armar caldo” los lotes se marcan con botones o tocándolos en el mapa.</dd>
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
       <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo, siempre dentro del rubro elegido.</dd>
@@ -2651,7 +2704,7 @@ function helpHTML(){
       <dt>¿Reemplaza a la etiqueta o a la prueba de jarra?</dt><dd>No. La etiqueta del producto prevalece siempre y la prueba de jarra con el agua y las dosis reales es la confirmación final.</dd>
       <dt>¿Cómo empiezo de cero?</dt><dd>En “Armar caldo”, botón “Empezar de cero”. Para volver al ejemplo, abrí el caso práctico y tocá “Abrir este caso en el armador”.</dd>
       <dt>¿Qué es el campo de ejemplo y cómo lo elimino?</dt><dd>La app trae una “Estancia Ejemplo” de 500 ha con 8 lotes y un año de aplicaciones hipotéticas, para ver el mapa, el historial y los avisos de rotación. Se elimina con el botón de abajo o en “Campos y lotes” → “Eliminar ejemplo”; tus datos no se tocan. Se puede volver a cargar cuando quieras.</dd>
-      <dt>¿Cómo paso mis datos a otro celular o a la PC?</dt><dd>En “Campos y lotes” → “Respaldo completo” se descarga un archivo con campos, historial, dosis de etiqueta y caldos guardados. En el otro equipo: “Restaurar respaldo”.</dd>
+      <dt>¿Cómo paso mis datos a otro celular o a la PC?</dt><dd>En “Campos y lotes” → “Respaldo completo” se descarga un archivo con campos, historial, equipos y calibraciones, dosis de etiqueta y caldos guardados. En el otro equipo: “Restaurar respaldo”.</dd>
       <dt>¿Cómo lo abro en QGIS?</dt><dd>Exportá “Lotes · GeoJSON” o “Historial con lotes · GeoJSON” y arrastralo a QGIS (sistema de coordenadas WGS 84, EPSG:4326). El historial trae una fila por aplicación y lote, con fecha, productos, grupos, condiciones y semáforo.</dd>
       <dt>¿Qué es el Delta T?</dt><dd>La diferencia entre la temperatura del aire y la de bulbo húmedo; mide qué tan rápido se evaporan las gotas. Entre 2 y 8 es ideal; por encima de 10 no conviene aplicar.</dd>
     </dl>
@@ -2672,6 +2725,7 @@ const TOUR = [
   {v:"caldo", sel:"#rubros", t:"Elegí tu rubro", d:"Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. Define qué productos aparecen en el buscador y en el listado, y qué opciones de rotación ves."},
   {v:"caldo", sel:"#pProductos", t:"Productos del caldo", d:"Buscá por nombre, activo o empresa y tocá el producto para agregarlo. Cargá la dosis por hectárea. Cada producto muestra su presentación (soluble, sólido, suspensión u oleoso) y su paso de carga."},
   {v:"caldo", sel:"#pAplic", t:"Dónde y cómo se aplica", d:"Elegí el campo y los lotes (la superficie se suma sola), el volumen por hectárea, el tanque y cuántas horas va a esperar el caldo."},
+  {v:"caldo", sel:"#apEqRow", t:"Equipo y modo de aplicación", d:"Elegí tu pulverizadora, mochila, drone o avión: la app toma su tanque y su calibración. Con drone o avión aparece el plan de vuelo con caudal, cargas, gota, clima y normativa."},
   {v:"caldo", sel:"#pAgua", t:"El agua", d:"pH, dureza, temperatura y turbidez son los datos que más cambian el resultado. Si no los tenés, las alertas que dependen de ellos quedan “a verificar”."},
   {v:"caldo", sel:"#pAmb", t:"Condiciones ambientales", d:"Temperatura, humedad, viento y lluvia prevista. La app calcula el Delta T, controla la Ley 3742/09 y suma alertas de deriva y evaporación."},
   {v:"caldo", sel:"#pSemaforo", t:"El semáforo de la mezcla", d:"Verde: problema leve. Amarillo: precaución. Naranja: riesgo alto, solo con correcciones. Rojo: no mezclar. El color general es el de la peor alerta."},
@@ -2689,6 +2743,7 @@ const TOUR = [
   {v:"campos", sel:"#mTools", t:"Marcar los límites", d:"“Dibujar lote”: tocá el mapa en cada quiebre del borde. “Recorrer el borde con GPS”: caminá o andá en vehículo por el límite con el celular. “Mi ubicación” e “Ir a coordenadas” te llevan al lugar. Es opcional: un lote también puede cargarse sin mapa."},
   {v:"campos", sel:'label[for="cFile"]', t:"Importar desde QGIS, Google Earth o GPS", d:"GeoPackage, Shapefile .zip, GeoJSON, KML, KMZ, GPX o CSV de vértices. También podés arrastrar el archivo sobre el mapa. Si está en UTM, la app lo convierte."},
   {v:"campos", sel:"#cTop", t:"Campo de ejemplo", d:"El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan."},
+  {v:"caldo", sel:'#tabs [data-v="equipos"]', t:"Equipos y calibración", d:"Cargá las medidas de cada equipo, calculá pastilla y presión, y hacé la calibración a campo: velocidad, caudal por pastilla, volumen real e inspección."},
   {v:"caldo", sel:'#tabs [data-v="historial"]', t:"Historial", d:"Todas las aplicaciones registradas, con filtros y exportación a Excel (CSV) y QGIS (GeoJSON)."},
   {v:"caldo", sel:'#tabs [data-v="rotacion"]', t:"Rotación", d:"Para qué se usa cada activo, su grupo de modo de acción y qué grupos alternar para el mismo objetivo."},
   {v:"caldo", sel:'#tabs [data-v="caso"]', t:"Caso práctico", d:"Un barbecho químico de soja paso a paso: cómo pasa de naranja a amarillo y qué conviene separar."},
@@ -2754,11 +2809,480 @@ addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); INSTALL=e; $("#b
 $("#btnInstall").onclick=async()=>{ if(!INSTALL) return; INSTALL.prompt(); try{ await INSTALL.userChoice; }catch(e){} INSTALL=null; $("#btnInstall").hidden=true; };
 addEventListener("appinstalled",()=>{ $("#btnInstall").hidden=true; });
 
+/* ====================================================================
+   Equipos de aplicación, calibración y aplicación aérea (drone y avión)
+   ==================================================================== */
+const EQD = D.equipos;
+const TIPOS_EQ = {autopropulsada: "Pulverizadora autopropulsada", arrastre: "Pulverizadora de arrastre", montada: "Pulverizadora montada (3 puntos)", mochila: "Mochila", drone: "Drone", avion: "Avión agrícola"};
+const MODOS = {terrestre: "Terrestre", mochila: "Mochila", drone: "Drone", avion: "Avión"};
+const modoDe = q => !q ? null : q.tipo === "drone" ? "drone" : q.tipo === "avion" ? "avion" : q.tipo === "mochila" ? "mochila" : "terrestre";
+const esAereo = m => m === "drone" || m === "avion";
+const ISO = Object.fromEntries(EQD.pastillas.map(([s, c, h, q]) => [s, {s, c, h, q}]));
+/* volumen razonable para el modo si el actual no corresponde */
+const volDef = (m, v) => esAereo(m) ? (v && v <= 50 ? v : m === "drone" ? 15 : 30) : m === "mochila" ? (v && v >= 150 ? v : 200) : (v && v >= 40 ? v : 100);
+const findEq = id => (EQUIPOS || []).find(q => q.id === id) || null;
+const nv = v => v === "" || v == null || isNaN(+v) ? null : +v;
+const oscuro = h => { const n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) < 140; };
+const isoChip = s => ISO[s] ? `<span class="iso" style="background:${ISO[s].h};color:${oscuro(ISO[s].h) ? "#fff" : "#111"}">${esc(s)}</span> ${esc(ISO[s].c)}` : esc(s || "—");
+
+/* Cálculos (fórmulas de INTA / ASABE; velocidad del drone en m/s, del resto en km/h) */
+const CAL = {
+  q: (V, v, esp) => V * v * esp / 600,                       // L/min por pastilla (esp en m)
+  pres: (q, iso) => 3 * Math.pow(q / ISO[iso].q, 2),          // presión para ese caudal (bar)
+  qNom: (iso, P) => ISO[iso].q * Math.sqrt(P / 3),            // caudal nominal a la presión P
+  vReal: (q, v, esp) => q * 600 / (v * esp),                  // L/ha con el caudal medido
+  qDrone: (V, v, W) => V * v * W * 0.006,                     // L/min del drone
+  qAvion: (V, v, W) => V * v * W / 600,                       // L/min del avión
+  haCarga: (tq, rem, V) => V > 0 && tq > 0 ? Math.max(0, tq - (rem || 0)) / V : null,
+  capTerr: (A, v, ef) => 0.1 * v * A * ef,                    // ha/h
+  capDrone: (W, v, ef) => 0.36 * W * v * ef,
+  capAvion: (W, v, ef) => W * v / 10 * ef,
+};
+function recomPastillas(q, tipo){
+  const t = EQD.tipos_pastilla[tipo] || EQD.tipos_pastilla.std, mid = (t.pmin + t.pmax) / 2;
+  return EQD.pastillas.map(([s, c, h, q3]) => ({s, P: 3 * Math.pow(q / q3, 2)})).filter(x => x.P >= t.pmin && x.P <= t.pmax).sort((a, b) => Math.abs(a.P - mid) - Math.abs(b.P - mid));
+}
+function volEq(q){ const c = (q.calibraciones || [])[0]; return c && c.V_obj ? c.V_obj : volDef(modoDe(q), S.vol); }
+function anchoEq(q){ return nv(q.ancho) || (nv(q.n_pastillas) && nv(q.espaciado) ? q.n_pastillas * q.espaciado / 100 : null); }
+function velEq(q, m){ return nv(q && q.vel) ?? (m === "drone" ? 6 : m === "avion" ? 210 : m === "mochila" ? 2.4 : 16); }
+function eqEstado(q){
+  const c = (q.calibraciones || [])[0];
+  if(!c) return {l: 2, t: "Sin calibrar"};
+  const d = Math.round((Date.now() - new Date(c.fecha + "T12:00")) / 864e5);
+  if(!c.apto) return {l: 2, t: `Calibración con fallas (${fmtFecha(c.fecha)})`};
+  if(d > EQD.tolerancias.dias_recalibrar) return {l: 1, t: `Calibrado hace ${d} días: recalibrar`};
+  return {l: 0, t: `Calibrado el ${fmtFecha(c.fecha)}`};
+}
+
+/* Gota recomendada según los productos del caldo */
+function gotaCaldo(ev){
+  const cls = new Set();
+  ev.xs.forEach(x => { if(x.virt) return; x.k.forEach(c => { const o = c.o; if(!o || c.t !== "ai") return;
+    if(o.clase === "herbicida") cls.add(o.grupo === "HRAC 4" || c.id === "clomazona" ? "hormonal" : ["HRAC 22", "HRAC 14", "HRAC 10"].includes(o.grupo) ? "herb_cont" : "herb_sist");
+    else if(o.clase === "fungicida") cls.add(/^FRAC M/.test(o.grupo || "") ? "fung_cont" : "fung_sist");
+    else if(o.clase === "insecticida") cls.add("insect"); }); });
+  return [...cls].map(k => Object.assign({k}, EQD.gota_producto[k]));
+}
+function gotaDrone(gs){
+  if(gs.some(g => g.k === "hormonal")) return {um: [400, 500], txt: "Lo más gruesa que permita el equipo (400–500 µm); con hormonales conviene la aplicación terrestre con inducción de aire"};
+  if(gs.some(g => g.k.startsWith("herb"))) return {um: EQD.gota_drone.grueso, txt: "Gruesa (350–500 µm) para herbicidas"};
+  if(gs.length) return {um: EQD.gota_drone.general, txt: "250–320 µm; más fina (150–250 µm) solo con viento bajo y humedad alta"};
+  return {um: EQD.gota_drone.general, txt: "250–320 µm para la mayoría de los usos"};
+}
+function gotaHTML(ev, aereo){
+  const gs = gotaCaldo(ev);
+  if(!gs.length) return `<p class="note">Agregá productos para ver la gota recomendada.</p>`;
+  const mezcla = new Set(gs.map(g => g.clase)).size > 1;
+  return `<div class="tw"><table><thead><tr><th>Producto</th><th>Gota</th><th>Impactos/cm² en tarjeta</th></tr></thead><tbody>${gs.map(g => `<tr><td>${esc(g.nombre)}</td><td>${esc(g.clase)} <span class="note">(${g.um[0]}–${g.um[1]} µm)</span></td><td>${esc(g.impactos)}</td></tr>`).join("")}</tbody></table></div>
+    ${aereo && S.modo === "drone" ? `<p class="note" style="margin-top:6px"><b>Drone:</b> ${esc(gotaDrone(gs).txt)}.</p>` : ""}
+    ${mezcla ? `<p class="note" style="margin-top:6px">La mezcla junta productos que piden gotas distintas: priorizar la del producto principal (con herbicidas, la más gruesa) o aplicar por separado.</p>` : ""}
+    <p class="note" style="margin-top:6px">${esc(EQD.gota_clima)}</p>`;
+}
+
+/* ---------- Armador: equipo y modo ---------- */
+function renderEquipoSel(){
+  const sel = $("#apEquipo"); if(!sel) return;
+  const q = findEq(S.equipo);
+  if(S.equipo && !q){ S.equipo = null; }
+  sel.innerHTML = `<option value="">— Sin equipo —</option>` + (EQUIPOS || []).map(e => `<option value="${esc(e.id)}"${e.id === S.equipo ? " selected" : ""}>${esc(e.nombre)}</option>`).join("");
+  $("#apModo").innerHTML = Object.entries(MODOS).map(([k, t]) => `<button class="chip" data-m="${k}" aria-pressed="${(S.modo || "terrestre") === k}" style="font-size:.8rem;padding:2px 10px">${t}</button>`).join("");
+  $("#tanqueLbl").textContent = S.modo === "avion" ? "Tolva (L)" : S.modo === "drone" ? "Tanque del drone (L)" : S.modo === "mochila" ? "Mochila (L)" : "Tanque (L)";
+  let nota = "";
+  if(q){ const e = eqEstado(q), c = (q.calibraciones || [])[0];
+    nota = `${pill(e.l, e.t)}${c && c.V_real && S.vol && Math.abs(c.V_real - S.vol) / S.vol > 0.05 ? ` El equipo calibrado aplica ${fmt(c.V_real, 1)} L/ha y el caldo está calculado para ${fmt(S.vol, 0)} L/ha.` : ""}`; }
+  else if(esAereo(S.modo)) nota = `Sin equipo cargado: se usan valores típicos. Cargá tu ${S.modo === "drone" ? "drone" : "avión"} en “Equipos y calibración”.`;
+  $("#apEqNote").innerHTML = nota;
+  sel.onchange = e => { const nq = findEq(e.target.value); S.equipo = nq ? nq.id : null;
+    if(nq){ S.modo = modoDe(nq); if(nv(nq.tanque)) S.tanque = nq.tanque; const c = (nq.calibraciones || [])[0];
+      if(c && c.V_real) S.vol = Math.round(c.V_real * 10) / 10; else S.vol = volDef(S.modo, S.vol);
+      S.vuelo = Object.assign(S.vuelo || {}, {vel: null, faja: null, alt: null, gota: null}); }
+    S.ejemplo = false; save(); fillInputs(); renderCaldo(); };
+  document.querySelectorAll("#apModo .chip").forEach(b => b.onclick = () => { const m = b.dataset.m; if(m === (S.modo || "terrestre")) return;
+    S.modo = m; const q2 = findEq(S.equipo); if(q2 && modoDe(q2) !== m) S.equipo = null;
+    S.vol = volDef(m, S.vol);
+    S.vuelo = Object.assign(S.vuelo || {}, {vel: null, faja: null, alt: null, gota: null});
+    if(!S.equipo) S.tanque = {terrestre: 2000, mochila: 20, drone: 40, avion: 1900}[m];
+    toast(`Volumen ${S.vol} L/ha y ${m === "avion" ? "tolva" : m === "mochila" ? "mochila" : "tanque"} de ${S.tanque} L: ajustalos a tu equipo`);
+    S.ejemplo = false; save(); fillInputs(); renderCaldo(); });
+}
+
+/* Panel del armador: regulación (terrestre/mochila) o plan de vuelo (drone/avión) */
+function vueloDatos(ev){
+  const m = S.modo, q = findEq(S.equipo), vu = S.vuelo || {}, dr = m === "drone";
+  const vel = nv(vu.vel) ?? velEq(q, m);
+  const faja = nv(vu.faja) ?? nv(q && q.faja) ?? (dr ? 7 : 25);
+  const alt = nv(vu.alt) ?? nv(q && q.alt) ?? (dr ? 2.5 : 4);
+  const gota = nv(vu.gota) ?? nv(q && q.gota) ?? (dr ? gotaDrone(gotaCaldo(ev)).um[0] : 250);
+  return {vel, ud: dr ? "m/s" : "km/h", faja, alt, gota};
+}
+function climaAereo(c){
+  const out = [], V = c.viento_kmh, T = c.temperatura_ambiente_C, H = c.HR, dT = deltaT(T, H);
+  if(V != null) out.push(V < 3 ? [2, `Viento ${fmt(V, 1)} km/h: calma, posible inversión térmica`] : V > 10 ? [3, `Viento ${fmt(V, 1)} km/h: más de 10 km/h, no aplicar`] : [0, `Viento ${fmt(V, 1)} km/h: dentro de 3 a 10 km/h`]);
+  if(T != null) out.push(T > 32 ? [3, `${fmt(T, 1)} °C: más de 32 °C, no aplicar`] : [0, `${fmt(T, 1)} °C`]);
+  if(H != null) out.push(H < 60 ? [3, `Humedad ${fmt(H, 0)} %: menos de 60 %, no aplicar`] : [0, `Humedad ${fmt(H, 0)} %`]);
+  if(dT != null) out.push(dT > 10 ? [2, `Delta T ${fmt(dT, 1)}: evaporación muy rápida`] : dT > 8 ? [1, `Delta T ${fmt(dT, 1)}: evaporación rápida`] : dT < 2 ? [1, `Delta T ${fmt(dT, 1)}: aire muy húmedo, posible inversión`] : [0, `Delta T ${fmt(dT, 1)}: ideal`]);
+  return out;
+}
+function equipoPanelHTML(ev){
+  const m = S.modo || "terrestre", q = findEq(S.equipo), V = ev.inp.vol;
+  if(esAereo(m)){
+    const dr = m === "drone", vd = vueloDatos(ev);
+    if(!(V > 0)) return `<div class="panel" id="pVuelo"><div class="panel-h"><h3>Plan de vuelo · ${dr ? "drone" : "avión"}</h3></div><p class="note">Cargá el volumen por hectárea en “2 · Aplicación”.</p></div>`;
+    const Q = V ? (dr ? CAL.qDrone(V, vd.vel, vd.faja) : CAL.qAvion(V, vd.vel, vd.faja)) : null;
+    const qmax = q && nv(q.caudal_max);
+    const vmax = qmax && V ? (dr ? qmax / (V * vd.faja * 0.006) : qmax * 600 / (V * vd.faja)) : null;
+    const rem = q ? nv(q.remanente) || 0 : 0, haC = CAL.haCarga(S.tanque, rem, V);
+    const cargas = haC && S.sup ? Math.ceil(S.sup / haC) : null;
+    const tCarga = Q ? (S.tanque - rem) / Q : null;
+    const cap = dr ? CAL.capDrone(vd.faja, vd.vel, 0.5) : CAL.capAvion(vd.faja, vd.vel, 0.45);
+    const bat = dr && q && nv(q.autonomia) && tCarga ? Math.ceil((tCarga + 2) / q.autonomia) : null;
+    const cl = climaAereo(S.caldo), chk = dr ? EQD.check_drone : EQD.check_avion, hechos = (S.vuelo && S.vuelo.chk) || [];
+    const rec = EQD.vuelo[m];
+    const volTxt = dr ? (V < 10 ? [2, "Menos de 10 L/ha: cobertura insuficiente para la mayoría de los productos"] : V < 15 ? [1, "Volumen bajo: verificar la cobertura con tarjetas"] : V > 40 ? [1, "Volumen alto para drone: muchas cargas por hectárea"] : [0, "Volumen habitual para drone"])
+      : (V < 10 ? [1, "Volumen muy bajo: solo con formulaciones y etiqueta para BVO/UBV"] : V > 60 ? [1, "Volumen alto para avión: pocas hectáreas por carga"] : [0, "Volumen habitual para avión"]);
+    return `<div class="panel" id="pVuelo">
+      <div class="panel-h"><h3>Plan de vuelo · ${dr ? "drone" : "avión"}</h3><span class="note">${q ? esc(q.nombre) : "valores típicos"}</span></div>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+        <label class="f">Velocidad (${vd.ud})<input id="vVel" type="number" step="${dr ? 0.5 : 5}" min="0" value="${vd.vel}"></label>
+        <label class="f">Ancho de faja (m)<input id="vFaja" type="number" step="0.5" min="0" value="${vd.faja}"></label>
+        <label class="f">Altura sobre el cultivo (m)<input id="vAlt" type="number" step="0.5" min="0" value="${vd.alt}"></label>
+        <label class="f">Gota (µm)<input id="vGota" type="number" step="10" min="0" value="${vd.gota}"></label>
+      </div>
+      <div class="kv" style="margin-top:10px">
+        <div><b>${Q != null ? fmt(Q, 2) + " L/min" : "—"}</b><span>Caudal necesario${qmax ? ` (máx. del equipo ${fmt(qmax, 1)})` : ""}</span></div>
+        <div><b>${haC != null ? fmt(haC, 2) + " ha" : "—"}</b><span>Por carga de ${fmt(S.tanque, 0)} L${rem ? ` (remanente ${fmt(rem, 1)} L)` : ""}</span></div>
+        <div><b>${cargas != null ? cargas : "—"}</b><span>Cargas para ${S.sup ? fmt(S.sup, 1) + " ha" : "la superficie"}</span></div>
+        <div><b>${tCarga != null ? fmt(tCarga, 1) + " min" : "—"}</b><span>Pulverizando por carga</span></div>
+        <div><b>${fmt(cap, 1)} ha/h</b><span>Capacidad estimada (eficiencia ${dr ? 50 : 45} %)</span></div>
+        ${bat != null ? `<div><b>${bat}</b><span>Baterías por carga (${fmt(q.autonomia, 0)} min c/u)</span></div>` : ""}
+      </div>
+      ${qmax && Q > qmax ? `<p class="rnote" style="margin-top:8px">El caudal necesario supera el máximo del equipo: bajar la velocidad a ${fmt(vmax, 1)} ${vd.ud} o menos, o achicar la faja o el volumen.</p>` : ""}
+      <p style="margin-top:8px">${pill(volTxt[0], fmt(V || 0, 0) + " L/ha")} <span class="note">${esc(volTxt[1])}</span></p>
+      ${cl.length ? `<div class="row" style="gap:6px;margin-top:8px">${cl.map(([l, t]) => pill(l, t)).join("")}</div>` : `<p class="note" style="margin-top:8px">Cargá las condiciones ambientales (panel 4) para revisar viento, temperatura, humedad y Delta T.</p>`}
+      <details class="box" style="margin-top:10px" open><summary>Gota y cobertura</summary><div class="in">${gotaHTML(ev, true)}</div></details>
+      <details class="box" style="margin-top:8px"><summary>Recomendaciones de vuelo</summary><div class="in"><ul class="clean">
+        ${[["Volumen", rec.volumen], ["Altura", rec.altura], ["Velocidad", rec.velocidad], ["Faja", rec.faja], ["Gota", rec.gota], ["Clima", rec.clima], ["Preparación del caldo", rec.mezcla]].map(([k, t]) => `<li><b>${k}:</b> ${esc(t)}</li>`).join("")}</ul></div></details>
+      <details class="box" style="margin-top:8px"><summary>Antes de ${dr ? "volar" : "despegar"} (${hechos.length}/${chk.length})</summary><div class="in chklist">${chk.map((t, i) => `<label><input type="checkbox" class="vChk" data-i="${i}" ${hechos.includes(i) ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div></details>
+      <details class="box" style="margin-top:8px"><summary>Normativa</summary><div class="in"><ul class="clean note">${EQD.normativa[dr ? "drone" : "aereo"].concat(dr ? EQD.normativa.aereo.slice(0, 2) : []).map(t => `<li>${esc(t)}</li>`).join("")}</ul></div></details>
+    </div>`;
+  }
+  // terrestre o mochila
+  if(!q || modoDe(q) !== m){
+    return `<div class="panel" id="pRegul"><div class="panel-h"><h3>Equipo y gota</h3><button class="btn sm" id="goEquipos">Cargar mi pulverizadora</button></div>
+      <p class="note" style="margin-bottom:8px">Elegí un equipo en “2 · Aplicación” para ver la pastilla y la presión que necesitás para ${fmt(V || 0, 0)} L/ha.</p>${gotaHTML(ev, false)}</div>`;
+  }
+  if(m === "mochila"){
+    const c = (q.calibraciones || [])[0], Vm = c ? c.V_real : null;
+    return `<div class="panel" id="pRegul"><div class="panel-h"><h3>Mochila · ${esc(q.nombre)}</h3>${pill(eqEstado(q).l, eqEstado(q).t)}</div>
+      ${Vm ? `<p>La mochila aplica <b>${fmt(Vm, 0)} L/ha</b>: cada carga de ${fmt(q.tanque, 0)} L cubre ${fmt(q.tanque / Vm * 10000, 0)} m².</p>
+        <div class="tw" style="margin-top:6px"><table><thead><tr><th>Producto</th><th style="text-align:right">Por mochila</th></tr></thead><tbody>${ev.xs.filter(x => x.dosis > 0).map(x => `<tr><td>${esc(x.n)}</td><td class="n">${fmt(x.dosis * q.tanque / Vm * 1000, 1)} ${unitOf(x) === "kg" ? "g" : "mL"}</td></tr>`).join("")}</tbody></table></div>`
+        : `<p class="note">Calibrá la mochila en “Equipos y calibración” para saber cuántos litros por hectárea aplica.</p>`}
+      <details class="box" style="margin-top:10px"><summary>Gota recomendada</summary><div class="in">${gotaHTML(ev, false)}</div></details></div>`;
+  }
+  const v = velEq(q, m), esp = (nv(q.espaciado) || 50) / 100, A = anchoEq(q);
+  const qn = V ? CAL.q(V, v, esp) : null, tipo = q.pastilla_tipo || "std", t = EQD.tipos_pastilla[tipo];
+  const Pact = qn && ISO[q.pastilla_iso] ? CAL.pres(qn, q.pastilla_iso) : null;
+  const okP = Pact != null && Pact >= t.pmin && Pact <= t.pmax;
+  const recs = qn ? recomPastillas(qn, tipo).slice(0, 3) : [];
+  const haT = CAL.haCarga(S.tanque, nv(q.remanente) || 0, V), tanques = haT && S.sup ? Math.ceil(S.sup / haT) : null;
+  const cap = A ? CAL.capTerr(A, v, (nv(q.eficiencia) || 60) / 100) : null;
+  const alt = EQD.altura_barra[String(q.angulo)];
+  return `<div class="panel" id="pRegul"><div class="panel-h"><h3>Regulación · ${esc(q.nombre)}</h3>${pill(eqEstado(q).l, eqEstado(q).t)}</div>
+    <div class="kv">
+      <div><b>${qn != null ? fmt(qn, 2) + " L/min" : "—"}</b><span>Caudal por pastilla a ${fmt(v, 1)} km/h</span></div>
+      <div><b>${Pact != null ? fmt(Pact, 1) + " bar" : "—"}</b><span>Presión con ${ISO[q.pastilla_iso] ? "la " + esc(q.pastilla_iso) + " actual" : "la pastilla actual"}</span></div>
+      <div><b>${haT != null ? fmt(haT, 1) + " ha" : "—"}</b><span>Por tanque</span></div>
+      <div><b>${tanques ?? "—"}</b><span>Tanques para ${S.sup ? fmt(S.sup, 1) + " ha" : "la superficie"}</span></div>
+      <div><b>${cap != null ? fmt(cap, 1) + " ha/h" : "—"}</b><span>Capacidad (barra de ${A ? fmt(A, 1) : "—"} m)</span></div>
+      ${alt ? `<div><b>${alt} cm</b><span>Altura de barra (pastillas de ${q.angulo}°)</span></div>` : ""}
+    </div>
+    ${Pact != null ? `<p style="margin-top:8px">${pill(okP ? 0 : 2, okP ? "Presión dentro del rango" : "Presión fuera del rango")} <span class="note">${esc(t.nombre)}: ${t.pmin} a ${t.pmax} bar.</span></p>` : ""}
+    ${recs.length ? `<p class="note" style="margin-top:6px">Pastillas de tipo ${esc(t.nombre)} que dan ${fmt(qn, 2)} L/min dentro de su rango: ${recs.map(r => `${isoChip(r.s)} a ${fmt(r.P, 1)} bar`).join(" · ")}.</p>` : qn ? `<p class="rnote" style="margin-top:6px">Ningún tamaño de ${esc(t.nombre)} da ${fmt(qn, 2)} L/min dentro de su rango de presión: cambiar la velocidad o el tipo de pastilla.</p>` : ""}
+    <details class="box" style="margin-top:10px"><summary>Gota recomendada</summary><div class="in">${gotaHTML(ev, false)}</div></details></div>`;
+}
+function bindEquipoPanel(ev){
+  renderEquipoSel();
+  const g = $("#goEquipos"); if(g) g.onclick = () => setView("equipos");
+  [["vVel", "vel"], ["vFaja", "faja"], ["vAlt", "alt"], ["vGota", "gota"]].forEach(([id, k]) => { const el = $("#" + id); if(el) el.onchange = e => { const x = nv(e.target.value); S.vuelo[k] = x != null && x > 0 ? x : null; save(); renderCaldo(); }; });
+  document.querySelectorAll(".vChk").forEach(c => c.onchange = () => { const i = +c.dataset.i, a = S.vuelo.chk || (S.vuelo.chk = []); const j = a.indexOf(i); if(c.checked && j < 0) a.push(i); if(!c.checked && j >= 0) a.splice(j, 1); save(); const sm = c.closest("details").querySelector("summary"); sm.textContent = sm.textContent.replace(/\(\d+\//, `(${a.length}/`); });
+}
+
+/* ---------- Pestaña Equipos y calibración ---------- */
+let EQ_SEL = load("eq_sel", null);
+const CW = {};   // borradores de calibración por equipo (en memoria)
+function renderEquipos(){
+  const el = $("#v-equipos");
+  if(!findEq(EQ_SEL)) EQ_SEL = (EQUIPOS[0] || {}).id || null;
+  const q = findEq(EQ_SEL);
+  el.innerHTML = `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><h2>Equipos y calibración</h2><p class="lead">Cargá tus pulverizadoras, mochilas, drones y aviones con sus medidas. Calcula la pastilla y la presión, guía la calibración a campo (velocidad, caudal por pastilla, volumen real) y guarda el historial de cada equipo. En “Armar caldo” elegís el equipo y la app usa su tanque y su calibración.</p></div>
+    <button class="btn pri" id="eqNuevo">Nuevo equipo</button></div>
+    ${EQUIPOS.length ? `<div class="eqgrid"><div class="eqlist">${EQUIPOS.map(e => { const st = eqEstado(e); return `<button class="eqcard" data-id="${esc(e.id)}" aria-pressed="${e.id === EQ_SEL}"><span class="t">${esc(e.nombre)}</span><span class="note">${esc(TIPOS_EQ[e.tipo] || e.tipo)} · ${e.tanque ? fmt(e.tanque, 0) + " L" : "—"}${e.tipo === "drone" || e.tipo === "avion" || e.tipo === "mochila" ? (e.faja ? " · faja " + fmt(e.faja, 1) + " m" : "") : anchoEq(e) ? " · " + fmt(anchoEq(e), 1) + " m de barra" : ""}</span><span>${pill(st.l, st.t)}${e.ejemplo ? ` <span class="tag">ejemplo</span>` : ""}</span></button>`; }).join("")}</div>
+      <div class="stack" id="eqDet">${q ? eqDetalleHTML(q) : ""}</div></div>`
+      : `<div class="panel"><p>Todavía no cargaste equipos.</p><p class="note">Tocá “Nuevo equipo” y elegí el tipo: pulverizadora autopropulsada, de arrastre o montada, mochila, drone o avión.</p></div>`}`;
+  $("#eqNuevo").onclick = () => openEqForm(null);
+  el.querySelectorAll(".eqcard").forEach(b => b.onclick = () => { EQ_SEL = b.dataset.id; store("eq_sel", EQ_SEL); renderEquipos(); });
+  if(q) bindEqDetalle(q);
+}
+function eqDatosTabla(q){
+  const m = modoDe(q), filas = [["Tipo", TIPOS_EQ[q.tipo]], ["Marca y modelo", q.marca || (q.modelo ? ((EQD.drones.concat(EQD.aviones)).find(x => x.id === q.modelo) || {}).nombre : "")], [m === "avion" ? "Tolva" : "Tanque", q.tanque ? fmt(q.tanque, 0) + " L" : null], ["Remanente (no aplicable)", q.remanente ? fmt(q.remanente, 1) + " L" : null]];
+  if(m === "terrestre") filas.push(["Barra", anchoEq(q) ? `${fmt(anchoEq(q), 1)} m · ${q.n_pastillas || "—"} pastillas a ${q.espaciado || "—"} cm` : null], ["Pastillas", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}${q.angulo ? " · " + q.angulo + "°" : ""}`], ["Presión de trabajo", q.presion ? fmt(q.presion, 1) + " bar" : null], ["Velocidad", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Altura de barra", q.altura ? q.altura + " cm" : null], ["Bomba", q.bomba ? fmt(q.bomba, 0) + " L/min" : null], ["Eficiencia de campo", q.eficiencia ? q.eficiencia + " %" : null]);
+  if(m === "mochila") filas.push(["Ancho de faja", q.faja ? fmt(q.faja, 2) + " m" : null], ["Velocidad de marcha", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Pastilla", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}`], ["Presión", q.presion ? fmt(q.presion, 1) + " bar" : null]);
+  if(m === "drone" || m === "avion") filas.push(["Ancho de faja", q.faja ? fmt(q.faja, 1) + " m" : null], ["Velocidad de trabajo", q.vel ? fmt(q.vel, 1) + (m === "drone" ? " m/s" : " km/h") : null], ["Altura de vuelo", q.alt ? fmt(q.alt, 1) + " m" : null], ["Caudal máximo", q.caudal_max ? fmt(q.caudal_max, 1) + " L/min" : null], ["Atomizadores", q.atom ? `${q.n_atom || ""} ${q.atom === "centrifugo" ? "centrífugos" : q.atom === "rotativo" ? "rotativos" : "hidráulicos (picos)"}` : null], ["Gota", q.gota ? q.gota + " µm" : null]);
+  if(m === "drone") filas.push(["Baterías", q.autonomia ? `${q.baterias || "—"} de ${q.autonomia} min` : null]);
+  return `<div class="tw"><table><tbody>${filas.filter(f => f[1]).map(([k, v]) => `<tr><th style="width:42%">${esc(k)}</th><td>${String(v).includes("<span") ? v : esc(v)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function eqDetalleHTML(q){
+  const m = modoDe(q), st = eqEstado(q), cals = q.calibraciones || [];
+  const chk = m === "drone" ? EQD.check_drone : m === "avion" ? EQD.check_avion : m === "mochila" ? EQD.check_insp.filter((_, i) => [0, 5, 6, 7].includes(i)) : EQD.check_insp;
+  const ins = q.inspeccion || {};
+  return `<div class="panel"><div class="panel-h"><h3>${esc(q.nombre)}</h3><span class="row" style="gap:6px">${pill(st.l, st.t)}<button class="btn sm" id="eqEdit">Editar datos</button><button class="btn sm" id="eqDup">Duplicar</button><button class="btn sm" id="eqDel">Borrar</button></span></div>${eqDatosTabla(q)}</div>
+    <div class="panel"><div class="panel-h"><h3>Regulación</h3><span class="note">Qué pastilla, presión o velocidad usar para el volumen buscado</span></div><div id="eqReg">${eqRegHTML(q)}</div></div>
+    <div class="panel"><div class="panel-h"><h3>Calibración a campo</h3><span class="note">Medí, compará y guardá</span></div><div id="eqCal">${eqCalHTML(q)}</div></div>
+    <div class="panel"><div class="panel-h"><h3>${m === "drone" || m === "avion" ? "Lista de control antes de aplicar" : "Inspección del equipo"}</h3><span class="note">${ins.fecha ? "Última: " + fmtFecha(ins.fecha) + ` · ${ins.ok.length}/${ins.total} en orden` : "Sin registrar"}</span></div>
+      <div class="chklist" id="eqChk">${chk.map((t, i) => `<label><input type="checkbox" data-i="${i}" ${ins.ok && ins.ok.includes(i) && ins.total === chk.length ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div>
+      <div class="row" style="margin-top:10px"><button class="btn sm" id="eqChkSave">Guardar ${m === "drone" || m === "avion" ? "control" : "inspección"} de hoy</button></div></div>
+    <div class="panel"><div class="panel-h"><h3>Historial de calibraciones</h3><span class="note">${cals.length} registradas</span></div>
+      ${cals.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Objetivo</th><th>Real</th><th>Error</th><th>Detalle</th><th>Resultado</th><th></th></tr></thead><tbody>${cals.map((c, i) => `<tr><td class="mono">${esc(fmtFecha(c.fecha))}</td><td class="n">${fmt(c.V_obj, 1)} L/ha</td><td class="n">${fmt(c.V_real, 1)} L/ha</td><td class="n">${c.error != null ? (c.error > 0 ? "+" : "") + fmt(c.error, 1) + " %" : "—"}</td><td class="note">${calDetTxt(c)}</td><td>${pill(c.apto ? 0 : 2, c.apto ? "Apto" : "Corregir")}</td><td><button class="btn sm" data-cdel="${i}">Borrar</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="note">Todavía no hay calibraciones guardadas.</p>`}</div>
+    ${m === "drone" || m === "avion" ? `<div class="panel"><div class="panel-h"><h3>Recomendaciones y normativa</h3></div><ul class="clean">${Object.entries({Volumen: "volumen", Altura: "altura", Velocidad: "velocidad", Faja: "faja", Gota: "gota", Clima: "clima", "Preparación del caldo": "mezcla"}).map(([k, v]) => `<li><b>${k}:</b> ${esc(EQD.vuelo[m][v])}</li>`).join("")}</ul>
+      <ul class="clean note" style="margin-top:8px">${EQD.normativa[m === "drone" ? "drone" : "aereo"].map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>`
+    : `<div class="panel"><div class="panel-h"><h3>Normativa para aplicación terrestre</h3></div><ul class="clean note">${EQD.normativa.terrestre.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>`}`;
+}
+function calDetTxt(c){
+  const d = c.det || {};
+  if(c.tipo === "terrestre") return `${fmt(d.vel, 1)} km/h · ${fmt(d.P, 1)} bar · media ${fmt(d.media, 3)} L/min · CV ${fmt(d.cv, 1)} %${d.fuera && d.fuera.length ? ` · ${d.fuera.length} pastillas fuera` : ""}`;
+  if(c.tipo === "mochila") return `${fmt(d.area, 0)} m² · ${fmt(d.gastado, 2)} L promedio`;
+  return `${fmt(d.vel, 1)} ${c.tipo === "drone" ? "m/s" : "km/h"} · faja ${fmt(d.faja, 1)} m · ${fmt(d.Q, 2)} L/min${d.impactos ? ` · ${d.impactos} impactos/cm²` : ""}`;
+}
+function eqRegHTML(q){
+  const m = modoDe(q), cw = CW[q.id] || (CW[q.id] = {});
+  const V = nv(cw.rV) ?? volEq(q);
+  if(m === "terrestre" || m === "mochila"){
+    const v = nv(cw.rv) ?? velEq(q, m), esp = m === "mochila" ? (nv(q.faja) || 1) : (nv(q.espaciado) || 50) / 100;
+    const qn = CAL.q(V, v, esp), tipo = q.pastilla_tipo || "std", t = EQD.tipos_pastilla[tipo];
+    const tabla = EQD.pastillas.map(([s, c, h, q3]) => { const P = 3 * Math.pow(qn / q3, 2); return {s, P, ok: P >= t.pmin && P <= t.pmax}; }).filter(x => x.P >= 0.5 && x.P <= 25);
+    const A = m === "terrestre" ? anchoEq(q) : nv(q.faja);
+    const alt = EQD.altura_barra[String(q.angulo)], ang = nv(q.angulo), espc = nv(q.espaciado);
+    const altGeo = ang && espc ? espc / Math.tan(ang / 2 * Math.PI / 180) : null;
+    return `<div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+        <label class="f">Volumen buscado (L/ha)<input id="rgV" type="number" step="1" value="${V}"></label>
+        <label class="f">Velocidad (km/h)<input id="rgv" type="number" step="0.5" value="${v}"></label></div>
+      <div class="kv" style="margin-top:10px">
+        <div><b>${fmt(qn, 3)} L/min</b><span>Caudal por ${m === "mochila" ? "la pastilla" : "pastilla"} (${m === "mochila" ? "faja " + fmt(esp, 2) + " m" : "a " + fmt(esp * 100, 0) + " cm"})</span></div>
+        ${A ? `<div><b>${fmt(qn * (m === "terrestre" ? (q.n_pastillas || A / esp) : 1), 1)} L/min</b><span>Caudal total de la ${m === "mochila" ? "mochila" : "barra"}</span></div>` : ""}
+        ${m === "terrestre" && A ? `<div><b>${fmt(CAL.capTerr(A, v, (nv(q.eficiencia) || 60) / 100), 1)} ha/h</b><span>Capacidad efectiva</span></div>` : ""}
+        <div><b>${q.tanque ? fmt(CAL.haCarga(q.tanque, q.remanente, V), m === "mochila" ? 3 : 1) + " ha" : "—"}</b><span>Por ${m === "mochila" ? "mochila" : "tanque"}</span></div>
+        ${m === "terrestre" && alt ? `<div><b>${alt} cm</b><span>Altura de barra (${q.angulo}°, práctica de campo)</span></div>` : ""}
+      </div>
+      <p class="note" style="margin-top:8px">Presión necesaria según el tamaño de pastilla (${esc(t.nombre)}: ${t.pmin} a ${t.pmax} bar). En verde, los tamaños que trabajan dentro de su rango.</p>
+      <div class="tw"><table><thead><tr><th>Pastilla ISO</th><th style="text-align:right">L/min a 3 bar</th><th style="text-align:right">Presión necesaria</th><th></th></tr></thead><tbody>
+        ${tabla.map(x => `<tr${x.s === q.pastilla_iso ? ' style="font-weight:700"' : ""}><td>${isoChip(x.s)}${x.s === q.pastilla_iso ? " (actual)" : ""}</td><td class="n">${fmt(ISO[x.s].q, 1)}</td><td class="n">${fmt(x.P, 2)} bar</td><td>${x.ok ? pill(0, "En rango") : pill(null, x.P < t.pmin ? "Presión baja" : "Presión alta")}</td></tr>`).join("")}</tbody></table></div>
+      ${altGeo ? `<p class="note" style="margin-top:6px">Altura geométrica mínima para doble cobertura: ${fmt(altGeo, 0)} cm; en el campo se usa algo más (los bordes del abanico pierden carga).</p>` : ""}
+      <p class="note">Caudal = volumen × velocidad × separación ÷ 600. El caudal cambia con la raíz de la presión: para duplicarlo hay que cuadruplicar la presión.</p>`;
+  }
+  const dr = m === "drone", v = nv(cw.rv) ?? velEq(q, m), W = nv(cw.rW) ?? nv(q.faja) ?? (dr ? 7 : 25);
+  const Q = dr ? CAL.qDrone(V, v, W) : CAL.qAvion(V, v, W), qmax = nv(q.caudal_max);
+  const vmax = qmax ? (dr ? qmax / (V * W * 0.006) : qmax * 600 / (V * W)) : null;
+  const haC = CAL.haCarga(q.tanque, q.remanente, V), tC = Q ? Math.max(0, (q.tanque || 0) - (q.remanente || 0)) / Q : null;
+  const porAtom = q.n_atom ? Q / q.n_atom : null;
+  return `<div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      <label class="f">Volumen buscado (L/ha)<input id="rgV" type="number" step="1" value="${V}"></label>
+      <label class="f">Velocidad (${dr ? "m/s" : "km/h"})<input id="rgv" type="number" step="${dr ? 0.5 : 5}" value="${v}"></label>
+      <label class="f">Ancho de faja (m)<input id="rgW" type="number" step="0.5" value="${W}"></label></div>
+    <div class="kv" style="margin-top:10px">
+      <div><b>${fmt(Q, 2)} L/min</b><span>Caudal a cargar en ${dr ? "la app del drone" : "el sistema"}${qmax ? ` (máx. ${fmt(qmax, 1)})` : ""}</span></div>
+      ${porAtom ? `<div><b>${fmt(porAtom, 2)} L/min</b><span>Por atomizador (${q.n_atom})</span></div>` : ""}
+      <div><b>${haC != null ? fmt(haC, 2) + " ha" : "—"}</b><span>Por carga</span></div>
+      <div><b>${tC != null ? fmt(tC, 1) + " min" : "—"}</b><span>Pulverizando por carga</span></div>
+      <div><b>${fmt(dr ? CAL.capDrone(W, v, 0.5) : CAL.capAvion(W, v, 0.45), 1)} ha/h</b><span>Capacidad estimada</span></div>
+    </div>
+    ${qmax && Q > qmax ? `<p class="rnote" style="margin-top:8px">Supera el caudal máximo: bajar la velocidad a ${fmt(vmax, 1)} ${dr ? "m/s" : "km/h"} o menos.</p>` : ""}
+    <p class="note" style="margin-top:8px">${dr ? "Caudal = volumen × velocidad (m/s) × faja × 0,006." : "Caudal = volumen × velocidad (km/h) × faja ÷ 600."} Usar la faja verificada con tarjetas, no la máxima del catálogo.</p>`;
+}
+function eqCalHTML(q){
+  const m = modoDe(q), cw = CW[q.id] || (CW[q.id] = {});
+  const V = nv(cw.cV) ?? volEq(q);
+  if(m === "terrestre"){
+    const n = Math.min(80, nv(cw.n) ?? (q.n_pastillas || 10)), tc = nv(cw.tc) ?? (EQD.tiempo_colecta[q.pastilla_iso] || 60);
+    cw.ml = cw.ml || [];
+    return `<ol class="clean" style="padding-left:18px;list-style:decimal;margin-bottom:8px">
+        <li class="note">Tanque a la mitad con agua limpia, filtros limpios y la presión de trabajo estable unos 3 minutos.</li>
+        <li class="note">Velocidad: marcá 50 m, arrancá 10 m antes y tomá el tiempo de ida y de vuelta.</li>
+        <li class="note">Caudal: juntá lo que tira cada pastilla durante el tiempo indicado con una jarra graduada (en mL).</li></ol>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+        <label class="f">Volumen buscado (L/ha)<input class="cwi" data-k="cV" type="number" step="1" value="${V}"></label>
+        <label class="f">Presión de trabajo (bar)<input class="cwi" data-k="cP" type="number" step="0.1" value="${nv(cw.cP) ?? q.presion ?? 3}"></label>
+        <label class="f">Distancia (m)<input class="cwi" data-k="d" type="number" step="1" value="${nv(cw.d) ?? 50}"></label>
+        <label class="f">Tiempo ida (s)<input class="cwi" data-k="t1" type="number" step="0.1" value="${cw.t1 ?? ""}"></label>
+        <label class="f">Tiempo vuelta (s)<input class="cwi" data-k="t2" type="number" step="0.1" value="${cw.t2 ?? ""}"></label>
+        <label class="f">Pastillas a medir<input class="cwi" data-k="n" type="number" min="1" max="80" step="1" value="${n}"></label>
+        <label class="f">Tiempo de colecta (s)<input class="cwi" data-k="tc" type="number" min="10" step="5" value="${tc}"></label></div>
+      <p class="note" style="margin:10px 0 6px">mL recogidos por pastilla (de izquierda a derecha):</p>
+      <div class="cwgrid" id="cwMl">${Array.from({length: n}, (_, i) => `<label>N.º ${i + 1}<input type="number" min="0" step="1" data-i="${i}" value="${cw.ml[i] ?? ""}"></label>`).join("")}</div>
+      <div id="cwRes" style="margin-top:12px">${calTerrRes(q)}</div>`;
+  }
+  if(m === "mochila"){
+    cw.g = cw.g || [];
+    return `<p class="note" style="margin-bottom:8px">Marcá un área (por ejemplo 50 m de largo por el ancho de faja), cargá la mochila con agua hasta una marca, aplicá caminando como lo hacés siempre y medí cuánto hay que reponer. Repetí 3 veces.</p>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+        <label class="f">Largo (m)<input class="cwi" data-k="lar" type="number" step="1" value="${nv(cw.lar) ?? 50}"></label>
+        <label class="f">Ancho de faja (m)<input class="cwi" data-k="anc" type="number" step="0.1" value="${nv(cw.anc) ?? q.faja ?? 2}"></label>
+        ${[0, 1, 2].map(i => `<label class="f">Litros gastados ${i + 1}<input class="cwg" data-i="${i}" type="number" step="0.01" value="${cw.g[i] ?? ""}"></label>`).join("")}
+        <label class="f">Volumen buscado (L/ha)<input class="cwi" data-k="cV" type="number" step="1" value="${V}"></label></div>
+      <div id="cwRes" style="margin-top:12px">${calMochRes(q)}</div>`;
+  }
+  const dr = m === "drone";
+  return `<p class="note" style="margin-bottom:8px">${dr ? "1) Hacé la calibración de caudal en la app del drone (o juntá lo que tiran todas las boquillas durante 1 minuto a la presión o velocidad de bomba de trabajo). 2) Verificá el ancho de faja con tarjetas hidrosensibles o papel en una línea perpendicular al vuelo. 3) Contá los impactos por cm² en las tarjetas." : "1) Medí el caudal con el caudalímetro o juntando lo que tiran los atomizadores en un tiempo conocido. 2) Hacé una pasada sobre una línea de tarjetas o colectores para medir la faja efectiva. 3) Contá los impactos por cm²."}</p>
+    <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+      <label class="f">Volumen buscado (L/ha)<input class="cwi" data-k="cV" type="number" step="1" value="${V}"></label>
+      <label class="f">Velocidad (${dr ? "m/s" : "km/h"})<input class="cwi" data-k="cv" type="number" step="${dr ? 0.5 : 5}" value="${nv(cw.cv) ?? velEq(q, m)}"></label>
+      <label class="f">Faja verificada (m)<input class="cwi" data-k="cW" type="number" step="0.5" value="${nv(cw.cW) ?? q.faja ?? ""}"></label>
+      <label class="f">Litros recogidos<input class="cwi" data-k="L" type="number" step="0.01" value="${cw.L ?? ""}"></label>
+      <label class="f">En (segundos)<input class="cwi" data-k="Ls" type="number" step="1" value="${nv(cw.Ls) ?? 60}"></label>
+      <label class="f">Impactos/cm² (tarjetas)<input class="cwi" data-k="imp" type="number" step="1" value="${cw.imp ?? ""}"></label></div>
+    <div id="cwRes" style="margin-top:12px">${calAereoRes(q)}</div>`;
+}
+function calTerrRes(q){
+  const cw = CW[q.id], V = nv(cw.cV) ?? volEq(q), P = nv(cw.cP) ?? q.presion ?? 3, esp = (nv(q.espaciado) || 50) / 100;
+  const d = nv(cw.d) ?? 50, ts = [nv(cw.t1), nv(cw.t2)].filter(t => t > 0);
+  const vel = ts.length ? 3.6 * d / (ts.reduce((a, b) => a + b, 0) / ts.length) : (nv(q.vel) || null);
+  const tc = nv(cw.tc) ?? (EQD.tiempo_colecta[q.pastilla_iso] || 60), n = Math.min(80, nv(cw.n) ?? (q.n_pastillas || 10));
+  if(!(V > 0) || !(tc > 0) || !(esp > 0)) return `<p class="note">Cargá el volumen buscado, el tiempo de colecta y la separación entre pastillas.</p>`;
+  const qs = (cw.ml || []).slice(0, n).map(x => nv(x) != null ? nv(x) / 1000 * 60 / tc : null);
+  const val = qs.filter(x => x != null);
+  if(val.length < 2 || !vel) return `<p class="note">${!vel ? "Cargá los tiempos de ida y vuelta (o la velocidad del equipo). " : ""}Cargá al menos 2 pastillas para ver el resultado.</p>`;
+  const media = val.reduce((a, b) => a + b, 0) / val.length;
+  const sd = Math.sqrt(val.reduce((a, b) => a + (b - media) ** 2, 0) / (val.length - 1)), cv = sd / media * 100;
+  const qnom = ISO[q.pastilla_iso] ? CAL.qNom(q.pastilla_iso, P) : null;
+  const tolN = (qnom != null && qnom < 1 ? EQD.tolerancias.pastilla_nominal_bajo_pct : EQD.tolerancias.pastilla_nominal_pct);
+  const fuera = [];
+  qs.forEach((x, i) => { if(x == null) return; const dn = qnom ? (x - qnom) / qnom * 100 : null, dm = (x - media) / media * 100;
+    if((dn != null && Math.abs(dn) > tolN) || (dn == null && Math.abs(dm) > EQD.tolerancias.pastilla_media_pct)) fuera.push({i, x, dn, dm}); });
+  const Vr = CAL.vReal(media, vel, esp), err = (Vr - V) / V * 100;
+  const apto = Math.abs(err) <= EQD.tolerancias.volumen_pct && !fuera.length;
+  const Pn = P * Math.pow(V / Vr, 2), vN = vel * Vr / V, t = EQD.tipos_pastilla[q.pastilla_tipo || "std"];
+  const juego = fuera.length >= Math.max(1, Math.ceil(val.length * 0.1));
+  cw._res = {vel, P, media, cv, Vr, err, apto, fuera: fuera.map(f => f.i + 1), n: val.length, V};
+  document.querySelectorAll("#cwMl input").forEach(inp => inp.classList.toggle("bad", fuera.some(f => f.i === +inp.dataset.i)));
+  return `<div class="kv">
+      <div><b>${fmt(vel, 1)} km/h</b><span>Velocidad ${ts.length ? "medida" : "del equipo"}</span></div>
+      <div><b>${fmt(media, 3)} L/min</b><span>Caudal medio (${val.length} pastillas)</span></div>
+      ${qnom ? `<div><b>${fmt(qnom, 3)} L/min</b><span>Nominal de la ${esc(q.pastilla_iso)} a ${fmt(P, 1)} bar</span></div>` : ""}
+      <div><b>${fmt(cv, 1)} %</b><span>Coeficiente de variación</span></div>
+      <div><b>${fmt(Vr, 1)} L/ha</b><span>Volumen real</span></div>
+      <div><b>${err > 0 ? "+" : ""}${fmt(err, 1)} %</b><span>Diferencia con ${fmt(V, 0)} L/ha (tolerancia ±${EQD.tolerancias.volumen_pct} %)</span></div>
+    </div>
+    <p style="margin-top:8px">${pill(apto ? 0 : 2, apto ? "Equipo calibrado" : "Corregir antes de aplicar")}</p>
+    ${fuera.length ? `<p class="rnote" style="margin-top:6px">${fuera.length} pastilla${fuera.length > 1 ? "s" : ""} fuera de tolerancia (${qnom ? `±${tolN} % del nominal` : `±${EQD.tolerancias.pastilla_media_pct} % de la media`}): ${fuera.map(f => `N.º ${f.i + 1} (${fmt(f.x, 3)} L/min, ${f.dn != null ? (f.dn > 0 ? "+" : "") + fmt(f.dn, 0) : (f.dm > 0 ? "+" : "") + fmt(f.dm, 0)} %)`).join(", ")}. ${juego ? "Son 10 % o más de las medidas: conviene cambiar el juego completo." : "Limpiar o cambiar esas pastillas y volver a medir."}</p>` : ""}
+    ${!apto && Math.abs(err) > EQD.tolerancias.volumen_pct ? `<p class="note" style="margin-top:6px">Para llegar a ${fmt(V, 0)} L/ha: ${Pn >= t.pmin && Pn <= t.pmax ? `llevar la presión a ${fmt(Pn, 1)} bar` : `la presión necesaria (${fmt(Pn, 1)} bar) queda fuera del rango de la pastilla`}${vN >= 4 && vN <= 30 ? `, o cambiar la velocidad a ${fmt(vN, 1)} km/h` : ""}.</p>` : ""}
+    ${cv > EQD.tolerancias.cv_barra_pct ? `<p class="note">El CV entre pastillas supera ${EQD.tolerancias.cv_barra_pct} %: revisar filtros, pastillas tapadas o desgastadas y caída de presión en la barra.</p>` : ""}
+    <div class="row" style="margin-top:10px"><button class="btn pri sm" id="cwSave">Guardar calibración</button><button class="btn sm" id="cwClr">Limpiar mediciones</button></div>`;
+}
+function calMochRes(q){
+  const cw = CW[q.id], area = (nv(cw.lar) ?? 50) * (nv(cw.anc) ?? q.faja ?? 2), g = (cw.g || []).map(nv).filter(x => x > 0), V = nv(cw.cV) ?? volEq(q);
+  if(!g.length || !area) return `<p class="note">Cargá los litros gastados en al menos una pasada.</p>`;
+  if(!(V > 0)) return `<p class="note">Cargá el volumen buscado.</p>`;
+  const tolM = EQD.tolerancias.mochila_pct, gm = g.reduce((a, b) => a + b, 0) / g.length, Vr = gm / area * 10000, err = (Vr - V) / V * 100, apto = Math.abs(err) <= tolM;
+  cw._res = {area, gastado: gm, Vr, err, apto, V};
+  return `<div class="kv"><div><b>${fmt(area, 0)} m²</b><span>Área de prueba</span></div><div><b>${fmt(gm, 2)} L</b><span>Promedio gastado</span></div><div><b>${fmt(Vr, 0)} L/ha</b><span>Volumen real</span></div>
+      <div><b>${q.tanque ? fmt(q.tanque / Vr * 10000, 0) + " m²" : "—"}</b><span>Superficie por mochila</span></div><div><b>${err > 0 ? "+" : ""}${fmt(err, 0)} %</b><span>Diferencia con ${fmt(V, 0)} L/ha (tolerancia ±${tolM} %)</span></div></div>
+    <p style="margin-top:8px">${pill(apto ? 0 : 2, apto ? "Calibrada" : "Ajustar el paso o la presión")}</p>
+    <p class="note">Con la mochila calibrada, la cantidad de producto por carga = dosis por hectárea × litros de la mochila ÷ ${fmt(Vr, 0)} L/ha. Se ve en “Armar caldo” al elegir la mochila.</p>
+    <div class="row" style="margin-top:10px"><button class="btn pri sm" id="cwSave">Guardar calibración</button></div>`;
+}
+function calAereoRes(q){
+  const cw = CW[q.id], m = modoDe(q), dr = m === "drone", V = nv(cw.cV) ?? volEq(q), v = nv(cw.cv) ?? velEq(q, m), W = nv(cw.cW) ?? nv(q.faja);
+  const L = nv(cw.L), Ls = nv(cw.Ls) ?? 60;
+  if(!(W > 0) || !(V > 0) || !(v > 0)) return `<p class="note">Cargá el volumen buscado, la velocidad y el ancho de faja verificado.</p>`;
+  const Qn = dr ? CAL.qDrone(V, v, W) : CAL.qAvion(V, v, W);
+  if(L == null || !Ls) return `<p class="note">Caudal necesario: <b>${fmt(Qn, 2)} L/min</b>. Cargá lo recogido para comparar.</p>`;
+  const Q = L / Ls * 60, Vr = dr ? Q / (v * W * 0.006) : Q * 600 / (v * W), err = (Vr - V) / V * 100;
+  const imp = nv(cw.imp), objImp = gotaCaldo(evaluate(S)).map(g => parseInt(g.impactos)).filter(x => x > 0), minImp = objImp.length ? Math.max(...objImp) : 20;
+  const apto = Math.abs(err) <= EQD.tolerancias.volumen_pct && (imp == null || imp >= minImp);
+  cw._res = {vel: v, faja: W, Q, Vr, err, apto, impactos: imp, V};
+  return `<div class="kv"><div><b>${fmt(Qn, 2)} L/min</b><span>Caudal necesario</span></div><div><b>${fmt(Q, 2)} L/min</b><span>Caudal medido</span></div>
+      <div><b>${fmt(Vr, 1)} L/ha</b><span>Volumen real</span></div><div><b>${err > 0 ? "+" : ""}${fmt(err, 1)} %</b><span>Diferencia con ${fmt(V, 0)} L/ha</span></div>
+      ${imp != null ? `<div><b>${fmt(imp, 0)}</b><span>Impactos/cm² (mínimo ${minImp} para el caldo actual)</span></div>` : ""}</div>
+    <p style="margin-top:8px">${pill(apto ? 0 : 2, apto ? "Calibrado" : "Corregir antes de aplicar")}</p>
+    ${Math.abs(err) > EQD.tolerancias.volumen_pct ? (() => { const vS = v * Vr / V, vOk = dr ? vS >= 2 && vS <= 8 : vS >= 150 && vS <= 260;
+      return `<p class="note">Ajustar el caudal a ${fmt(Qn, 2)} L/min ${dr ? "en la app del drone (calibración del caudalímetro)" : "(presión, restrictores o palas de los atomizadores)"}${vOk ? ` o la velocidad a ${fmt(vS, 1)} ${dr ? "m/s" : "km/h"}` : ""}.</p>`; })() : ""}
+    ${imp != null && imp < minImp ? `<p class="note">Pocos impactos: subir el volumen, bajar la gota o la altura, o achicar la faja.</p>` : ""}
+    <div class="row" style="margin-top:10px"><button class="btn pri sm" id="cwSave">Guardar calibración</button></div>`;
+}
+function bindEqDetalle(q){
+  const m = modoDe(q), cw = CW[q.id];
+  $("#eqEdit").onclick = () => openEqForm(q);
+  $("#eqDup").onclick = () => { const c = clone(q); c.id = uid("eq"); c.nombre = q.nombre + " (copia)"; c.ejemplo = false; c.calibraciones = []; c.inspeccion = null; EQUIPOS.push(c); saveEquipos(); EQ_SEL = c.id; renderEquipos(); };
+  $("#eqDel").onclick = e => { const b = e.target; if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Seguro?"; return; } EQUIPOS = EQUIPOS.filter(x => x !== q); saveEquipos(); if(S.equipo === q.id){ S.equipo = null; save(); } EQ_SEL = null; renderEquipos(); toast("Equipo borrado"); };
+  const regBind = () => { const r = $("#eqReg"); r.innerHTML = eqRegHTML(q); [["rgV", "rV"], ["rgv", "rv"], ["rgW", "rW"]].forEach(([id, k]) => { const el = $("#" + id); if(el) el.onchange = ev => { const x = nv(ev.target.value); if(x == null || x <= 0){ toast("Cargá un valor mayor que cero"); regBind(); return; } cw[k] = x; regBind(); }; }); };
+  regBind();
+  const res = () => { const r = $("#cwRes"); if(!r) return; r.innerHTML = m === "terrestre" ? calTerrRes(q) : m === "mochila" ? calMochRes(q) : calAereoRes(q); bindSave(); };
+  const calBind = () => { $("#eqCal").innerHTML = eqCalHTML(q);
+    document.querySelectorAll("#eqCal .cwi").forEach(el => el.oninput = ev => { cw[el.dataset.k] = ev.target.value; if(el.dataset.k === "n") calBind(); else res(); });
+    document.querySelectorAll("#cwMl input").forEach(el => el.oninput = ev => { cw.ml[+el.dataset.i] = ev.target.value; res(); });
+    document.querySelectorAll("#eqCal .cwg").forEach(el => el.oninput = ev => { cw.g[+el.dataset.i] = ev.target.value; res(); });
+    res(); };
+  const bindSave = () => {
+    const sb = $("#cwSave"); if(sb) sb.onclick = () => { const r = cw._res; if(!r) return;
+      const rec = {fecha: fechaMas(0), tipo: m === "terrestre" ? "terrestre" : m, V_obj: r.V, V_real: Math.round(r.Vr * 10) / 10, error: Math.round(r.err * 10) / 10, apto: r.apto,
+        det: m === "terrestre" ? {vel: r.vel, P: r.P, media: r.media, cv: r.cv, n: r.n, fuera: r.fuera} : m === "mochila" ? {area: r.area, gastado: r.gastado} : {vel: r.vel, faja: r.faja, Q: r.Q, impactos: r.impactos}};
+      (q.calibraciones = q.calibraciones || []).unshift(rec); q.ejemplo = false; saveEquipos(); toast("Calibración guardada"); renderEquipos(); };
+    const cb = $("#cwClr"); if(cb) cb.onclick = () => { cw.ml = []; cw.t1 = cw.t2 = ""; calBind(); };
+  };
+  calBind();
+  $("#eqChkSave").onclick = () => { const boxes = [...document.querySelectorAll("#eqChk input")]; q.inspeccion = {fecha: fechaMas(0), ok: boxes.filter(b => b.checked).map(b => +b.dataset.i), total: boxes.length}; saveEquipos(); toast("Guardado"); renderEquipos(); };
+  document.querySelectorAll("[data-cdel]").forEach(b => b.onclick = () => { if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Seguro?"; return; } q.calibraciones.splice(+b.dataset.cdel, 1); saveEquipos(); renderEquipos(); });
+}
+function openEqForm(q0){
+  const nuevo = !q0, q = q0 ? clone(q0) : {id: uid("eq"), tipo: "autopropulsada", nombre: "", tanque: 3000, n_pastillas: 54, espaciado: 50, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 3, vel: 16, altura: 50, eficiencia: 60, calibraciones: []};
+  const draw = () => {
+    const m = modoDe(q), num = (k, lab, st = "any", ph = "") => `<label class="f">${lab}<input data-k="${k}" type="number" step="${st}" value="${q[k] ?? ""}" placeholder="${ph}"></label>`;
+    const selTipoPast = `<label class="f">Tipo de pastilla<select data-k="pastilla_tipo">${Object.entries(EQD.tipos_pastilla).map(([k, t]) => `<option value="${k}"${q.pastilla_tipo === k ? " selected" : ""}>${esc(t.nombre)}</option>`).join("")}</select></label>`;
+    const selIso = `<label class="f">Tamaño ISO (color)<select data-k="pastilla_iso"><option value="">—</option>${EQD.pastillas.map(([s, c, h, q3]) => `<option value="${s}"${q.pastilla_iso === s ? " selected" : ""}>${s} · ${esc(c)} (${fmt(q3, 1)} L/min a 3 bar)</option>`).join("")}</select></label>`;
+    const modelos = m === "drone" ? EQD.drones : m === "avion" ? EQD.aviones : null;
+    let campos = "";
+    if(m === "terrestre") campos = `${num("n_pastillas", "N.º de pastillas", 1)}${num("espaciado", "Separación entre pastillas (cm)", 1, "50")}${num("ancho", "Ancho de barra (m)", 0.5, q.n_pastillas && q.espaciado ? fmt(q.n_pastillas * q.espaciado / 100, 1) : "")}${selTipoPast}${selIso}
+      <label class="f">Ángulo (°)<select data-k="angulo">${[110, 80, 65, 120].map(a => `<option${+q.angulo === a ? " selected" : ""}>${a}</option>`).join("")}</select></label>
+      ${num("presion", "Presión de trabajo (bar)", 0.1)}${num("vel", "Velocidad de trabajo (km/h)", 0.5)}${num("altura", "Altura de barra (cm)", 1)}${num("bomba", "Caudal de la bomba (L/min)", 1)}${num("eficiencia", "Eficiencia de campo (%)", 1, "60")}`;
+    if(m === "mochila") campos = `${num("faja", "Ancho de faja (m)", 0.1, "1")}${num("vel", "Velocidad de marcha (km/h)", 0.1, "2,4")}${selTipoPast}${selIso}${num("presion", "Presión (bar)", 0.1, "2")}`;
+    if(m === "drone" || m === "avion") campos = `<label class="f">Modelo<select data-k="modelo"><option value="">— Otro —</option>${modelos.map(x => `<option value="${x.id}"${q.modelo === x.id ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}</select></label>
+      ${num("faja", "Ancho de faja (m)", 0.5)}${num("vel", m === "drone" ? "Velocidad de trabajo (m/s)" : "Velocidad de trabajo (km/h)", m === "drone" ? 0.5 : 5)}${num("alt", "Altura de vuelo (m)", 0.5)}${num("caudal_max", "Caudal máximo (L/min)", 0.5)}
+      <label class="f">Atomizadores<select data-k="atom">${[["centrifugo", "Centrífugos"], ["rotativo", "Rotativos (tipo Micronair)"], ["hidraulico", "Hidráulicos (picos)"]].map(([k, t]) => `<option value="${k}"${q.atom === k ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+      ${num("n_atom", "Cantidad de atomizadores", 1)}${num("gota", "Gota de trabajo (µm)", 10)}${m === "drone" ? num("autonomia", "Minutos por batería", 1) + num("baterias", "Baterías disponibles", 1) : ""}`;
+    openDrawer(`<div class="stack"><span class="eyebrow">Equipos</span><h2>${nuevo ? "Nuevo equipo" : "Editar equipo"}</h2>
+      <form class="stack" id="fEq" style="gap:12px">
+        <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+          <label class="f" style="grid-column:1/-1">Nombre<input data-k="nombre" value="${esc(q.nombre || "")}" placeholder="Ej.: Autopropulsada del lote norte" required></label>
+          <label class="f">Tipo<select data-k="tipo">${Object.entries(TIPOS_EQ).map(([k, t]) => `<option value="${k}"${q.tipo === k ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+          <label class="f">Marca y modelo<input data-k="marca" value="${esc(q.marca || "")}"></label>
+          ${num("tanque", m === "avion" ? "Tolva (L)" : m === "mochila" ? "Capacidad de la mochila (L)" : "Tanque (L)", 1)}${num("remanente", "Remanente que no se aplica (L)", 0.5, "0")}
+          ${campos}
+        </div>
+        <div class="row"><button class="btn pri" type="submit">Guardar</button></div>
+      </form></div>`);
+    document.querySelectorAll("#fEq [data-k]").forEach(el => el.onchange = e => { const k = el.dataset.k; const v = el.type === "number" ? nv(e.target.value) : e.target.value;
+      q[k] = v;
+      if(k === "tipo"){ const mm = modoDe(q);
+        if(q.nombre && q.nombre === q.marca) q.nombre = "";
+        ["caudal_max", "modelo", "marca", "autonomia", "baterias"].forEach(x => delete q[x]);
+        if(mm !== "terrestre") ["n_pastillas", "espaciado", "ancho", "angulo", "altura", "bomba", "eficiencia"].forEach(x => delete q[x]);
+        if(esAereo(mm)) ["pastilla_tipo", "pastilla_iso", "presion"].forEach(x => delete q[x]); else ["modelo", "faja", "alt", "caudal_max", "atom", "n_atom", "gota", "autonomia", "baterias"].forEach(x => { if(!(mm === "mochila" && x === "faja")) delete q[x]; });
+        if(mm === "terrestre") Object.assign(q, {tanque: 3000, n_pastillas: 54, espaciado: 50, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 3, vel: 16, altura: 50, eficiencia: 60}); if(mm === "drone"){ Object.assign(q, {tanque: 40, faja: 7, vel: 6, alt: 2.5, caudal_max: 12, atom: "centrifugo", n_atom: 2, gota: 300}); } else if(mm === "avion"){ Object.assign(q, {tanque: 1893, faja: 28, vel: 210, alt: 4, atom: "rotativo", n_atom: 8, gota: 250}); } else if(mm === "mochila"){ Object.assign(q, {tanque: 20, faja: 1, vel: 2.4, presion: 2, pastilla_tipo: "std", pastilla_iso: "02"}); } draw(); }
+      if(k === "modelo" && v){ const x = (EQD.drones.concat(EQD.aviones)).find(y => y.id === v); if(x){ q.tanque = x.tanque; if(x.caudal) q.caudal_max = x.caudal; q.vel = x.vel; q.faja = Array.isArray(x.faja) ? x.faja[0] + Math.round((x.faja[1] - x.faja[0]) * 0.5) : (x.faja || q.faja); if(x.atom) q.atom = x.atom; if(x.n) q.n_atom = x.n; if(x.gota) q.gota = Math.max(250, x.gota[0]); if(!q.nombre) q.nombre = x.nombre; q.marca = x.nombre; draw(); } }
+      if(k === "n_pastillas" || k === "espaciado"){ const a = $('#fEq [data-k="ancho"]'); if(a && q.n_pastillas && q.espaciado) a.placeholder = fmt(q.n_pastillas * q.espaciado / 100, 1); } });
+    $("#fEq").onsubmit = e => { e.preventDefault(); document.querySelectorAll("#fEq [data-k]").forEach(el => { const k = el.dataset.k; q[k] = el.type === "number" ? nv(el.value) : el.value; });
+      if(!q.nombre){ toast("Poné un nombre"); return; }
+      if(nuevo) EQUIPOS.push(q); else { q.ejemplo = false; Object.assign(q0, q); }
+      saveEquipos(); EQ_SEL = q.id; store("eq_sel", EQ_SEL); closeDrawer(); toast("Equipo guardado"); if(VIEW === "equipos") renderEquipos(); else renderAll(); };
+  };
+  draw();
+}
+
 /* ---------- Render general ---------- */
 function renderAll(){
   if(VIEW==="caldo") renderCaldo();
   else if(VIEW==="caso") renderCaso();
   else if(VIEW==="campos") renderCampos();
+  else if(VIEW==="equipos") renderEquipos();
   else if(VIEW==="historial") renderHistorial();
   else if(VIEW==="rotacion") renderRotacion();
   else if(VIEW==="productos") renderProductos();
@@ -2767,7 +3291,7 @@ function renderAll(){
   else if(VIEW==="problemas") renderProblemas();
 }
 renderRubros(); fillInputs(); bindInputs(); bindSearch(); initProductFilters();
-const h = (location.hash||"").slice(1); if(["caldo","campos","historial","rotacion","caso","productos","inertes","diag","problemas"].includes(h)) setView(h); else renderAll();
+const h = (location.hash||"").slice(1); if(["caldo","campos","equipos","historial","rotacion","caso","productos","inertes","diag","problemas"].includes(h)) setView(h); else renderAll();
 </script>
 
 <script>

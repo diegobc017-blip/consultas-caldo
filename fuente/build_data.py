@@ -7,6 +7,7 @@ from config_usos import OBJETIVOS, USOS, RESISTENCIA, PRINCIPIOS_ROTACION
 from config_carryover import CULTIVOS, GRAM, HOJA, CARRY, SELECT, MOMENTOS
 from config_rubro_uso import USO_RUBRO
 import config_correcciones as CORR
+import config_equipos as EQ
 from config_reglas_extra import REGLAS_EXTRA, SEMAFORO_EXTRA, MEDIDAS_EXTRA, PROBLEMAS_EXTRA
 import re
 
@@ -41,7 +42,7 @@ for _id, campos in CORR.REGLAS.items():
     _reg[_id].update(campos)
 for _o in d["orden_carga"]:
     if _o["paso"] in CORR.ORDEN_CARGA: _o["descripcion"] = CORR.ORDEN_CARGA[_o["paso"]]
-d["reglas_compatibilidad"] = d["reglas_compatibilidad"] + CORR.REGLAS_NUEVAS
+d["reglas_compatibilidad"] = d["reglas_compatibilidad"] + CORR.REGLAS_NUEVAS + EQ.REGLAS_AEREAS
 
 def nopat(x):
     return {k: v for k, v in x.items() if k != "patron"}
@@ -169,12 +170,13 @@ for x in diag:
     if x["sintoma"].startswith("El caldo se ve normal"):
         x["problemas"] = x["problemas"] + ["PR33"]
 reglas = d["reglas_compatibilidad"] + REGLAS_EXTRA
-REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS)
+REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS); REGLAS_ALL.update(EQ.SEMAFORO_AEREAS)
 for _id, v in CORR.SEMAFORO_MOD.items():
     assert _id in REGLAS_ALL, _id
     REGLAS_ALL[_id] = v
 MEDIDAS_ALL = {k: dict(v) for k, v in MEDIDAS.items()}; MEDIDAS_ALL.update(MEDIDAS_EXTRA)
 for _id, campos in CORR.MEDIDAS.items(): MEDIDAS_ALL[_id].update(campos)
+MEDIDAS_ALL.update(EQ.MEDIDAS_AEREAS)
 
 DB = {
     "meta": {k: d["meta"][k] for k in ("titulo", "version", "fecha_generacion", "fuente_productos", "criterio_productos_actuales", "advertencias", "estadisticas", "fuentes_datos_quimicos")},
@@ -197,6 +199,11 @@ DB = {
     "objetivos": OBJETIVOS, "resistencia": RESISTENCIA, "principios_rotacion": PRINCIPIOS_ROTACION,
     "familias": FAMILIAS, "form_familia": FORM_FAMILIA, "inertes": INERTES, "impurezas": IMPUREZAS,
     "cultivos": CULTIVOS, "cult_gram": GRAM, "cult_hoja": HOJA, "carry": CARRY, "select": SELECT, "momentos": MOMENTOS,
+    "equipos": {"pastillas": EQ.PASTILLAS_ISO, "tipos_pastilla": EQ.TIPOS_PASTILLA, "clases_gota": EQ.CLASES_GOTA,
+                "gota_producto": EQ.GOTA_PRODUCTO, "gota_drone": EQ.GOTA_DRONE, "gota_clima": EQ.GOTA_CLIMA, "altura_barra": EQ.ALTURA_BARRA,
+                "tolerancias": EQ.TOLERANCIAS, "tiempo_colecta": EQ.TIEMPO_COLECTA, "check_insp": EQ.CHECKLIST_INSPECCION,
+                "check_drone": EQ.CHECKLIST_DRONE, "check_avion": EQ.CHECKLIST_AVION, "normativa": EQ.NORMATIVA, "vuelo": EQ.VUELO,
+                "drones": EQ.MODELOS_DRONE, "aviones": EQ.MODELOS_AVION},
     "senales_mal_estado": SENALES_MAL_ESTADO, "prueba_calidad": PRUEBA_CALIDAD_CASERA,
 }
 # chequeos
