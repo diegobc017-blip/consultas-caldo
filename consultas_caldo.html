@@ -2114,7 +2114,7 @@ function cargarEjemplo(){
   const e = crearEjemplo();
   CAMPOS.unshift(e.campo); HIST = e.hist.concat(HIST);
   Object.entries(e.etq).forEach(([r, v]) => { if(!ETQ[r]) ETQ[r] = v; });
-  saveCampos(); saveHist(); saveEtq(); store("ejemplo_borrado", false);
+  saveCampos(); saveHist(); saveEtq(); store("ejemplo_borrado", false); store("ejemplo_v", 2);
 }
 function eliminarEjemplo(silencioso){
   CAMPOS = (CAMPOS || []).filter(c => !c.ejemplo);
@@ -2126,6 +2126,7 @@ function eliminarEjemplo(silencioso){
 }
 function initDatos(){
   if(CAMPOS === null || HIST === null){ CAMPOS = CAMPOS || []; HIST = HIST || []; if(!load("ejemplo_borrado", false)) cargarEjemplo(); else { saveCampos(); saveHist(); } }
+  else if(CAMPOS.some(c => c.ejemplo) && load("ejemplo_v", 1) < 2) cargarEjemplo(); // actualiza el ejemplo (lotes con contorno real); no toca los datos propios
 }
 initDatos();
 const hayEjemplo = () => (CAMPOS || []).some(c => c.ejemplo) || (HIST || []).some(h => h.ejemplo);
