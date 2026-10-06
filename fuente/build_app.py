@@ -26,23 +26,22 @@ sql_js = open(os.path.join(FUENTE, "vendor", "sql-wasm.js"), encoding="utf-8").r
 sql_wasm_b64 = base64.b64encode(open(os.path.join(FUENTE, "vendor", "sql-wasm.wasm"), "rb").read()).decode()
 
 FONTS = [
-    ("Atkinson Hyperlegible", "400", "normal", "atkinson-hyperlegible-latin-400-normal.woff2"),
-    ("Atkinson Hyperlegible", "700", "normal", "atkinson-hyperlegible-latin-700-normal.woff2"),
-    ("Atkinson Hyperlegible", "400", "italic", "atkinson-hyperlegible-latin-400-italic.woff2"),
-    ("Bricolage Grotesque", "200 800", "normal", "bricolage-grotesque-latin-wght-normal.woff2"),
-    ("JetBrains Mono", "400", "normal", "jetbrains-mono-latin-400-normal.woff2"),
-    ("JetBrains Mono", "600", "normal", "jetbrains-mono-latin-600-normal.woff2"),
+    ("Atkinson Hyperlegible", "400", "normal", "atkinson-hyperlegible-latin-400-normal.woff2", None),
+    ("Atkinson Hyperlegible", "700", "normal", "atkinson-hyperlegible-latin-700-normal.woff2", None),
+    ("Atkinson Hyperlegible", "400", "italic", "atkinson-hyperlegible-latin-400-italic.woff2", None),
+    ("Archivo", "100 900", "normal", "archivo-latin-standard-normal.woff2", "62% 125%"),
 ]
 
 def fontface(inline):
     out = []
-    for fam, w, st, f in FONTS:
+    for fam, w, st, f, stretch in FONTS:
         if inline:
             b = base64.b64encode(open(os.path.join(FUENTE, "fonts", f), "rb").read()).decode()
             src = f"url(data:font/woff2;base64,{b}) format('woff2')"
         else:
             src = f"url(fonts/{f}) format('woff2')"
-        out.append(f"@font-face{{font-family:'{fam}';font-style:{st};font-weight:{w};font-display:swap;src:{src}}}")
+        fs = f"font-stretch:{stretch};" if stretch else ""
+        out.append(f"@font-face{{font-family:'{fam}';font-style:{st};font-weight:{w};{fs}font-display:swap;src:{src}}}")
     return "".join(out)
 
 def fill(t, fonts_css, leaflet_css_txt, libs, data_tag):

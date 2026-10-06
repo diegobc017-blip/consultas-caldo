@@ -177,7 +177,7 @@ DERIVA_AI_AEREO = ["24d", "dicamba", "picloram", "triclopir", "fluroxipir", "ami
 REGLAS_AEREAS = [
  {"id": "DRN01", "tipo": "fisica_sedimento", "severidad": "alta",
   "titulo": "Tanque del drone sin agitación: suspensiones y polvos se asientan",
-  "condiciones": {"presentes": [{"formulacion": ["WG", "WP", "WS", "SC", "SE", "CS", "ZC", "OD", "DC"]}], "agua": {}, "caldo": {"modo": {"==": "drone"}}},
+  "condiciones": {"presentes": [{"formulacion": ["WG", "WP", "WS", "SC", "SE", "CS", "ZC", "OD", "DC"]}], "agua": {}, "caldo": {"dron_sin_agitador": {"==": True}}},
   "mecanismo": "El tanque del drone casi no tiene agitación: con el caldo muy concentrado, las partículas de WG, WP y SC sedimentan en minutos, tapan el filtro y el caudal real baja sin aviso.",
   "recomendacion": "Preparar el caldo en un tanque nodriza con agitación, pasarlo por filtro y cargar el drone justo antes de cada vuelo. No dejar caldo quieto en el drone entre vuelos.",
   "confianza": "alta", "problemas": ["PR04", "PR27"]},
@@ -216,4 +216,93 @@ SEMAFORO_AEREAS = {
 MEDIDAS_AEREAS = {
  "premezcla": {"tipo": "practica", "nombre": "Premezcla en tanque nodriza", "detalle": "Preparar el caldo en un tanque aparte con agitación, cargar el drone o la tolva por un filtro y aplicar enseguida."},
  "gota": {"tipo": "practica", "nombre": "Gota regulada para el producto", "detalle": "Ajustar el atomizador o los picos al tamaño de gota recomendado (más gruesa con herbicidas y cerca de cultivos sensibles) y verificar con tarjetas hidrosensibles."},
+}
+
+# ---------------- Funciones de cada tipo de equipo ----------------
+# Fuentes: fichas Revista Cultivar "Compara Pulverizadores", folletos Jacto, Stara, John Deere, Case IH, New Holland;
+# DJI Agras (T25, T50, T70P, T100) y XAG P100 Pro; Satloc G4; Micronair; GRDC (PWM).
+# [id, nombre, por qué importa]
+FUNCIONES = {
+ "terrestre": [
+  ["computadora", "Computadora de caudal", "Mantiene los litros por hectárea cuando cambia la velocidad, subiendo o bajando la presión. Ojo: al cambiar la presión cambia el tamaño de gota; conviene trabajar a velocidad pareja."],
+  ["secciones", "Corte de secciones por GPS", "Cierra secciones en cabeceras y zonas ya aplicadas: menos superposición y menos producto fuera del lote. Cuantas más secciones, menos superposición."],
+  ["picoapico", "Control pico a pico", "Cada pastilla se abre o cierra sola: superposición casi nula en cabeceras y bordes irregulares."],
+  ["pwm", "PWM (modulación por ancho de pulso)", "Las pastillas pulsan muchas veces por segundo: el caudal cambia con la velocidad sin cambiar la presión, así la gota queda igual. Mantener el ciclo de trabajo por encima de 70 %. Compensa las curvas."],
+  ["altura", "Control automático de altura de barra", "Sensores de ultrasonido mantienen la barra a la altura justa: distribución pareja y menos deriva."],
+  ["suspension", "Suspensión y estabilización de barra", "Evita que la barra rebote o se adelante y atrase, que dejan franjas con más y menos producto."],
+  ["piloto", "Piloto automático o RTK", "Pasadas paralelas exactas: sin huecos ni superposición entre pasadas; mejora el corte de secciones."],
+  ["inyeccion", "Inyección directa", "El producto se dosifica en la línea y el tanque lleva solo agua: evita incompatibilidades de mezcla y sobrantes de caldo."],
+  ["recirculacion", "Recirculación de barra", "El caldo circula por la barra antes de abrir: sin sedimento ni agua sola al empezar la pasada."],
+  ["agitador", "Agitador del tanque", "Mantiene en suspensión WG, WP y SC durante la aplicación y los traslados."],
+  ["incorporador", "Incorporador de productos", "Carga segura de los productos y triple lavado de envases; ayuda a respetar el orden de carga."],
+  ["agua_limpia", "Tanque de agua limpia", "Permite lavar el circuito en el lote y reducir la contaminación entre productos."],
+  ["selectiva", "Aplicación selectiva con cámaras", "Detecta las malezas y aplica solo sobre ellas (por ejemplo See & Spray): ahorra herbicida no residual."],
+  ["estacion", "Estación meteorológica a bordo", "Registra viento, temperatura y humedad durante la aplicación."],
+ ],
+ "mochila": [
+  ["cfvalve", "Válvula de caudal constante", "Mantiene la presión fija (1, 1,5 o 2 bar) aunque cambie el bombeo: caudal parejo (±1,5 %) y gota uniforme."],
+  ["bateria", "Bomba a batería con presión constante", "La presión no depende del bombeo manual; varios niveles de presión elegibles."],
+  ["motor", "Motorizada (atomizador)", "Gota fina transportada por aire, para frutales y cultivos altos; más deriva."],
+  ["pantalla", "Pantalla o campana protectora", "Para aplicaciones dirigidas de herbicidas sin mojar el cultivo o los árboles."],
+ ],
+ "drone": [
+  ["rtk", "RTK", "Posición al centímetro: pasadas exactas y faja real constante."],
+  ["radar", "Radar y visión para evitar obstáculos", "Detecta árboles, cables y postes; necesario en silvopastoriles y lotes con cortinas."],
+  ["terreno", "Seguimiento del terreno", "Mantiene la altura sobre el cultivo en terreno ondulado: faja y deriva estables."],
+  ["centrifugo", "Atomizadores centrífugos con ajuste de gota", "El tamaño de gota se elige por las revoluciones del disco, no por la pastilla."],
+  ["caudalimetro", "Caudalímetro", "Mide el caudal real: calibrarlo con agua antes de cada campaña o al cambiar de producto."],
+  ["rutas", "Planificación de rutas y mapas", "Vuelo automático por el lote con las fajas y zonas de exclusión cargadas."],
+  ["esparcidor", "Sistema de esparcido de granulados", "Permite aplicar cebos, semillas o fertilizantes granulados."],
+  ["agitador", "Agitación en el tanque", "Pocos drones la tienen: sin ella el caldo con WG, WP o SC se asienta en minutos."],
+ ],
+ "avion": [
+  ["dgps", "Banderillero satelital (DGPS)", "Guía las pasadas con el ancho de faja real y registra el vuelo (por ejemplo Satloc o AgNav)."],
+  ["caudal_auto", "Control automático de caudal", "Mantiene la dosis cuando cambia la velocidad; algunos permiten dosis variable."],
+  ["rotativos", "Atomizadores rotativos (tipo Micronair)", "Espectro de gotas más angosto; la gota depende del ángulo de las palas y de la velocidad del avión."],
+  ["hidraulicos", "Picos hidráulicos", "La gota depende del pico, la presión y el ángulo respecto al viento."],
+  ["registro", "Registro de vuelo y mapas", "Sirve de respaldo de la aplicación ante el SENAVE (registro de aplicaciones, art. 61)."],
+ ],
+}
+
+# Catálogo de pulverizadoras terrestres (mercado brasileño/regional; verificar la versión vendida en Paraguay)
+MODELOS_TERRESTRE = [
+ {"id": "jacto_up2030", "nombre": "Jacto Uniport 2030", "tipo": "autopropulsada", "tanque": 2000, "barras": [24, 30], "esp": [35, 50], "vel": 40, "bomba": 190, "secciones": 8, "fun": ["computadora", "secciones", "suspension"]},
+ {"id": "jacto_up3030", "nombre": "Jacto Uniport 3030", "tipo": "autopropulsada", "tanque": 3000, "barras": [36, 28, 32], "esp": [35, 50], "vel": 55, "bomba": 300, "fun": ["computadora", "picoapico", "suspension"]},
+ {"id": "jacto_up4530", "nombre": "Jacto Uniport 4530", "tipo": "autopropulsada", "tanque": 4500, "barras": [42, 36], "esp": [35], "vel": 55, "bomba": 300, "fun": ["computadora", "picoapico", "suspension", "piloto"]},
+ {"id": "stara_imp30", "nombre": "Stara Imperador 3.0", "tipo": "autopropulsada", "tanque": 2400, "agua_limpia": 240, "barras": [27, 30], "esp": [50], "vel": 42, "secciones": 7, "fun": ["computadora", "secciones", "picoapico", "recirculacion", "piloto", "agitador", "incorporador", "agua_limpia"]},
+ {"id": "stara_imp4000", "nombre": "Stara Imperador 4000", "tipo": "autopropulsada", "tanque": 4000, "agua_limpia": 400, "barras": [30, 36], "esp": [50], "bomba": 803, "fun": ["computadora", "picoapico", "incorporador", "agua_limpia"]},
+ {"id": "jd_4630", "nombre": "John Deere 4630", "tipo": "autopropulsada", "tanque": 2770, "agua_limpia": 265, "barras": [24.4, 27.4], "vel": 43, "secciones": 7, "fun": ["computadora", "secciones"]},
+ {"id": "jd_m4030", "nombre": "John Deere M4030", "tipo": "autopropulsada", "tanque": 3000, "agua_limpia": 568, "barras": [30, 36], "vel": 30, "secciones": 9, "fun": ["computadora", "secciones", "altura", "piloto", "estacion", "incorporador", "agitador", "agua_limpia"]},
+ {"id": "jd_m4040", "nombre": "John Deere M4040", "tipo": "autopropulsada", "tanque": 4000, "agua_limpia": 568, "barras": [36, 30], "esp": [38, 50], "vel": 32, "secciones": 9, "fun": ["computadora", "secciones", "altura", "piloto", "estacion", "incorporador", "agitador", "agua_limpia"]},
+ {"id": "jd_r4038", "nombre": "John Deere R4038", "tipo": "autopropulsada", "tanque": 3800, "agua_limpia": 454, "barras": [40], "vel": 40, "secciones": 13, "fun": ["computadora", "secciones", "pwm", "picoapico", "altura", "piloto", "agua_limpia"]},
+ {"id": "pla_125j", "nombre": "PLA 125J", "tipo": "autopropulsada", "tanque": 2500, "barras": [27], "fun": ["computadora", "secciones", "suspension"]},
+ {"id": "case_patriot350", "nombre": "Case IH Patriot 350", "tipo": "autopropulsada", "tanque": 3500, "agua_limpia": 350, "barras": [30, 36], "esp": [50.8, 35], "secciones": 9, "fun": ["computadora", "secciones", "altura", "piloto", "suspension"]},
+ {"id": "nh_def3500", "nombre": "New Holland Defensor 3500 HC", "tipo": "autopropulsada", "tanque": 3500, "agua_limpia": 350, "barras": [30, 36], "esp": [50.8, 35], "vel": 50, "bomba": 549, "secciones": 9, "fun": ["computadora", "secciones"]},
+ {"id": "nh_def4000", "nombre": "New Holland Defensor 4000", "tipo": "autopropulsada", "tanque": 4000, "agua_limpia": 400, "barras": [30, 36], "esp": [50.8, 35], "vel": 50, "bomba": 746, "fun": ["computadora", "picoapico", "altura", "suspension"]},
+ {"id": "metalfor_fm2500", "nombre": "Metalfor FM2500", "tipo": "autopropulsada", "tanque": 2500, "barras": [20], "fun": ["suspension"]},
+ {"id": "jacto_columbia", "nombre": "Jacto Columbia (Cross)", "tipo": "arrastre", "tanque": 2000, "barras": [18], "esp": [35, 50], "bomba": 150, "fun": ["agitador", "suspension"]},
+ {"id": "jacto_adv3000", "nombre": "Jacto Advance 3000", "tipo": "arrastre", "tanque": 3000, "agua_limpia": 200, "barras": [20], "esp": [50], "secciones": 4, "fun": ["computadora", "secciones", "agitador", "incorporador", "agua_limpia"]},
+ {"id": "metalfor_futur3000", "nombre": "Metalfor Futur 3000S", "tipo": "arrastre", "tanque": 3000, "barras": [20], "esp": [35, 52], "bomba": 110, "secciones": 3, "fun": ["secciones", "suspension"]},
+]
+MODELOS_MOCHILA = [
+ {"id": "jacto_pjh", "nombre": "Jacto PJH (20 L)", "tanque": 20, "pmax": 6.8, "fun": []},
+ {"id": "jacto_djb20", "nombre": "Jacto DJB-20 (batería)", "tanque": 20, "fun": ["bateria"]},
+ {"id": "stihl_sr450", "nombre": "Stihl SR 450 (atomizador)", "tanque": 14, "fun": ["motor"]},
+]
+# Funciones de los drones del catálogo
+FUN_DRONE = {
+ "dji_t10": ["rtk", "radar", "terreno", "caudalimetro", "rutas", "esparcidor"],
+ "dji_t20p": ["rtk", "radar", "terreno", "centrifugo", "caudalimetro", "rutas", "esparcidor"],
+ "dji_t25": ["rtk", "radar", "terreno", "centrifugo", "caudalimetro", "rutas", "esparcidor"],
+ "dji_t30": ["rtk", "radar", "terreno", "caudalimetro", "rutas", "esparcidor"],
+ "dji_t40": ["rtk", "radar", "terreno", "centrifugo", "caudalimetro", "rutas", "esparcidor"],
+ "dji_t50": ["rtk", "radar", "terreno", "centrifugo", "caudalimetro", "rutas", "esparcidor"],
+ "dji_t70p": ["rtk", "radar", "terreno", "centrifugo", "caudalimetro", "rutas", "esparcidor"],
+ "dji_t100": ["rtk", "radar", "terreno", "centrifugo", "caudalimetro", "rutas", "esparcidor"],
+ "xag_p100": ["rtk", "radar", "terreno", "centrifugo", "caudalimetro", "rutas", "esparcidor"],
+}
+MODELOS_DRONE.insert(6, {"id": "dji_t70p", "nombre": "DJI Agras T70P", "tanque": 70, "caudal": 30, "faja": [4, 11], "vel": 7, "atom": "centrifugo", "n": 2, "gota": [50, 500]})
+BATERIAS_DRONE = {
+ "dji_t25": "DB800: carga rápida 9–12 min", "dji_t50": "DB1560: 1.500 ciclos; carga rápida 9–12 min o 2 h normal",
+ "dji_t100": "41 Ah: carga 30→95 % en 8–9 min", "xag_p100": "962 Wh: carga con refrigeración por agua en 11 min",
 }

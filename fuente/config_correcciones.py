@@ -12,6 +12,13 @@ ACTIVOS = {
  "nano_plata": {"nombre": "Nanopartículas de plata (con o sin cobre)",
                 "modo_accion": "Multisitio (la plata no tiene código FRAC; el cobre es FRAC M01)"},
  "feromona": {"nombre": "Feromonas (grandlure del picudo y feromonas de lepidópteros)"},
+ # nombres como se escriben en el listado del SENAVE y en las etiquetas de Paraguay
+ "lambdacialotrina": {"nombre": "Lambdacialotrina"},
+ "betaciflutrina": {"nombre": "Betaciflutrina"},
+ "gammacialotrina": {"nombre": "Gammacialotrina"},
+ "fluchloraminopyr": {"nombre": "Flucloraminopir-tefuril"},
+ "physcion": {"nombre": "Fiscion (extracto de Rheum)"},
+ "cartap": {"nombre": "Cartap clorhidrato"},
  "bio_bt": {"modo_accion": "IRAC 11A – disruptor microbiano de la membrana intestinal"},
  "bio_virus": {"modo_accion": "IRAC 31 – baculovirus"},
  "bio_hongo_entomo": {"modo_accion": "IRAC UNF – hongos entomopatógenos (Pochonia y Purpureocillium: nematicidas biológicos)"},

@@ -8,6 +8,8 @@ from config_carryover import CULTIVOS, GRAM, HOJA, CARRY, SELECT, MOMENTOS
 from config_rubro_uso import USO_RUBRO
 import config_correcciones as CORR
 import config_equipos as EQ
+import config_silvo as SV
+import config_clima as CL
 from config_reglas_extra import REGLAS_EXTRA, SEMAFORO_EXTRA, MEDIDAS_EXTRA, PROBLEMAS_EXTRA
 import re
 
@@ -42,7 +44,7 @@ for _id, campos in CORR.REGLAS.items():
     _reg[_id].update(campos)
 for _o in d["orden_carga"]:
     if _o["paso"] in CORR.ORDEN_CARGA: _o["descripcion"] = CORR.ORDEN_CARGA[_o["paso"]]
-d["reglas_compatibilidad"] = d["reglas_compatibilidad"] + CORR.REGLAS_NUEVAS + EQ.REGLAS_AEREAS
+d["reglas_compatibilidad"] = d["reglas_compatibilidad"] + CORR.REGLAS_NUEVAS + EQ.REGLAS_AEREAS + SV.REGLAS_SILVO + CL.REGLAS_CLIMA
 
 def nopat(x):
     return {k: v for k, v in x.items() if k != "patron"}
@@ -123,6 +125,14 @@ def compact(p, mant):
     }
 
 prods = [compact(p, 0) for p in d["productos"]] + [compact(p, 1) for p in d["productos_mantenimiento_vencido"]]
+# Silvopastoril (SP): productos de pasturas o forestal
+def _rs(x): return [x[i:i+2] for i in range(0, len(x), 2)]
+for p in prods:
+    s_, s2_, es_ = _rs(p["s"]), _rs(p["s2"]), _rs(p["es"])
+    if "PA" in s_ or "FO" in s_: s_.append("SP")
+    elif "PA" in s2_ or "FO" in s2_: s2_.append("SP")
+    if ("PA" in es_ or "FO" in es_) and "SP" in s_: es_.append("SP")
+    p["s"], p["s2"], p["es"] = "".join(s_), "".join(s2_), "".join(es_)
 
 # grupo de modo de acción normalizado (HRAC/IRAC/FRAC + código)
 def grupo(moa):
@@ -151,6 +161,31 @@ def uso_rubros(a):
         elif a.get("usos"): ur[x] = {"u": a["usos"], "o": a.get("objetivos", [])}
     if ur: a["ur"] = ur
 for a in activos + biologicos + botanicos: uso_rubros(a)
+for a in activos + biologicos + botanicos:
+    ur = a.get("ur") or {}
+    partes = [(k, ur[k]) for k in ("PA", "FO") if k in ur]
+    if partes:
+        nom = {"PA": "Pasturas", "FO": "Forestal"}
+        a["ur"]["SP"] = {"u": " ".join(f"{nom[k]}: {e['u']}" for k, e in partes), "o": list(dict.fromkeys(o for k, e in partes for o in e["o"]))}
+        if all(e.get("sec") for k, e in partes): a["ur"]["SP"]["sec"] = 1
+# variantes de escritura (listado SENAVE, nombres en inglés, errores comunes) para el buscador
+import unicodedata
+def _nk(t):
+    t = unicodedata.normalize("NFD", (t or "").lower())
+    return "".join(ch for ch in t if ch.isalnum() and not unicodedata.combining(ch))
+_var = collections.defaultdict(set)
+for _p in d["productos"] + d["productos_mantenimiento_vencido"]:
+    for _c in _p["componentes"]:
+        o = re.split(r"[(\d]", _c.get("nombre_original") or "")[0]
+        o = re.sub(r"\b(SAL|SALES|ACIDO|ÁCIDO|EQUIVALENTE|DE|DEL|ESTER|ÉSTER|DIMETILAMINA|AMONIO|POTASICA|POTÁSICA|SODICA|SÓDICA|ISOPROPILAMINA|AMINA|TRIETANOLAMINA|TRIISOPROPANOLAMINA|BUTOXI|ETIL|BUTOTIL|COLINA|DIGLICOLAMINA|AMONICA|AMÓNICA)\b", " ", o.upper()).strip()
+        k = _nk(o)
+        if len(k) >= 4: _var[_c["id"]].add(k)
+ALIAS_EXTRA = {"24d": ["24d", "dosacuatrod"], "glifosato": ["glyphosate", "glifo"], "lambdacialotrina": ["lambda", "lambdacihalotrina", "lambdacyhalothrin"],
+               "clorpirifos": ["chlorpyrifos"], "s_metolacloro": ["smetolaclor", "metolaclor"], "bio_bt": ["bt", "bacillusthuringiensis"],
+               "cobre": ["oxicloruro", "hidroxidodecobre", "copper"], "fosfuros": ["fosfina", "fosfurodealuminio"], "emamectina": ["emamectina", "emamectin"]}
+for a in activos + biologicos + botanicos:
+    al = (_var.get(a["id"], set()) | set(ALIAS_EXTRA.get(a["id"], []))) - {_nk(a["nombre"])}
+    if al: a["al"] = sorted(al)
 for k, v in USO_RUBRO.items():
     assert k in AI_RUBROS, k
     assert set(v) <= set(AI_RUBROS[k].split()), (k, set(v) - set(AI_RUBROS[k].split()))
@@ -170,14 +205,16 @@ for x in diag:
     if x["sintoma"].startswith("El caldo se ve normal"):
         x["problemas"] = x["problemas"] + ["PR33"]
 reglas = d["reglas_compatibilidad"] + REGLAS_EXTRA
-REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS); REGLAS_ALL.update(EQ.SEMAFORO_AEREAS)
+REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS); REGLAS_ALL.update(EQ.SEMAFORO_AEREAS); REGLAS_ALL.update(SV.SEMAFORO_SILVO); REGLAS_ALL.update(CL.SEMAFORO_CLIMA)
 for _id, v in CORR.SEMAFORO_MOD.items():
     assert _id in REGLAS_ALL, _id
     REGLAS_ALL[_id] = v
 MEDIDAS_ALL = {k: dict(v) for k, v in MEDIDAS.items()}; MEDIDAS_ALL.update(MEDIDAS_EXTRA)
 for _id, campos in CORR.MEDIDAS.items(): MEDIDAS_ALL[_id].update(campos)
-MEDIDAS_ALL.update(EQ.MEDIDAS_AEREAS)
+MEDIDAS_ALL.update(EQ.MEDIDAS_AEREAS); MEDIDAS_ALL.update(SV.MEDIDAS_SILVO)
 
+RUBROS = dict(list(RUBROS.items())[:4] + [("SP", SV.RUBRO_SP)] + list(RUBROS.items())[4:])
+AI_RUBROS_SP = {k: (v + " SP" if ("PA" in v.split() or "FO" in v.split()) else v) for k, v in AI_RUBROS.items()}
 DB = {
     "meta": {k: d["meta"][k] for k in ("titulo", "version", "fecha_generacion", "fuente_productos", "criterio_productos_actuales", "advertencias", "estadisticas", "fuentes_datos_quimicos")},
     "categorias_problemas": d["categorias_problemas"],
@@ -194,7 +231,7 @@ DB = {
     "reglas_generales": d["reglas_generales"],
     "prueba_jarra": d["prueba_de_jarra"],
     "productos": prods,
-    "rubros": RUBROS, "ai_rubros": AI_RUBROS,
+    "rubros": RUBROS, "ai_rubros": AI_RUBROS_SP,
     "niveles": NIVELES, "medidas": MEDIDAS_ALL, "semaforo": REGLAS_ALL,
     "objetivos": OBJETIVOS, "resistencia": RESISTENCIA, "principios_rotacion": PRINCIPIOS_ROTACION,
     "familias": FAMILIAS, "form_familia": FORM_FAMILIA, "inertes": INERTES, "impurezas": IMPUREZAS,
@@ -203,7 +240,12 @@ DB = {
                 "gota_producto": EQ.GOTA_PRODUCTO, "gota_drone": EQ.GOTA_DRONE, "gota_clima": EQ.GOTA_CLIMA, "altura_barra": EQ.ALTURA_BARRA,
                 "tolerancias": EQ.TOLERANCIAS, "tiempo_colecta": EQ.TIEMPO_COLECTA, "check_insp": EQ.CHECKLIST_INSPECCION,
                 "check_drone": EQ.CHECKLIST_DRONE, "check_avion": EQ.CHECKLIST_AVION, "normativa": EQ.NORMATIVA, "vuelo": EQ.VUELO,
-                "drones": EQ.MODELOS_DRONE, "aviones": EQ.MODELOS_AVION},
+                "drones": EQ.MODELOS_DRONE, "aviones": EQ.MODELOS_AVION, "funciones": EQ.FUNCIONES,
+                "terrestres": EQ.MODELOS_TERRESTRE, "mochilas": EQ.MODELOS_MOCHILA, "fun_drone": EQ.FUN_DRONE, "baterias": EQ.BATERIAS_DRONE},
+    "silvo": {"arboles": SV.ARBOLES, "riesgo": SV.RIESGO_ARBOL, "riesgo_gram": SV.RIESGO_GRAMINICIDA, "reingreso": SV.REINGRESO, "practicas": SV.PRACTICAS_SILVO},
+    "clima": {"om": CL.OPEN_METEO, "lavado": CL.LAVADO_H, "lavado_forma": CL.LAVADO_FORMA, "lavado_clase": CL.LAVADO_CLASE, "lavado_grupo": CL.LAVADO_GRUPO,
+              "lavado_nota": CL.LAVADO_NOTA, "pre": CL.PREEMERGENTES, "pre_momento": CL.PRE_SEGUN_MOMENTO, "activacion": CL.LLUVIA_ACTIVACION, "aux_vol": CL.AUXINICOS_VOLATILES,
+              "t_vol": CL.T_VOLATILIDAD, "t_aceite": CL.T_ACEITE_AZUFRE, "inversion": CL.INVERSION, "rafaga": CL.RAFAGA_ALTA},
     "senales_mal_estado": SENALES_MAL_ESTADO, "prueba_calidad": PRUEBA_CALIDAD_CASERA,
 }
 # chequeos

@@ -15,86 +15,121 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Caldo">
 <title>Consultas de Caldo</title>
-<style>@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:200 800;font-display:swap;src:url(fonts/bricolage-grotesque-latin-wght-normal.woff2) format('woff2')}@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jetbrains-mono-latin-600-normal.woff2) format('woff2')}</style>
+<style>@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:100 900;font-stretch:62% 125%;font-display:swap;src:url(fonts/archivo-latin-standard-normal.woff2) format('woff2')}</style>
 <style></style>
 <style>
-/* Layout: herramienta de campo — encabezado con rubro y pestañas; armador en dos columnas (carga | resultado), una columna en celular. */
+/* Estética de campo: encabezado verde monte con surcos, franja de tierra colorada, acentos trigo. Títulos en Archivo ancho; texto en Atkinson (se lee al sol). */
 :root{
-  --paper:#F2F4F1; --panel:#FFFFFF; --sunk:#E8ECE7; --ink:#18221D; --muted:#56635C; --line:#D3D9D3;
-  --accent:#28598A; --accent-ink:#FFFFFF; --accent-soft:#DFE8F2;
+  --paper:#ECEFE4; --panel:#FCFCF8; --sunk:#E2E7D9; --ink:#1C281E; --muted:#56634F; --line:#CBD3C1;
+  --accent:#2F5D34; --accent-ink:#FFFFFF; --accent-soft:#DCE7D2;
+  --monte:#1F3A24; --monte-2:#2B4C30; --tierra:#9A4325; --trigo:#D9B13B; --trigo-ink:#2A2208; --on-monte:#F2F5EE; --on-monte-muted:#B9C8B4;
   --s0:#2F8545; --s1:#C99A00; --s2:#DB6514; --s3:#C02E2E;
-  --s0-bg:#E3F1E6; --s1-bg:#FBF1CF; --s2-bg:#FCE6D6; --s3-bg:#F8DEDE;
-  --s-off:#C9D0CA; --lamp-case:#26302B;
-  --f-sol:#2B7A9E; --f-sol-bg:#DCEEF5; --f-sol2:#7A5A2B; --f-sol2-bg:#F3E8D6; --f-sus:#5A5FA8; --f-sus-bg:#E5E6F5; --f-ole:#9A6A00; --f-ole-bg:#F7EDCC; --f-no:#6A6F6C; --f-no-bg:#E6E8E6;
-  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --s0-bg:#E1EFDF; --s1-bg:#F8EECB; --s2-bg:#FAE3D2; --s3-bg:#F6DCDA;
+  --s-off:#C4CCBE; --lamp-case:#1C2A1F;
+  --f-sol:#2B7A9E; --f-sol-bg:#DCEEF5; --f-sol2:#7A5A2B; --f-sol2-bg:#F1E6D3; --f-sus:#5A5FA8; --f-sus-bg:#E5E6F5; --f-ole:#9A6A00; --f-ole-bg:#F5EBC9; --f-no:#6A6F6C; --f-no-bg:#E4E7E1;
+  --display:"Archivo", "Segoe UI", system-ui, sans-serif;
   --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
-  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --r:10px;
+  --mono:"Archivo", "Segoe UI", system-ui, sans-serif;
+  --r:12px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#111714; --panel:#19211D; --sunk:#141B17; --ink:#E4EBE6; --muted:#9AA8A0; --line:#2C3832;
-  --accent:#7EAAD8; --accent-ink:#0F1A24; --accent-soft:#1E2C3A;
+  --paper:#0F1510; --panel:#172019; --sunk:#121A13; --ink:#E6ECE2; --muted:#9EAC98; --line:#2A372B;
+  --accent:#8FC27A; --accent-ink:#0E1A0F; --accent-soft:#1D2E1E;
+  --monte:#0C1A0F; --monte-2:#15281A; --tierra:#C2603C; --trigo:#E3BE55; --trigo-ink:#1E1806; --on-monte:#EEF3EA; --on-monte-muted:#9FB39A;
   --s0:#5CC274; --s1:#E8C03A; --s2:#F08A45; --s3:#F06464;
   --s0-bg:#17301F; --s1-bg:#33290A; --s2-bg:#3A2312; --s3-bg:#3A1818;
-  --s-off:#2F3934; --lamp-case:#0A0E0C;
+  --s-off:#2F3934; --lamp-case:#08100A;
   --f-sol:#6FC0E0; --f-sol-bg:#16303A; --f-sol2:#D9B27A; --f-sol2-bg:#33291A; --f-sus:#A9ADF0; --f-sus-bg:#24264A; --f-ole:#E8C35A; --f-ole-bg:#3A3012; --f-no:#B3B8B5; --f-no-bg:#2A302D;
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#111714; --panel:#19211D; --sunk:#141B17; --ink:#E4EBE6; --muted:#9AA8A0; --line:#2C3832;
-  --accent:#7EAAD8; --accent-ink:#0F1A24; --accent-soft:#1E2C3A;
+  --paper:#0F1510; --panel:#172019; --sunk:#121A13; --ink:#E6ECE2; --muted:#9EAC98; --line:#2A372B;
+  --accent:#8FC27A; --accent-ink:#0E1A0F; --accent-soft:#1D2E1E;
+  --monte:#0C1A0F; --monte-2:#15281A; --tierra:#C2603C; --trigo:#E3BE55; --trigo-ink:#1E1806; --on-monte:#EEF3EA; --on-monte-muted:#9FB39A;
   --s0:#5CC274; --s1:#E8C03A; --s2:#F08A45; --s3:#F06464;
   --s0-bg:#17301F; --s1-bg:#33290A; --s2-bg:#3A2312; --s3-bg:#3A1818;
-  --s-off:#2F3934; --lamp-case:#0A0E0C;
+  --s-off:#2F3934; --lamp-case:#08100A;
   --f-sol:#6FC0E0; --f-sol-bg:#16303A; --f-sol2:#D9B27A; --f-sol2-bg:#33291A; --f-sus:#A9ADF0; --f-sus-bg:#24264A; --f-ole:#E8C35A; --f-ole-bg:#3A3012; --f-no:#B3B8B5; --f-no-bg:#2A302D;
   color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
-h1,h2,h3,h4{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
-h2{font-size:1.45rem;font-weight:700}
-h3{font-size:1.12rem;font-weight:700}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0;font-stretch:108%}
+h2{font-size:1.5rem;font-weight:800;letter-spacing:-.01em}
+h3{font-size:1.1rem;font-weight:750}
 h4{font-size:.98rem;font-weight:700}
 p{margin:0}
-.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-stretch:100%}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 a{color:var(--accent)}
 
-/* Header */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
+/* Encabezado: verde monte con surcos y franja de tierra colorada */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;color:var(--on-monte);
+  background:repeating-linear-gradient(104deg,rgba(255,255,255,.035) 0 2px,transparent 2px 16px),var(--monte);border-bottom:5px solid var(--tierra)}
 .top-in{max-width:1280px;margin:0 auto;padding:10px 16px 0;display:flex;flex-direction:column;gap:8px}
 .brand-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:10px}
-.brand-mark{display:grid;grid-template-rows:repeat(4,8px);gap:3px;background:var(--lamp-case);padding:4px;border-radius:6px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand-mark{display:grid;grid-template-rows:repeat(4,8px);gap:3px;background:var(--lamp-case);padding:4px;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
 .brand-mark i{width:8px;height:8px;border-radius:50%;display:block}
-.brand h1{font-size:1.25rem;font-weight:800;letter-spacing:-.01em}
-.brand small{display:block;color:var(--muted);font-size:.78rem;font-family:var(--body);font-weight:400;letter-spacing:0}
-.rubros{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.rubros .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:2px}
+.brand h1{font-size:1.3rem;font-weight:850;font-stretch:118%;letter-spacing:-.01em;color:var(--on-monte)}
+.brand small{display:block;color:var(--on-monte-muted);font-size:.78rem;font-family:var(--body);font-weight:400;letter-spacing:0;font-stretch:100%}
+.rubro-btn{display:inline-flex;align-items:center;gap:9px;border:1.5px solid var(--trigo);background:rgba(0,0,0,.18);color:var(--on-monte);border-radius:999px;padding:4px 14px 4px 6px;cursor:pointer;font-weight:700}
+.rubro-btn .ri{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--trigo);color:var(--trigo-ink)}
+.rubro-btn .ri svg{width:20px;height:20px}
+.rubro-btn .rn{display:flex;flex-direction:column;line-height:1.1;text-align:left}
+.rubro-btn .rn small{font-size:.7rem;font-weight:400;color:var(--on-monte-muted)}
+.rubro-btn:hover{background:rgba(0,0,0,.3)}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font-size:.86rem;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -4px}
-.tabs button{border:0;background:none;padding:9px 12px 11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;font-size:.92rem}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button{border:0;background:none;padding:9px 12px 11px;font-weight:700;color:var(--on-monte-muted);cursor:pointer;white-space:nowrap;border-bottom:4px solid transparent;font-size:.92rem;font-family:var(--display);font-stretch:104%}
+.tabs button:hover{color:var(--on-monte)}
+.tabs button[aria-selected="true"]{color:var(--on-monte);border-bottom-color:var(--trigo)}
+.top .btn{background:transparent;color:var(--on-monte);border-color:rgba(255,255,255,.35)}
+.top .btn-help .q{background:var(--trigo);color:var(--trigo-ink)}
+.top :focus-visible{outline-color:var(--trigo)}
+
+/* Pantalla de inicio: elegir el rubro */
+.gate{position:fixed;inset:0;z-index:90;overflow:auto;color:var(--on-monte);
+  background:linear-gradient(180deg,transparent 0 calc(100% - 10px),var(--tierra) calc(100% - 10px)),
+  repeating-linear-gradient(104deg,rgba(255,255,255,.04) 0 2px,transparent 2px 18px),var(--monte)}
+.gate-in{max-width:1060px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top,0px)) 16px 40px;display:flex;flex-direction:column;gap:18px}
+.gate-brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-stretch:118%;font-size:1.05rem}
+.gate h2{font-size:clamp(1.9rem,5vw,3.1rem);font-weight:850;font-stretch:122%;line-height:1.02;color:var(--on-monte);max-width:16ch}
+.gate p{color:var(--on-monte-muted);max-width:60ch}
+.gate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.gate-card{display:grid;grid-template-columns:54px minmax(0,1fr);gap:4px 14px;align-items:start;text-align:left;cursor:pointer;color:var(--on-monte);
+  background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);border-radius:16px;padding:14px;font:inherit}
+.gate-card:hover,.gate-card:focus-visible{background:rgba(255,255,255,.11);border-color:var(--trigo);outline:none}
+.gate-card .gi{grid-row:span 3;display:grid;place-items:center;width:54px;height:54px;border-radius:14px;background:var(--trigo);color:var(--trigo-ink)}
+.gate-card .gi svg{width:34px;height:34px}
+.gate-card b{font-family:var(--display);font-size:1.18rem;font-weight:800;font-stretch:112%}
+.gate-card span{font-size:.84rem;color:var(--on-monte-muted)}
+.gate-card em{font-style:normal;font-size:.78rem;color:var(--trigo)}
+.gate-card.last{border-color:var(--trigo)}
+.gate-rem{display:inline-flex;gap:8px;align-items:center;font-size:.9rem;color:var(--on-monte-muted)}
+.gate-rem input{width:18px;height:18px;accent-color:var(--trigo)}
+.gate .btn{background:transparent;color:var(--on-monte);border-color:rgba(255,255,255,.35)}
 
 main{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:18px 60px}
 .view{display:flex;flex-direction:column;gap:18px}
 .lead{color:var(--muted);max-width:72ch}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:0 1px 0 rgba(28,40,30,.04)}
 .panel-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px}
-.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.eyebrow{font-size:.82rem;color:var(--accent);font-weight:700}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:start}
 @media (max-width:920px){.grid2{grid-template-columns:minmax(0,1fr)}}
 .stack{display:flex;flex-direction:column;gap:14px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:700;font-size:.88rem}
+.btn:hover{border-color:var(--accent)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.ghost{background:transparent}
 .btn.sm{padding:3px 8px;font-size:.8rem;font-weight:400}
 .note{font-size:.84rem;color:var(--muted)}
 .tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.ex-banner{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:8px;padding:8px 12px;font-size:.88rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.ex-banner{background:var(--s1-bg);border:1px dashed var(--s1);border-radius:8px;padding:8px 12px;font-size:.88rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 
 /* Familias de presentación */
 .fam{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
@@ -120,8 +155,12 @@ details.box>.in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .search{position:relative}
 .search input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--paper);font-size:.95rem}
 .sugg{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);max-height:340px;overflow:auto;z-index:15}
-.sugg button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 10px;text-align:left;cursor:pointer}
-.sugg button:hover,.sugg button:focus-visible{background:var(--sunk)}
+.sugg{max-height:min(60vh,460px)}
+.sugg button.sg-ai,.sugg button.sg-p{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 10px;text-align:left;cursor:pointer}
+.sugg button.sg-ai{border-left:4px solid var(--trigo)}
+.sugg button.sg-ai .t{font-family:var(--display);font-stretch:106%}
+.sg-h{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;padding:6px 10px;font-size:.78rem;font-weight:700;color:var(--muted);background:var(--sunk);border-bottom:1px solid var(--line)}
+.sugg button.sg-ai:hover,.sugg button.sg-p:hover,.sugg button.sg-ai:focus-visible,.sugg button.sg-p:focus-visible{background:var(--accent-soft);outline:none}
 .sugg .t{font-weight:700}
 .sugg .s{font-size:.78rem;color:var(--muted)}
 
@@ -146,7 +185,7 @@ details.box>.in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .lamp i.on.l3{background:var(--s3);box-shadow:0 0 18px var(--s3)}
 .lamp.sm{width:30px;padding:5px;gap:4px;border-radius:8px}
 .lamp.sm i{width:20px;height:20px}
-.vt{font-family:var(--display);font-size:1.5rem;font-weight:800}
+.vt{font-family:var(--display);font-size:1.6rem;font-weight:850;font-stretch:112%}
 .c0{color:var(--s0)}.c1{color:var(--s1)}.c2{color:var(--s2)}.c3{color:var(--s3)}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
@@ -180,14 +219,14 @@ details.box>.in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
 table{border-collapse:collapse;width:100%;font-size:.88rem}
 th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--sunk);font-weight:700}
+th{font-size:.8rem;color:var(--muted);background:var(--sunk);font-weight:700}
 tr:last-child td{border-bottom:0}
 td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 .step{font-family:var(--mono);font-weight:600;color:var(--accent)}
 
 .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .kv div{background:var(--sunk);border-radius:8px;padding:8px 10px}
-.kv b{display:block;font-family:var(--mono);font-size:1.05rem}
+.kv b{display:block;font-family:var(--mono);font-size:1.12rem;font-weight:750;font-variant-numeric:tabular-nums}
 .kv span{font-size:.76rem;color:var(--muted)}
 
 ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
@@ -206,6 +245,20 @@ ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .rb i.sec{color:var(--accent);border-style:dashed;opacity:.75}
 .rbedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .tag.esp{color:var(--accent);border-color:var(--accent);font-weight:700}
+.clima{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.hgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px}
+@media (max-width:640px){.hgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.hcell{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;border:1px solid transparent;border-radius:6px;padding:4px 0;cursor:pointer;font:inherit;font-size:.72rem;background:var(--sunk);color:var(--ink)}
+.hcell b{font-family:var(--mono);font-size:.82rem}
+.hcell span{color:inherit;opacity:.8}
+.hcell.l0{background:var(--s0-bg);color:var(--s0)}.hcell.l1{background:var(--s1-bg);color:var(--s1)}.hcell.l2{background:var(--s2-bg);color:var(--s2)}.hcell.l3{background:var(--s3-bg);color:var(--s3)}
+.hcell.noche{box-shadow:inset 0 -3px 0 rgba(28,40,30,.35)}
+.hcell.sel{border-color:var(--ink)}
+.hcell:disabled{opacity:.35;cursor:default}
+.hcell i{position:absolute;top:1px;right:3px;font-style:normal;font-size:.62rem}
+.win{display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:space-between;align-items:center;border:1px solid var(--line);border-left:5px solid var(--s0);border-radius:8px;padding:7px 10px;background:var(--panel)}
+.win.l1{border-left-color:var(--s1)}
+#btnClima[aria-pressed="true"]{background:var(--monte);border-color:var(--monte)}
 .iso{display:inline-block;min-width:2.4em;text-align:center;border-radius:4px;padding:0 4px;font-family:var(--mono);font-size:.76rem;font-weight:700;border:1px solid rgba(0,0,0,.3);vertical-align:1px}
 .eqgrid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:900px){.eqgrid{grid-template-columns:minmax(0,1fr)}}
@@ -219,6 +272,19 @@ ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .cwgrid input.bad{border-color:var(--s3);background:var(--s3-bg)}
 .chklist{display:flex;flex-direction:column;gap:6px}
 .chklist label{display:flex;gap:8px;align-items:flex-start;font-size:.88rem}
+.funset{grid-column:1/-1;border:1px solid var(--line);border-radius:8px;padding:8px 12px 12px;margin:0}
+.funset legend{font-weight:700;font-size:.9rem;padding:0 4px}
+.funchk{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 14px}
+.funchk label{display:flex;gap:8px;align-items:flex-start;font-size:.86rem;line-height:1.3}
+.funchk small{display:block;color:var(--muted);font-size:.76rem}
+.funlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin:0;padding:0}
+.funlist li{list-style:none;background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:.86rem}
+.funlist li b{display:block;font-family:var(--display);font-stretch:92%}
+.funlist.off li{background:transparent;border:1px dashed var(--line)}
+.funav{display:flex;flex-direction:column;gap:6px;margin:10px 0 0;padding:0}
+.funav li{list-style:none;font-size:.86rem;padding:6px 10px;border-left:4px solid var(--line);background:var(--sunk);border-radius:0 6px 6px 0}
+.funav li.l1{border-color:var(--s1);background:var(--s1-bg)}
+.funav li.l2{border-color:var(--s2);background:var(--s2-bg)}
 .tag.mio{color:var(--ink);background:var(--sunk)}
 .pfx{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 .pfchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -242,8 +308,8 @@ ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .map-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
 .map-tools .sep{width:1px;height:22px;background:var(--line)}
 .ap-map{height:280px;margin-top:8px}
-.vtx{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #28598A;box-shadow:0 0 0 1px #0004}
-.vtx-mid{width:12px;height:12px;border-radius:50%;background:#28598Acc;border:2px solid #fff;color:#fff;font:700 10px/8px sans-serif;text-align:center}
+.vtx{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #2F5D34;box-shadow:0 0 0 1px #0004}
+.vtx-mid{width:12px;height:12px;border-radius:50%;background:#2F5D34cc;border:2px solid #fff;color:#fff;font:700 10px/8px sans-serif;text-align:center}
 .drop-hint{outline:3px dashed var(--accent);outline-offset:-6px}
 .map{height:min(62vh,520px);border-radius:8px;border:1px solid var(--line);background:var(--sunk);z-index:0}
 .lote-tip{background:rgba(255,255,255,.85);border:0;box-shadow:none;font-weight:700;font-size:.72rem;color:#18221D;padding:1px 5px}
@@ -282,6 +348,15 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTit" hidden>
+  <div class="gate-in">
+    <div class="gate-brand"><div class="brand-mark" aria-hidden="true"><i style="background:var(--s3)"></i><i style="background:var(--s2)"></i><i style="background:var(--s1)"></i><i style="background:var(--s0)"></i></div>Consultas de Caldo</div>
+    <h2 id="gateTit">¿En qué rubro vas a trabajar?</h2>
+    <p>La app muestra los productos, la rotación y los avisos de ese rubro. Lo podés cambiar cuando quieras con el botón del rubro, arriba.</p>
+    <div class="gate-grid" id="gateGrid"></div>
+    <div class="row" style="justify-content:space-between"><label class="gate-rem"><input type="checkbox" id="gateRem"> Entrar siempre con el rubro que elija</label><button class="btn" id="gateCerrar" hidden>Seguir con el rubro actual</button></div>
+  </div>
+</div>
 
 </head>
 <body>
@@ -290,9 +365,9 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
     <div class="brand-row">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true"><i style="background:var(--s3)"></i><i style="background:var(--s2)"></i><i style="background:var(--s1)"></i><i style="background:var(--s0)"></i></div>
-        <h1>Consultas de Caldo<small>Productos SENAVE · compatibilidad de mezclas · semáforo de riesgo</small></h1>
+        <h1>Consultas de Caldo<small>Mezclas de caldo, productos del SENAVE y momento de aplicar</small></h1>
       </div>
-      <div class="rubros" id="rubros" role="group" aria-label="Rubro"><span class="lbl">Rubro</span></div>
+      <button class="rubro-btn" id="rubroBtn" aria-haspopup="dialog" title="Cambiar el rubro"><span class="ri" id="rubroIco"></span><span class="rn"><small>Rubro</small><span id="rubroNom"></span></span></button>
       <div class="top-actions"><button class="btn" id="btnInstall" hidden>Instalar app</button><button class="btn btn-help" id="btnHelp"><span class="q">?</span>Ayuda</button></div>
     </div>
     <nav class="tabs" role="tablist" id="tabs">
@@ -320,7 +395,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
         <div class="panel" id="pProductos">
           <div class="panel-h"><h3>1 · Productos del caldo</h3><span class="note" id="rubroNote"></span></div>
           <div class="search">
-            <input id="q" type="search" placeholder="Buscar producto, activo o empresa…" autocomplete="off" aria-label="Buscar producto para agregar">
+            <input id="q" type="search" placeholder="Principio activo o producto (ej.: glifosato, lambda, Tordon)" autocomplete="off" aria-label="Buscar principio activo o producto para agregar">
             <div class="sugg" id="sugg" hidden></div>
           </div>
           <div class="mix" id="mix" style="margin-top:12px"></div>
@@ -384,7 +459,8 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
           </div>
         </div>
         <div class="panel" id="pAmb">
-          <div class="panel-h"><h3>4 · Condiciones ambientales</h3><span class="row" style="gap:6px"><span id="ambEstado"></span><button class="btn sm" id="btnAhora">Ahora</button></span></div>
+          <div class="panel-h"><h3>4 · Condiciones ambientales</h3><span class="row" style="gap:6px"><span id="ambEstado"></span><button class="btn sm" id="btnAhora">Ahora</button><button class="btn sm pri" id="btnClima" aria-pressed="false">Pronóstico y mejor horario</button></span></div>
+          <p class="note" id="ambFuente" style="margin:-4px 0 8px" hidden></p>
           <div class="fields">
             <label class="f" style="grid-column:span 2">Fecha y hora<input id="c_fecha_hora" type="datetime-local"></label>
             <label class="f">Temperatura (°C)<input id="c_temperatura_ambiente_C" type="number" step="0.5"></label>
@@ -396,6 +472,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
             <label class="f">Lluvia prevista en (h)<input id="c_lluvia_h" type="number" min="0" step="1" placeholder="sin lluvia"></label>
           </div>
           <div class="kv" id="ambKv" style="margin-top:10px"></div>
+          <div id="clima"></div>
         </div>
       </div>
 
@@ -420,7 +497,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
       <div><h2>Productos registrados</h2><p class="lead" id="prodLead"></p></div>
       <div class="panel">
         <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">
-          <label class="f" style="grid-column:span 2">Buscar<input id="pq" type="search" placeholder="Nombre, activo, empresa o registro"></label>
+          <div class="f search" style="grid-column:span 2"><label class="f" for="pq">Buscar</label><input id="pq" type="search" autocomplete="off" placeholder="Principio activo, producto, empresa o registro"><div class="sugg" id="psugg" hidden></div></div>
           <label class="f pwide">Ordenar por<select id="pord">
             <option value="rec">Recomendado: específicos primero</option><option value="nom">Nombre A–Z</option><option value="nomd">Nombre Z–A</option>
             <option value="dif">Más difundidos</option><option value="mio">Más usados por mí</option><option value="emp">Empresa A–Z</option>
@@ -624,7 +701,9 @@ function caldoDerived(xs, inp){
   const ranges = xs.map(x=>x.d.pH_optimo).filter(Boolean);
   let lo=-Infinity, hi=Infinity; ranges.forEach(([a,b])=>{lo=Math.max(lo,a);hi=Math.min(hi,b)});
   return {
-    ...inp.caldo, volumen_L_ha: inp.vol, modo: inp.modo,
+    ...inp.caldo, volumen_L_ha: inp.vol, modo: inp.modo, rubro: RUBRO,
+    dron_sin_agitador: inp.modo === "drone" && !((typeof findEq === "function" && findEq(S.equipo) || {}).funciones || []).includes("agitador"),
+    lluvia_margen_h: inp.caldo.lluvia_h != null && inp.caldo.lluvia_h !== "" ? inp.caldo.lluvia_h - lavadoCaldo(xs, inp.cult && inp.cult.momento).h : null,
     n_productos: reales.length,
     n_oleosos: xs.filter(x=>x.d.oleoso && !x.virt).length,
     activo_duplicado: Object.values(ais).some(s=>s.size>1),
@@ -636,6 +715,21 @@ function caldoDerived(xs, inp){
     delta_T: deltaT(inp.caldo.temperatura_ambiente_C, inp.caldo.HR),
     fuera_ley: fueraLey(inp.caldo),
   };
+}
+/* Horas sin lluvia que necesita el caldo: el producto más exigente (los preemergentes no cuentan: la lluvia los activa) */
+const esPre = (id, momento) => D.clima.pre.includes(id) || (momento === "pre" && D.clima.pre_momento.includes(id));
+function lavadoAI(c, momento){
+  const C = D.clima, o = c.o; if(!o || (c.t !== "ai" && c.t !== "bio")) return 0;
+  if(esPre(c.id, momento)) return 0;
+  if(C.lavado_forma[c.id] && c.forma && C.lavado_forma[c.id][c.forma] != null) return C.lavado_forma[c.id][c.forma];
+  if(C.lavado[c.id] != null) return C.lavado[c.id];
+  const g = o.grupo || ""; for(const [k, v] of Object.entries(C.lavado_grupo)) if(g.startsWith(k)) return v;
+  return C.lavado_clase[o.clase] ?? C.lavado_clase.default;
+}
+function lavadoCaldo(xs, momento){
+  let h = 0, quien = null, pre = false;
+  xs.forEach(x => { if(x.virt) return; x.k.forEach(c => { if(esPre(c.id, momento)) pre = true; const v = lavadoAI(c, momento); if(v > h){ h = v; quien = {x, c}; } }); });
+  return {h, quien, pre};
 }
 /* Delta T = T - temperatura de bulbo húmedo (fórmula de Stull, 2011) */
 function deltaT(T, HR){
@@ -652,7 +746,7 @@ function fueraLey(c){
   if(T!=null&&H!=null&&V!=null) return false;
   return null;
 }
-const DATO_NOMBRE = {pH:"pH del agua",dureza_ppm_CaCO3:"dureza",temperatura_C:"temperatura del agua",turbidez:"turbidez",Fe_mg_L:"hierro",HCO3_mg_L:"bicarbonatos",conductividad_uS_cm:"conductividad",cloro_mg_L:"cloro",horas_en_tanque:"horas en el tanque",temperatura_ambiente_C:"temperatura ambiente",pH_final:"pH final del caldo",volumen_L_ha:"volumen",viento_kmh:"viento",HR:"humedad relativa",delta_T:"temperatura y humedad (Delta T)",lluvia_h:"lluvia prevista",fuera_ley:"temperatura, humedad y viento"};
+const DATO_NOMBRE = {pH:"pH del agua",dureza_ppm_CaCO3:"dureza",temperatura_C:"temperatura del agua",turbidez:"turbidez",Fe_mg_L:"hierro",HCO3_mg_L:"bicarbonatos",conductividad_uS_cm:"conductividad",cloro_mg_L:"cloro",horas_en_tanque:"horas en el tanque",temperatura_ambiente_C:"temperatura ambiente",pH_final:"pH final del caldo",volumen_L_ha:"volumen",viento_kmh:"viento",HR:"humedad relativa",delta_T:"temperatura y humedad (Delta T)",lluvia_h:"lluvia prevista",lluvia_margen_h:"lluvia prevista",rafagas_kmh:"ráfagas",fuera_ley:"temperatura, humedad y viento"};
 function levelOf(rid, act){
   const cfg = SEM[rid] || [null,0,{}]; const r = RULE[rid];
   const base = cfg[0]!=null ? cfg[0] : SEV[r.severidad];
@@ -677,7 +771,7 @@ function evaluate(state){
     for(const [src,obj] of [["agua",inp.agua],["caldo",cal]]){
       for(const [k,ops] of Object.entries(r.condiciones[src]||{})){
         const v = obj[k];
-        if(v==null || v===""){ if(k==="lluvia_h") ok=false; else missing.push(k); continue; }
+        if(v==null || v===""){ if(k==="lluvia_h" || k==="lluvia_margen_h") ok=false; else missing.push(k); continue; }
         for(const [op,b] of Object.entries(ops)) if(!cond(op,v,b)) ok=false;
       }
     }
@@ -731,11 +825,36 @@ function maxTime(ev){ const t = ev.xs.map(x=>x.d.tiempo_max_caldo_h).filter(v=>v
 </script>
 <script>
 /* ---------- UI: rubros y pestañas ---------- */
+/* Íconos propios de cada rubro (trazo simple, 24×24) */
+const RUB_ICON = {
+  AG: '<path d="M12 21V8"/><path d="M12 12c-3.2-.6-5.4-2.7-5.6-6.2 3.3.1 5.4 2.2 5.6 6.2z"/><path d="M12 12c3.2-.6 5.4-2.7 5.6-6.2-3.3.1-5.4 2.2-5.6 6.2z"/><path d="M12 8c-1.6-1.6-1.8-3.6-.2-5.4 1.7 1.7 1.6 3.7.2 5.4z"/><path d="M12 16.5c1.9.1 3.2 1 3.8 2.6"/><path d="M12 18.5c-1.9.1-3.2 1-3.8 2.4"/>',
+  HO: '<path d="M12 8.2c4.3 0 7.3 2.9 7.3 6.4S16.3 21 12 21s-7.3-2.9-7.3-6.4S7.7 8.2 12 8.2z"/><path d="M12 8.2 9.6 5.6M12 8.2l2.4-2.6M12 8.2V4M9.4 8.8 6.6 7.9M14.6 8.8l2.8-.9"/>',
+  FO: '<path d="M12 2.8 6.6 10h3L5.4 16h13.2l-4.2-6h3z"/><path d="M12 16v5.2"/><path d="M8.5 21.2h7"/>',
+  PA: '<path d="M3 20.5h18"/><path d="M5.5 20.5c.2-4-.6-7.6-2.4-10.5"/><path d="M8.5 20.5c0-5.2 1-9.4 3.3-13.5"/><path d="M12.2 20.5c.3-4.4 1.8-7.8 4.8-10.6"/><path d="M15.8 20.5c.4-2.8 1.6-5 3.9-6.6"/><path d="M10 20.5c-.5-3.2-1.6-5.6-3.6-7.4"/>',
+  SP: '<path d="M3 20.5h18"/><circle cx="8" cy="7.5" r="4.2"/><path d="M8 11.7v8.8"/><path d="M14 20.5c.2-3 1.2-5.2 3.4-7"/><path d="M17.3 20.5c.4-2 1.4-3.6 3-4.6"/><path d="M12.2 20.5c-.2-2-.8-3.4-2-4.6"/>',
+  AL: '<path d="M6.5 21V9.5a5.5 5.5 0 0 1 11 0V21"/><path d="M4.5 21h15"/><path d="M6.5 13h11M6.5 17h11"/><path d="M12 4v-1.2"/>',
+};
+const rubIcon = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${RUB_ICON[k] || ""}</svg>`;
 function renderRubros(){
-  const el = $("#rubros"); el.querySelectorAll(".chip").forEach(c=>c.remove());
-  for(const k of RUBK){ const b=document.createElement("button"); b.className="chip"; b.textContent=D.rubros[k].nombre; b.title=D.rubros[k].detalle; b.setAttribute("aria-pressed", String(k===RUBRO));
-    b.onclick=()=>{RUBRO=k; store("rubro",k); renderRubros(); renderAll();}; el.appendChild(b); }
+  if(!D.rubros[RUBRO]) RUBRO = "AG";
+  $("#rubroIco").innerHTML = rubIcon(RUBRO); $("#rubroNom").textContent = D.rubros[RUBRO].nombre;
 }
+function elegirRubro(k){
+  RUBRO = k; store("rubro", k); if($("#gateRem").checked) store("rubro_fijo", true); else store("rubro_fijo", false);
+  $("#gate").hidden = true; document.body.style.overflow = ""; renderRubros(); renderAll();
+}
+function abrirGate(inicio){
+  const cnt = k => D.productos.filter(p => !p.m && p.s.includes(k)).length;
+  $("#gateGrid").innerHTML = RUBK.map(k => `<button class="gate-card${k === RUBRO && !inicio ? " last" : ""}" data-k="${k}"><span class="gi">${rubIcon(k)}</span><b>${esc(D.rubros[k].nombre)}</b><span>${esc(D.rubros[k].detalle)}</span><em>${cnt(k).toLocaleString("es-PY")} productos vigentes${k === RUBRO ? " · rubro actual" : ""}</em></button>`).join("");
+  $("#gateRem").checked = !!load("rubro_fijo", false);
+  $("#gateCerrar").hidden = !!inicio && !load("rubro_elegido", false);
+  $("#gate").hidden = false; document.body.style.overflow = "hidden";
+  document.querySelectorAll("#gateGrid .gate-card").forEach(b => b.onclick = () => { store("rubro_elegido", true); elegirRubro(b.dataset.k); });
+  const cur = $(`#gateGrid .gate-card[data-k="${RUBRO}"]`); if(cur) cur.focus();
+}
+$("#rubroBtn").onclick = () => abrirGate(false);
+$("#gateCerrar").onclick = () => { $("#gate").hidden = true; document.body.style.overflow = ""; };
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("#gate").hidden && !$("#gateCerrar").hidden) $("#gateCerrar").click(); });
 let VIEW = "caldo";
 function setView(v){
   VIEW=v; document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.v===v)));
@@ -763,6 +882,7 @@ function fillInputs(){
   $("#agitacion").value=S.caldo.agitacion; $("#portador").value=S.caldo.portador; $("#bolsas").value=String(!!S.caldo.bolsas_hidrosolubles); $("#phfinal").value=S.caldo.pH_final??"";
   AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.value = S.agua[k] ?? ""; });
   $("#exBanner").hidden = !S.ejemplo;
+  $("#ambFuente").hidden = !S.caldo.fuente_clima; $("#ambFuente").textContent = S.caldo.fuente_clima ? `Condiciones del pronóstico (${S.caldo.fuente_clima}) para el ${fmtFH(S.caldo.fecha_hora)}. Si cambiás un dato, pasa a ser tuyo.` : "";
   const opts = (v, vacio) => `<option value="">${vacio}</option>` + Object.entries(D.cultivos).map(([k, n]) => `<option value="${k}"${k === v ? " selected" : ""}>${esc(n)}</option>`).join("");
   $("#cuAct").innerHTML = opts(S.cult.actual, "— elegir —"); $("#cuSig").innerHTML = opts(S.cult.siguiente, "— elegir —");
   $("#cuMom").innerHTML = Object.entries(D.momentos).map(([k, n]) => `<option value="${k}"${k === S.cult.momento ? " selected" : ""}>${esc(n)}</option>`).join("");
@@ -776,7 +896,8 @@ function bindInputs(){
   $("#horas").oninput=e=>{S.caldo.horas_en_tanque=numOrNull(e.target.value);upd()};
   $("#sup").oninput=e=>{S.sup=numOrNull(e.target.value);S.supManual=true;upd()};
   AMB_KEYS.forEach(k=>{ const el=$("#c_"+k); const txt = el.tagName==="SELECT" || el.type==="datetime-local";
-    el.addEventListener(txt?"change":"input", e=>{ S.caldo[k] = txt ? (e.target.value||null) : numOrNull(e.target.value); upd(); }); });
+    el.addEventListener(txt?"change":"input", e=>{ S.caldo[k] = txt ? (e.target.value||null) : numOrNull(e.target.value); S.caldo.fuente_clima = null; upd(); }); });
+  $("#btnClima").onclick=toggleClima;
   $("#btnAhora").onclick=()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); S.caldo.fecha_hora=d.toISOString().slice(0,16); fillInputs(); upd(); };
   [["cuAct","actual"],["cuSig","siguiente"],["cuMom","momento"],["cuSiA","siembra_act"],["cuSiS","siembra_sig"]].forEach(([id,k])=>{ $("#"+id).onchange=e=>{ S.cult[k]=e.target.value||null; if(k==="momento"){ S.cult.momento=S.cult.momento||"barbecho"; $("#cuSiAW").hidden=S.cult.momento!=="barbecho"; } upd(); }; });
   $("#apMapBtn").onclick=()=>{ const b=$("#apMap"); b.hidden=!b.hidden; $("#apMapBtn").textContent=b.hidden?"Elegir lotes en el mapa":"Ocultar mapa"; if(!window.L){ toast("El mapa no está disponible en esta vista"); b.hidden=true; return; } refreshApMap(); };
@@ -794,37 +915,102 @@ function chipsRow(el, opts, arr){
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const v=b.dataset.v; const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); S.ejemplo=false; save(); renderCaldo(); });
 }
 
-/* buscador */
+/* ---------- Buscador: primero principios activos, después productos ---------- */
+const NK = t => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+const AIX = D.activos.concat(D.biologicos, D.botanicos).map(a => { const k = [NK(a.nombre)].concat(a.al || []); return {a, k, kh: k.map(x => x.replace(/h/g, ""))}; });
+const FORMA_TXT = {sal_dimetilamina: "sal dimetilamina", ester: "éster", sal_amonica: "sal amónica", sal_potasica: "sal potásica", sal_amina: "sal amina", acido: "ácido", sal_sodica: "sal sódica", sal_isopropilamina: "sal isopropilamina", sal_diglicolamina: "sal diglicolamina", sal_colina: "sal colina", sal_bapma: "sal BAPMA"};
+const CLASE_TXT = {herbicida: "Herbicida", insecticida: "Insecticida", fungicida: "Fungicida", regulador_crecimiento: "Regulador", biologico: "Biológico", extracto_botanico: "Botánico", molusquicida: "Molusquicida", sinergista: "Sinergista", feromona: "Feromona", protector: "Protector", rodenticida: "Rodenticida", acaricida: "Acaricida", nematicida: "Nematicida", bactericida: "Bactericida"};
+const titulo = t => (t || "").toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase());
+function buscarAI(q){
+  const k = NK(q); if(k.length < 2) return [];
+  const kh = k.replace(/h/g, ""), out = [];
+  for(const x of AIX){
+    let sc = 0;
+    if(x.k[0].startsWith(k)) sc = 100; else if(x.k.some(y => y.startsWith(k))) sc = 85; else if(x.kh.some(y => y.startsWith(kh))) sc = 80;
+    else if(x.k[0].includes(k)) sc = 60; else if(x.k.some(y => y.includes(k))) sc = 50; else if(k.length >= 4 && x.kh.some(y => y.includes(kh))) sc = 40;
+    if(sc) out.push({a: x.a, sc, n: countRubro(x.a.id)});
+  }
+  return out.sort((x, y) => (y.n > 0) - (x.n > 0) || y.sc - x.sc || y.n - x.n);
+}
+/* activos del producto escritos de forma pareja: "Glifosato 62 % (sal potásica)" */
+function paTxt(p){
+  const cs = p.k.filter(c => c[0] !== "ady"); if(!cs.length) return titulo(p.pa).replace(/(\d+\.\d+) %/g, m => fmt(parseFloat(m), 1) + " %");
+  return cs.map(c => { const o = compObj(c[0], c[1]); const nm = c[0] === "ai" && o ? o.nombre : titulo(c[4] || (o && o.nombre) || c[1]);
+    return `${nm}${c[3] != null ? " " + fmt(c[3], 1) + " %" : ""}${c[2] && FORMA_TXT[c[2]] ? " (" + FORMA_TXT[c[2]] + ")" : ""}`; }).join(" + ");
+}
+function productosDeAI(id, todos){
+  const mios = usosMios();
+  return D.productos.filter(p => !p.m && (todos || inRubro(p)) && p.k.some(c => c[1] === id))
+    .sort((a, b) => nivelRubro(a) - nivelRubro(b) || (mios[b.r] || 0) - (mios[a.r] || 0) || a.m - b.m || a.n.localeCompare(b.n, "es"));
+}
 function searchProducts(q, limit=12, onlyRubro=true){
-  q = q.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-  if(q.length<2) return [];
-  const out=[];
+  const k = NK(q); if(k.length < 2) return [];
+  const ais = new Set(buscarAI(q).filter(x => x.sc >= 50).slice(0, 8).map(x => x.a.id));
+  const out = [];
   for(const p of D.productos){
     if(onlyRubro && !inRubro(p)) continue;
-    const hay = (p.n+" "+p.pa+" "+p.e+" "+p.r).toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-    if(hay.includes(q)) out.push(p);
+    let sc = 0;
+    if(NK(p.n).startsWith(k)) sc = 3; else if(p.k.some(c => ais.has(c[1]))) sc = 2; else if(NK(p.n + " " + p.pa + " " + p.e + " " + p.r).includes(k)) sc = 1;
+    if(sc) out.push({p, sc});
   }
-  // primero: nombre que empieza con lo buscado, específicos del rubro, usados por mí, vigentes
   const mios = usosMios();
-  out.sort((a,b) => (a.n.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").startsWith(q)?0:1) - (b.n.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").startsWith(q)?0:1) ||
-    nivelRubro(a)-nivelRubro(b) || (mios[b.r]||0)-(mios[a.r]||0) || a.m-b.m || a.n.localeCompare(b.n, "es"));
-  return out.slice(0, limit);
+  out.sort((a, b) => b.sc - a.sc || nivelRubro(a.p) - nivelRubro(b.p) || (mios[b.p.r] || 0) - (mios[a.p.r] || 0) || a.p.m - b.p.m || a.p.n.localeCompare(b.p.n, "es"));
+  return out.slice(0, limit).map(x => x.p);
+}
+function aiBtnHTML(x){ const o = x.a;
+  return `<button class="sg-ai" data-ai="${esc(o.id)}"><span class="t">${esc(o.nombre)}</span><span class="s">${esc(CLASE_TXT[o.clase] || titulo(o.clase || ""))}${o.grupo ? " · " + esc(o.grupo) : ""} · ${x.n ? x.n.toLocaleString("es-PY") + " producto" + (x.n === 1 ? "" : "s") + " en " + esc(D.rubros[RUBRO].nombre) : "sin productos en " + esc(D.rubros[RUBRO].nombre)}</span></button>`; }
+function prodBtnHTML(p){
+  return `<button class="sg-p" data-r="${esc(p.r)}"><span class="t">${esc(p.n)} ${famChip(p.f)}${secRubro(p)?` <span class="tag">uso secundario</span>`:!inRubro(p)?` <span class="tag">fuera del rubro</span>`:esEsp(p)?` <span class="tag esp">específico</span>`:""}</span><span class="s">${esc(paTxt(p))} · ${esc(p.e)}${p.u!=="pulverizacion"?" · "+(p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"):""}</span></button>`; }
+/* Autocompletado reutilizable: inp (input), box (lista), onAI(id), onProd(r) */
+function autocompletar(inp, box, onAI, onProd, opt = {}){
+  let aiSel = null, todos = false;
+  const cerrar = () => { box.hidden = true; aiSel = null; };
+  const pintar = () => {
+    const q = inp.value.trim();
+    if(q.length < 2){ box.hidden = true; box.innerHTML = ""; todos = false; return; }
+    let html = "";
+    if(aiSel){
+      const o = AIX.find(x => x.a.id === aiSel).a, ps = productosDeAI(aiSel, todos);
+      html = `<div class="sg-h"><button class="linkbtn" data-volver="1">Volver a la búsqueda</button><span>${esc(o.nombre)}: ${ps.length} productos${todos ? " (todos los rubros)" : ""}</span></div>` +
+        (opt.filtrar ? `<button class="sg-ai" data-filtrar="${esc(aiSel)}"><span class="t">Ver los ${ps.length} productos con ${esc(o.nombre)} en el listado</span></button>` : "") +
+        ps.slice(0, 40).map(prodBtnHTML).join("") + (ps.length > 40 ? `<div class="sg-h"><span>Y ${ps.length - 40} más: escribí el nombre para acotar.</span></div>` : "");
+    } else {
+      const ais = buscarAI(q), conProd = ais.filter(x => x.n > 0).slice(0, 6), sinProd = ais.filter(x => !x.n).slice(0, 3);
+      const ps = searchProducts(q, 12, !todos);
+      if(conProd.length) html += `<div class="sg-h"><span>Principios activos</span></div>` + conProd.map(aiBtnHTML).join("");
+      if(ps.length) html += `<div class="sg-h"><span>Productos${todos ? " de todos los rubros" : ""}</span></div>` + ps.map(prodBtnHTML).join("");
+      if(sinProd.length && !conProd.length) html += `<div class="sg-h"><span>${sinProd.map(x => esc(x.a.nombre)).join(", ")}: sin productos en ${esc(D.rubros[RUBRO].nombre)}.</span></div>`;
+      if(!todos){ const fuera = searchProducts(q, 99, false).length; if(fuera > ps.length) html += `<div class="sg-h"><button class="linkbtn" data-todos="1">Buscar en todos los rubros (${fuera}${fuera >= 99 ? "+" : ""})</button></div>`; }
+      if(!html) html = `<div class="sg-h"><span>Sin resultados para “${esc(q)}”.</span></div>`;
+    }
+    box.innerHTML = html; box.hidden = false;
+    box.querySelectorAll("[data-ai]").forEach(b => b.onclick = () => { const id = b.dataset.ai; if(onAI && onAI(id, false) === true){ cerrar(); return; } aiSel = id; pintar(); });
+    box.querySelectorAll("[data-filtrar]").forEach(b => b.onclick = () => { const id = b.dataset.filtrar; cerrar(); onAI && onAI(id, true); });
+    box.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { const r = b.dataset.r; cerrar(); onProd(r); });
+    box.querySelectorAll("[data-volver]").forEach(b => b.onmousedown = e => { e.preventDefault(); aiSel = null; pintar(); inp.focus(); });
+    box.querySelectorAll("[data-todos]").forEach(b => b.onmousedown = e => { e.preventDefault(); todos = true; pintar(); inp.focus(); });
+  };
+  inp.addEventListener("input", () => { aiSel = null; if(inp.value.trim().length < 2) todos = false; pintar(); });
+  inp.addEventListener("focus", () => { if(inp.value.trim().length >= 2) pintar(); });
+  inp.addEventListener("keydown", e => {
+    const items = [...box.querySelectorAll("button.sg-ai,button.sg-p")]; if(box.hidden || !items.length) return;
+    const i = items.indexOf(document.activeElement);
+    if(e.key === "ArrowDown"){ e.preventDefault(); items[0].focus(); }
+    else if(e.key === "Enter"){ e.preventDefault(); items[0].click(); }
+    else if(e.key === "Escape") cerrar();
+  });
+  box.addEventListener("keydown", e => {
+    const items = [...box.querySelectorAll("button.sg-ai,button.sg-p")], i = items.indexOf(document.activeElement);
+    if(e.key === "ArrowDown"){ e.preventDefault(); (items[i + 1] || items[i]).focus(); }
+    else if(e.key === "ArrowUp"){ e.preventDefault(); if(i <= 0) inp.focus(); else items[i - 1].focus(); }
+    else if(e.key === "Escape"){ cerrar(); inp.focus(); }
+  });
+  document.addEventListener("click", e => { if(e.target === inp || e.composedPath().includes(box)) return; box.hidden = true; });
+  return {pintar, cerrar};
 }
 function bindSearch(){
-  const inp=$("#q"), box=$("#sugg");
-  inp.oninput=()=>{
-    if(inp.value.trim().length<2) inp.dataset.todos = "";
-    const todos = inp.dataset.todos === "1";
-    const res = searchProducts(inp.value, 14, !todos);
-    if(!res.length){ const fuera = inp.value.trim().length>=2 && !todos ? searchProducts(inp.value, 99, false).length : 0;
-      box.hidden = inp.value.trim().length<2; box.innerHTML = inp.value.trim().length<2?"":`<div class="note" style="padding:10px">Sin resultados en el rubro ${esc(D.rubros[RUBRO].nombre)}.${fuera?` <button class="linkbtn" id="qTodos">Buscar en todos los rubros (${fuera}${fuera>=99?"+":""})</button>`:""}</div>`;
-      const bt = $("#qTodos"); if(bt) bt.onmousedown = e => { e.preventDefault(); inp.dataset.todos = "1"; inp.oninput(); inp.focus(); };
-      return; }
-    box.innerHTML = (todos?`<div class="note" style="padding:6px 10px">Todos los rubros</div>`:"") + res.map(p=>`<button data-r="${esc(p.r)}"><span class="t">${esc(p.n)} ${famChip(p.f)}${secRubro(p)?` <span class="tag">uso secundario</span>`:!inRubro(p)?` <span class="tag">fuera del rubro</span>`:esEsp(p)?` <span class="tag esp">específico</span>`:""}</span><span class="s">${esc(p.pa)} · ${esc(p.e)}${p.u!=="pulverizacion"?" · "+(p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"):""}</span></button>`).join("");
-    box.hidden=false;
-    box.querySelectorAll("button[data-r]").forEach(b=>b.onclick=()=>{ S.items.push({r:b.dataset.r,dosis:null}); S.ejemplo=false; inp.value=""; inp.dataset.todos=""; box.hidden=true; save(); renderCaldo(); });
-  };
-  document.addEventListener("click",e=>{ if(!e.target.closest(".search")) box.hidden=true; });
+  const inp = $("#q"), box = $("#sugg");
+  autocompletar(inp, box, null, r => { S.items.push({r, dosis: null}); S.ejemplo = false; inp.value = ""; save(); renderCaldo(); });
 }
 
 /* ---------- Armador: resultado ---------- */
@@ -865,7 +1051,7 @@ function renderCaldo(){
     const mant = x.p && x.p.m ? `<span class="tag">mantenimiento vencido</span>`:"";
     const dose = isV ? `<span class="note">${x.virt==="ams"||x.virt==="antiesp"?"ver orden de carga":"según etiqueta"}</span>` : `<span class="dose"><input type="number" step="0.005" min="0" value="${x.dosis??""}" data-i="${i}" aria-label="Dosis de ${esc(x.n)}"><span class="note">${u}/ha</span></span>`;
     return `<div class="mi${isV?" virt":""}"><span class="nm">${esc(x.n)}</span>${dose}<button class="x" data-i="${i}" data-virt="${x.virt||""}" aria-label="Quitar ${esc(x.n)}">×</button>
-      <span class="sub">${famChip(x.f)}<span>Paso ${x.d.paso_orden_carga??"—"}</span>${x.p?`<span>${esc(x.p.pa)}</span><span>· ${esc(x.e)}</span>`:`<span>${esc(x.e)}</span>`}${offR}${warn}${mant}</span></div>`;
+      <span class="sub">${famChip(x.f)}<span>Paso ${x.d.paso_orden_carga??"—"}</span>${x.p?`<span>${esc(paTxt(x.p))}</span><span>· ${esc(x.e)}</span>`:`<span>${esc(x.e)}</span>`}${offR}${warn}${mant}</span></div>`;
   }).join("");
   mix.querySelectorAll(".dose input").forEach(inp=>inp.oninput=e=>{ const x=ev.xs[+e.target.dataset.i]; x.item.dosis=numOrNull(e.target.value); S.ejemplo=false; save(); renderResult(); });
   mix.querySelectorAll(".x").forEach(b=>b.onclick=()=>{ const x=ev.xs[+b.dataset.i];
@@ -912,6 +1098,7 @@ function renderResult(){
     </div>
   </div>
   ${equipoPanelHTML(ev)}
+  ${silvoPanelHTML(ev)}
   <div class="panel" id="pAlertas">
     <div class="panel-h"><h3>Alertas y cómo bajarlas</h3><span class="note">Tocá una medida para aplicarla; al lado se ve el color que queda.</span></div>
     <div class="alerts">${ev.fired.length?ev.fired.map(f=>alertHTML(f,ev,false)).join(""):`<p class="note">Sin alertas activas.</p>`}</div>
@@ -945,7 +1132,7 @@ function renderResult(){
   </div>`;
   el.querySelectorAll(".med").forEach(b=>b.onclick=()=>{ const m=b.dataset.m; const i=S.medidas.indexOf(m); if(i>=0) S.medidas.splice(i,1); else S.medidas.push(m); S.ejemplo=false; save(); renderCaldo(); });
   el.querySelectorAll(".pg").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
-  bindDosis(ev); bindRotacion(); bindJarra(ev); bindEquipoPanel(ev);
+  bindDosis(ev); bindRotacion(); bindJarra(ev); bindEquipoPanel(ev); bindSilvo(); refrescarClima();
 }
 function orderTable(ev){
   const rows = orderPlan(ev);
@@ -1139,6 +1326,7 @@ function opts(sel, arr, val, todos){ $(sel).innerHTML = `<option value="">${esc(
 function initProductFilters(){
   Object.entries(PFSEL).forEach(([id, k]) => $("#"+id).addEventListener(id==="pq"?"input":"change", e => { PF[k] = e.target.value; if(k !== "q") store("pfiltros", Object.assign({}, PF, {q:""})); PLIM=80; renderProductos(); }));
   $("#pAmplio").onchange = e => { AMPLIO = e.target.checked; store("rubro_amplio", AMPLIO); for(const k in CNT) delete CNT[k]; for(const k in DIFC) delete DIFC[k]; PLIM=80; renderProductos(); };
+  autocompletar($("#pq"), $("#psugg"), id => { PF.ai = id; PF.q = ""; $("#pq").value = ""; store("pfiltros", Object.assign({}, PF, {q:""})); PLIM = 80; renderProductos(); return true; }, r => openProduct(r));
   $("#pclr").onclick = () => { PF = Object.assign({}, PF0); store("pfiltros", PF); $("#pq").value = ""; PLIM=80; renderProductos(); };
   $("#pmore").onclick=()=>{PLIM+=120;renderProductos()};
 }
@@ -1167,11 +1355,12 @@ function renderProductos(){
   $("#pAmplio").checked = AMPLIO;
   // filtrar
   const q = NORM(PF.q.trim());
+  const qAI = new Set(q.length >= 2 ? buscarAI(PF.q).filter(x => x.sc >= 50).slice(0, 8).map(x => x.a.id) : []);
   const list = base.filter(p => (!PF.clase || (p.c||"").toUpperCase().includes(PF.clase)) && (!PF.fam || famOf(p.f)===PF.fam) && (!PF.emp || p.e===PF.emp) &&
     (PF.mant==="" || String(p.m)===PF.mant) && (!PF.orig || p.po===PF.orig) && (!PF.tox || TOXN(p.t)===PF.tox) &&
     (!PF.ai || aisDe(p).includes(PF.ai)) && (!PF.gru || aisDe(p).some(id => (AI[id]||{}).grupo === PF.gru)) &&
     (!PF.obj || aisDe(p).some(id => objR(objOf(id)).includes(PF.obj))) &&
-    (!q || NORM(p.n+" "+p.pa+" "+p.e+" "+p.r).includes(q)));
+    (!q || NORM(p.n+" "+p.pa+" "+p.e+" "+p.r).includes(q) || p.k.some(c => qAI.has(c[1]))));
   ordenar(list, PF.ord);
   const mios = usosMios();
   $("#prodLead").textContent = `${RN}: ${D.rubros[RUBRO].detalle}. Listado SENAVE con corte al ${D.meta.fecha_generacion.split("-").reverse().join("/")}. Primero van los productos específicos de ${RN}; luego los que también sirven en otros rubros y al final los coadyuvantes. El rubro se asigna por los usos de cada activo; los cultivos autorizados están en la etiqueta.`;
@@ -1188,7 +1377,7 @@ function renderProductos(){
   $("#plist").innerHTML = list.slice(0,PLIM).map(p=>{ const dif = difusion(p), u = mios[p.r];
     return `<button class="prow" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)}${p.ha?` · desde ${esc(p.ha.slice(0,4))}`:""}${p.po?` · ${esc(p.po)}`:""}</span>
       <span class="row" style="gap:4px;margin-top:3px">${esEsp(p)?`<span class="tag esp">Específico de ${esc(RN)}</span>`:""}${secRubro(p)?`<span class="tag">uso secundario</span>`:""}${u?`<span class="tag mio">Usado ${u} ${u===1?"vez":"veces"}</span>`:""}${dif>1?`<span class="tag" title="Marcas vigentes en ${esc(RN)} con la misma composición">${dif} marcas iguales</span>`:""}${TOXN(p.t)?`<span class="tag" title="Clase toxicológica">Tox. ${esc(TOXN(p.t)==="I"?p.t.replace(/\s/g,""):TOXN(p.t))}</span>`:""}</span></span>
-      <span class="pa s">${esc(p.pa)}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s, p.s2)}</span></button>`; }).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros. <button class="linkbtn" id="pclr2">Limpiar filtros</button></p>`;
+      <span class="pa s">${esc(paTxt(p))}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s, p.s2)}</span></button>`; }).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros. <button class="linkbtn" id="pclr2">Limpiar filtros</button></p>`;
   $("#plist").querySelectorAll(".prow").forEach(b=>b.onclick=()=>openProduct(b.dataset.r));
   if($("#pclr2")) $("#pclr2").onclick = () => $("#pclr").click();
   $("#pmore").hidden = list.length<=PLIM;
@@ -1427,13 +1616,13 @@ function crearEjemplo(){
 function ejemploEquipos(){
   return [
     {id: "ej-eq1", ejemplo: true, nombre: "Autopropulsada 3000 L (ejemplo)", tipo: "autopropulsada", marca: "", tanque: 3000, remanente: 30,
-     n_pastillas: 54, espaciado: 50, ancho: 27, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 2.6, vel: 16, altura: 50, bomba: 250, eficiencia: 60,
+     n_pastillas: 54, espaciado: 50, ancho: 27, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 2.6, vel: 16, altura: 50, bomba: 250, eficiencia: 60, secciones: 7, funciones: ["computadora", "secciones", "suspension", "agitador", "incorporador"],
      calibraciones: [{fecha: fechaMas(-20), tipo: "terrestre", V_obj: 70, V_real: 70.4, error: 0.5, apto: true, det: {vel: 16.2, P: 2.6, media: 0.95, cv: 3.1, n: 54, fuera: []}}],
      inspeccion: {fecha: fechaMas(-20), ok: D.equipos.check_insp.map((_, i) => i), total: D.equipos.check_insp.length}},
     {id: "ej-eq2", ejemplo: true, nombre: "Drone DJI Agras T40 (ejemplo)", tipo: "drone", modelo: "dji_t40", tanque: 40, remanente: 0.5, faja: 7, vel: 6, alt: 2.5,
-     caudal_max: 12, atom: "centrifugo", n_atom: 2, gota: 300, autonomia: 10, baterias: 3, calibraciones: []},
+     caudal_max: 12, atom: "centrifugo", n_atom: 2, gota: 300, autonomia: 10, baterias: 3, funciones: D.equipos.fun_drone.dji_t40.slice(), calibraciones: []},
     {id: "ej-eq3", ejemplo: true, nombre: "Avión Air Tractor AT-502B (ejemplo)", tipo: "avion", modelo: "at502b", tanque: 1893, remanente: 20, faja: 28, vel: 210, alt: 4,
-     atom: "rotativo", n_atom: 8, gota: 250, calibraciones: []},
+     atom: "rotativo", n_atom: 8, gota: 250, funciones: ["dgps", "caudal_auto", "rotativos", "registro"], calibraciones: []},
   ];
 }
 function cargarEjemplo(){
@@ -1458,6 +1647,9 @@ function initDatos(){
   if(CAMPOS === null || HIST === null){ CAMPOS = CAMPOS || []; HIST = HIST || []; if(!load("ejemplo_borrado", false)) cargarEjemplo(); else { saveCampos(); saveHist(); } }
   else if(CAMPOS.some(c => c.ejemplo) && load("ejemplo_v", 1) < 3) cargarEjemplo(); // actualiza el ejemplo (contorno real y superficie elipsoidal); no toca los datos propios
   if(EQUIPOS === null){ EQUIPOS = CAMPOS.some(c => c.ejemplo) ? ejemploEquipos() : []; saveEquipos(); }
+  else if(EQUIPOS.some(q => q.ejemplo && !q.funciones)){ // equipos de ejemplo guardados antes de que existieran las funciones
+    const ej = Object.fromEntries(ejemploEquipos().map(e => [e.id, e]));
+    EQUIPOS.forEach(q => { const e = ej[q.id]; if(q.ejemplo && e && !q.funciones){ q.funciones = e.funciones; if(e.secciones && !q.secciones) q.secciones = e.secciones; } }); saveEquipos(); }
 }
 initDatos();
 /* Superficie: desde 02/10/2026 se calcula sobre el elipsoide. Los lotes con superficie calculada por la
@@ -1662,7 +1854,8 @@ function rotacionHTML(ev){
     <div class="stack" style="gap:8px">${rows}</div>`;
 }
 function bindRotacion(){
-  document.querySelectorAll("[data-buscar]").forEach(b => b.onclick = () => { setView("productos"); $("#pq").value = b.dataset.buscar; PLIM = 80; renderProductos(); });
+  document.querySelectorAll("[data-buscar]").forEach(b => b.onclick = () => { const x = AIX.find(y => y.a.nombre === b.dataset.buscar);
+    PF = Object.assign({}, PF, x ? {ai: x.a.id, q: ""} : {q: b.dataset.buscar}); PLIM = 80; setView("productos"); });
 }
 
 /* ---------- Carry-over y cultivos ---------- */
@@ -2609,7 +2802,7 @@ function renderRotacion(){
   const grupos = Object.entries(byG).map(([g, arr]) => ({g, arr: arr.sort((x, y) => y.n - x.n), tot: arr.reduce((s, x) => s + x.n, 0)})).filter(x => x.tot > 0).sort((a, b) => b.tot - a.tot);
   const nrm = t => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "").replace(/h/g, "");
   const q = nrm(RF.q);
-  const hitAll = q ? D.activos.filter(a => nrm(a.nombre).includes(q) || nrm(a.id).includes(q)) : [];
+  const hitAll = q ? buscarAI(RF.q).filter(x => x.sc >= 50 && D.activos.includes(x.a)).map(x => x.a) : [];
   const hit = hitAll.filter(a => enRubroAI(a)).slice(0, 6), fuera = hitAll.filter(a => !enRubroAI(a)).slice(0, 8);
   const RN = esc(D.rubros[RUBRO].nombre);
   const faltan = Object.keys(OBJS_CLASE).filter(cl => !objsClase[cl].length).map(cl => CLASES[cl].toLowerCase() + "s");
@@ -2646,10 +2839,10 @@ function helpHTML(){
 
   <div class="panel"><h3>En 7 pasos</h3>
   <ol class="help-steps" style="margin-top:10px">
-    <li><div><b>Elegí tu rubro</b> arriba: Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. El buscador, el listado de productos y la rotación muestran solo lo de ese rubro: en Pasturas no aparecen los productos ni las opciones de rotación de soja o de hortalizas. Si buscás algo que no está, el buscador ofrece “Buscar en todos los rubros”.</div></li>
-    <li><div><b>Agregá los productos</b> en “Armar caldo”: escribí el nombre comercial, el activo o la empresa y tocá el producto. Cargá la dosis por hectárea (L/ha o kg/ha según la presentación).</div></li>
+    <li><div><b>Elegí tu rubro</b> al entrar (se cambia cuando quieras con el botón del encabezado): Agrícola, Hortícola y frutícola, Forestal, Pasturas, Silvopastoril o Granos almacenados. El buscador, el listado de productos y la rotación muestran solo lo de ese rubro: en Pasturas no aparecen los productos ni las opciones de rotación de soja o de hortalizas. Si buscás algo que no está, el buscador ofrece “Buscar en todos los rubros”.</div></li>
+    <li><div><b>Agregá los productos</b> en “Armar caldo”: empezá a escribir y el buscador completa primero el <b>principio activo</b> (con el nombre como figura en el SENAVE, aunque lo escribas sin tildes o en inglés) y después los nombres comerciales. Al elegir un activo ves todos los productos que lo llevan. Cargá la dosis por hectárea (L/ha o kg/ha según la presentación).</div></li>
     <li><div><b>Elegí dónde vas a aplicar</b>: campo y lotes (se cargan en “Campos y lotes”). La superficie se suma sola y la app compara la mezcla con el historial de esos lotes para avisarte si repetís el mismo modo de acción.</div></li>
-    <li><div><b>Completá la aplicación, el agua y las condiciones ambientales</b>: volumen por hectárea, tanque, cuánto tiempo va a esperar el caldo, el análisis de agua y la temperatura, humedad y viento del momento. La app calcula el Delta T y controla la Ley 3742/09. Lo que falte queda “a verificar”.</div></li>
+    <li><div><b>Completá la aplicación, el agua y las condiciones ambientales</b>: volumen por hectárea, tanque, cuánto tiempo va a esperar el caldo, el análisis de agua y la temperatura, humedad y viento del momento, o tocá <b>“Pronóstico y mejor horario”</b> para traerlas del pronóstico en la ubicación de los lotes. La app calcula el Delta T y controla la Ley 3742/09. Lo que falte queda “a verificar”.</div></li>
     <li><div><b>Leé el semáforo</b> y bajá el riesgo: cada alerta muestra las medidas que la corrigen. Al tocar una medida (por ejemplo “Antiespumante” o “Agitación constante”) se aplica y el color se recalcula. Al lado de la flecha ves el color que quedaría antes de tocarla.</div></li>
     <li><div><b>Revisá dosis y cantidades</b>: cargá la dosis de etiqueta (queda guardada) y la dosis a aplicar, o la cantidad que ponés en cada tanque. La app te da el total para la superficie, los tanques y el último tanque parcial.</div></li>
     <li><div><b>Prepará y registrá</b>: seguí el “Orden de carga”, hacé la prueba de jarra (elegí el tamaño del recipiente y la app calcula las cantidades) y, después de aplicar, tocá “Registrar aplicación”. Queda en el historial del lote, se ve en el mapa y se puede exportar a QGIS.</div></li>
@@ -2676,7 +2869,9 @@ function helpHTML(){
 
   <div class="panel"><h3>Las demás pestañas</h3>
     <dl class="faq">
-      <dt>Equipos y calibración</dt><dd>Cargá cada pulverizadora (autopropulsada, de arrastre o montada), mochila, drone o avión con sus medidas: tanque, barra, número y separación de pastillas, tipo y tamaño ISO (color), presión, velocidad, altura; en drones y aviones, faja, velocidad, altura de vuelo, caudal máximo y atomizadores (hay modelos cargados de DJI, XAG, Air Tractor, Embraer y Thrush). <b>Regulación:</b> para el volumen y la velocidad que buscás, el caudal por pastilla y la presión de cada tamaño ISO, en verde los que trabajan dentro de su rango. <b>Calibración a campo:</b> velocidad con el tiempo en 50 m, caudal de cada pastilla con jarra (marca en rojo las que se apartan más de 10 % del nominal, o 15 % si tiran menos de 1 L/min), coeficiente de variación y volumen real; con más de 5 % de error indica qué presión o velocidad usar. Para drones y aviones: caudal medido, faja verificada con tarjetas e impactos por cm². Las calibraciones quedan en el historial del equipo y el estado avisa cuando pasaron más de 180 días.</dd>
+      <dt>Pronóstico y mejor horario</dt><dd>En “4 · Condiciones ambientales”, el botón “Pronóstico y mejor horario” trae el pronóstico hora por hora de los próximos 4 días para la ubicación de los lotes elegidos (o del campo, o de tu GPS). Usa dos modelos, ECMWF (Centro Europeo) y GFS (NOAA), a través de Open-Meteo; cuando no coinciden, la app toma el peor de los dos. Cada hora se pinta con el color que tendría tu mezcla: viento y ráfagas (deriva), Delta T, inversión térmica (aire más caliente a 80 m que a 2 m según GFS, o calma con cielo despejado de noche, al amanecer y al atardecer), calor con hormonales (volatilización) o con aceites y azufre (quemado), y lluvia antes de las horas que necesita cada producto para no lavarse (glifosato y 2,4-D hasta 6 h, bentazona 8 h, mancozeb unas 4 h, paraquat 30 min; los preemergentes, y atrazina, metribuzina o flumioxazin aplicados en preemergencia, necesitan la lluvia para activarse). La app propone los mejores horarios y, al tocar uno, carga esas condiciones y el semáforo las usa. Necesita internet; sin conexión usa el último pronóstico guardado (hasta 3 h). Para alertas oficiales, ver la Dirección de Meteorología e Hidrología.</dd>
+      <dt>Silvopastoril</dt><dd>Con el rubro Silvopastoril (o Pasturas) aparece un panel con los árboles (eucalipto, pino o nativos) y la altura, y si hay animales en el potrero. Avisa qué herbicidas dañan a los árboles por la raíz o por deriva (picloram, aminopiralida, triclopir, 2,4-D, residuales de suelo), cuándo aplicar dirigido o lejos de la zona de raíces, los días de reingreso de los animales y de corte para heno, y el estiércol con herbicidas que no se debe usar en huertas. El semáforo suma estas reglas (SP01 a SP05).</dd>
+      <dt>Equipos y calibración</dt><dd>Cargá cada pulverizadora (autopropulsada, de arrastre o montada), mochila, drone o avión con sus medidas: tanque, barra, número y separación de pastillas, tipo y tamaño ISO (color), presión, velocidad, altura; en drones y aviones, faja, velocidad, altura de vuelo, caudal máximo y atomizadores. Hay un <b>catálogo de modelos</b> (Jacto, Stara, John Deere, Case IH, New Holland, PLA, Metalfor; mochilas Jacto y Stihl; drones DJI y XAG; aviones Air Tractor, Embraer y Thrush) que carga los datos de fábrica. Marcá las <b>funciones</b> que tiene el equipo (computadora de caudal, corte de secciones, pico a pico, PWM, control de altura, piloto automático, agitador; en drones RTK, radar, seguimiento del terreno, atomizadores centrífugos; en mochilas válvula de caudal constante): la ficha explica para qué sirve cada una y qué tener en cuenta con las que faltan, por ejemplo entre qué velocidades no se sale de la presión de la pastilla, o que un drone sin agitador obliga a premezclar (y el semáforo lo marca). <b>Regulación:</b> para el volumen y la velocidad que buscás, el caudal por pastilla y la presión de cada tamaño ISO, en verde los que trabajan dentro de su rango. <b>Calibración a campo:</b> velocidad con el tiempo en 50 m, caudal de cada pastilla con jarra (marca en rojo las que se apartan más de 10 % del nominal, o 15 % si tiran menos de 1 L/min), coeficiente de variación y volumen real; con más de 5 % de error indica qué presión o velocidad usar. Para drones y aviones: caudal medido, faja verificada con tarjetas e impactos por cm². Las calibraciones quedan en el historial del equipo y el estado avisa cuando pasaron más de 180 días.</dd>
       <dt>Caldo para drone y avión</dt><dd>En “2 · Aplicación” elegí el equipo o el modo (Terrestre, Mochila, Drone, Avión). Con drone o avión aparece el <b>plan de vuelo</b>: caudal necesario frente al máximo del equipo, hectáreas por carga, cargas para la superficie, minutos por carga, baterías, gota recomendada según los productos, revisión del viento, la temperatura, la humedad y el Delta T, recomendaciones de vuelo, la lista de control antes de volar y la normativa (Ley 3742/09: franja de 200 m y aviso al SENAVE 24 h antes; DINAC R 1103 para drones). El semáforo suma reglas propias: el tanque del drone casi no agita, más de 2 productos a bajo volumen, polvos mojables y hormonales por aire.</dd>
       <dt>Campos y lotes</dt><dd>El mapa de tus campos. Cada lote es un polígono con la forma real del lote, con todos los puntos que haga falta. Se puede cargar de cuatro maneras: <b>dibujarlo</b> tocando el mapa en cada quiebre del límite; <b>recorrer el borde con GPS</b> desde el celular; <b>importarlo</b> desde QGIS (GeoPackage, Shapefile .zip, GeoJSON), Google Earth (KML o KMZ), un GPS (GPX) o un CSV de vértices, también arrastrando el archivo sobre el mapa; o cargarlo <b>sin mapa</b>, solo con nombre y hectáreas. El mapa es opcional: nada de la app se bloquea si un lote no tiene límites. En la ficha de cada lote: <b>Editar límites</b> (arrastrar puntos, agregar con +, borrar con doble toque), <b>Dividir</b> con una línea y su <b>historial de pulverizaciones</b> propio. En “Armar caldo” los lotes se marcan con botones o tocándolos en el mapa.</dd>
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
@@ -2686,14 +2881,14 @@ function helpHTML(){
       <dt>Formulaciones e inertes</dt><dd>Qué lleva cada tipo de formulación además del activo, qué parámetros de calidad debe cumplir, qué problemas da una formulación de mala calidad y cómo hacer una prueba casera.</dd>
       <dt>Diagnóstico</dt><dd>Si ya preparaste el caldo y ves algo raro (grumos, cristales, espuma, capas, calor), elegí el síntoma: la app muestra las causas probables y qué hacer.</dd>
       <dt>Cultivos y carry-over</dt><dd>En “2 · Aplicación” elegí el cultivo actual, el momento de la aplicación (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo actual tolera cada herbicida y cuántos días hay que esperar para sembrar, también por aplicaciones anteriores registradas en los lotes.</dd>
-      <dt>Problemas y reglas</dt><dd>Los 31 problemas posibles del caldo, con su explicación, y las reglas del semáforo con su color de partida, su piso y las medidas que lo bajan.</dd>
+      <dt>Problemas y reglas</dt><dd>Los ${D.catalogo_problemas.length} problemas posibles del caldo, con su explicación, y las reglas del semáforo con su color de partida, su piso y las medidas que lo bajan.</dd>
     </dl>
   </div>
 
   <div class="panel"><h3>Preguntas frecuentes</h3>
     <dl class="faq">
-      <dt>¿Dónde se guardan mis datos?</dt><dd>Solo en este dispositivo y en este navegador. Con “Guardar este caldo” podés guardar mezclas con nombre y volver a abrirlas desde “Mis caldos”. No se envía nada a internet.</dd>
-      <dt>¿Funciona sin internet?</dt><dd>Sí. Todo el listado de productos y las reglas vienen dentro de la app.</dd>
+      <dt>¿Dónde se guardan mis datos?</dt><dd>Solo en este dispositivo y en este navegador. Con “Guardar este caldo” podés guardar mezclas con nombre y volver a abrirlas desde “Mis caldos”. Tus datos no se envían a internet; para el pronóstico solo se consulta la latitud y longitud aproximadas del lote.</dd>
+      <dt>¿Funciona sin internet?</dt><dd>Sí. Todo el listado de productos y las reglas vienen dentro de la app. Solo el pronóstico necesita conexión; sin ella se usa el último guardado o se cargan las condiciones a mano.</dd>
       <dt>¿Cómo la instalo en el celular o la PC?</dt><dd>Abrí la app desde su dirección web en Chrome o Edge y tocá “Instalar app” (o el menú ⋮ → “Instalar aplicación” / “Agregar a la pantalla principal”). En iPhone: Safari → botón Compartir → “Agregar a inicio”. Una vez instalada abre como cualquier aplicación y funciona sin conexión.</dd>
       <dt>¿De dónde salen los productos?</dt><dd>Del listado del SENAVE con corte al ${esc(D.meta.fecha_generacion.split("-").reverse().join("/"))}: productos con registro vigente (${D.productos.filter(p=>!p.m).length.toLocaleString("es-PY")}), más los de mantenimiento vencido marcados aparte.</dd>
       <dt>¿Cómo se decide el rubro de cada producto?</dt><dd>El listado del SENAVE no trae cultivos, así que la app usa los usos de cada principio activo en cada rubro. Un producto entra en un rubro solo si <b>todos</b> sus activos se usan ahí; las mezclas formuladas para soja o maíz quedan en Agrícola y los curasemillas también. Los productos de uso general que en un rubro solo se usan dirigidos (por ejemplo glifosato entre filas de frutales) quedan ocultos; para verlos, en “Productos” marcá “Incluir productos de uso general”. Es orientativo: los cultivos autorizados están en la etiqueta.</dd>
@@ -2722,12 +2917,12 @@ $("#btnHelp").onclick=openHelp;
 
 /* ---------- Recorrido guiado ---------- */
 const TOUR = [
-  {v:"caldo", sel:"#rubros", t:"Elegí tu rubro", d:"Agrícola, Hortícola y frutícola, Forestal, Pasturas o Granos almacenados. Define qué productos aparecen en el buscador y en el listado, y qué opciones de rotación ves."},
-  {v:"caldo", sel:"#pProductos", t:"Productos del caldo", d:"Buscá por nombre, activo o empresa y tocá el producto para agregarlo. Cargá la dosis por hectárea. Cada producto muestra su presentación (soluble, sólido, suspensión u oleoso) y su paso de carga."},
+  {v:"caldo", sel:"#rubroBtn", t:"Tu rubro", d:"Agrícola, Hortícola y frutícola, Forestal, Pasturas, Silvopastoril o Granos almacenados. Se elige al entrar y se cambia con este botón. Define qué productos aparecen en el buscador y en el listado, y qué opciones de rotación ves."},
+  {v:"caldo", sel:"#pProductos", t:"Productos del caldo", d:"Empezá a escribir: primero se completan los principios activos y después los nombres comerciales. Tocá el producto para agregarlo y cargá la dosis por hectárea. Cada producto muestra su presentación (soluble, sólido, suspensión u oleoso) y su paso de carga."},
   {v:"caldo", sel:"#pAplic", t:"Dónde y cómo se aplica", d:"Elegí el campo y los lotes (la superficie se suma sola), el volumen por hectárea, el tanque y cuántas horas va a esperar el caldo."},
-  {v:"caldo", sel:"#apEqRow", t:"Equipo y modo de aplicación", d:"Elegí tu pulverizadora, mochila, drone o avión: la app toma su tanque y su calibración. Con drone o avión aparece el plan de vuelo con caudal, cargas, gota, clima y normativa."},
+  {v:"caldo", sel:"#apEqRow", t:"Equipo y modo de aplicación", d:"Elegí tu pulverizadora, mochila, drone o avión: la app toma su tanque, su calibración y sus funciones (por ejemplo, un drone sin agitador obliga a premezclar). Con drone o avión aparece el plan de vuelo con caudal, cargas, gota, clima y normativa."},
   {v:"caldo", sel:"#pAgua", t:"El agua", d:"pH, dureza, temperatura y turbidez son los datos que más cambian el resultado. Si no los tenés, las alertas que dependen de ellos quedan “a verificar”."},
-  {v:"caldo", sel:"#pAmb", t:"Condiciones ambientales", d:"Temperatura, humedad, viento y lluvia prevista. La app calcula el Delta T, controla la Ley 3742/09 y suma alertas de deriva y evaporación."},
+  {v:"caldo", sel:"#pAmb", t:"Condiciones y pronóstico", d:"Temperatura, humedad, viento y lluvia prevista, a mano o desde “Pronóstico y mejor horario”, que trae el pronóstico de la ubicación de los lotes, pinta cada hora con el color de tu mezcla y propone los mejores horarios. Suma alertas de deriva, inversión, lavado por lluvia y calor."},
   {v:"caldo", sel:"#pSemaforo", t:"El semáforo de la mezcla", d:"Verde: problema leve. Amarillo: precaución. Naranja: riesgo alto, solo con correcciones. Rojo: no mezclar. El color general es el de la peor alerta."},
   {v:"caldo", sel:"#pAlertas .al", t:"Cada alerta", d:"Explica qué problema puede aparecer, por qué pasa y qué hacer. El color de la izquierda es el riesgo actual."},
   {v:"caldo", sel:"#pAlertas .meds", t:"Medidas para bajar el color", d:"Tocá una medida para aplicarla. Después de la flecha ves cómo quedaría la alerta; si la medida activa otra regla, también lo avisa."},
@@ -2735,7 +2930,7 @@ const TOUR = [
   {v:"caldo", sel:"#pCarry", t:"Cultivos y carry-over", d:"Si el cultivo actual tolera cada herbicida, cuántos días esperar para sembrar el siguiente y qué residuos dejan las aplicaciones anteriores del lote."},
   {v:"caldo", sel:"#pRot", t:"Rotación de modos de acción", d:"Cada activo con su grupo (HRAC, IRAC o FRAC). Si ese grupo ya se usó en los lotes elegidos, avisa y propone alternativas con otro modo de acción."},
   {v:"caldo", sel:"#pDosis", t:"Dosis y cantidades", d:"Dosis de etiqueta y dosis a aplicar, total para la superficie, cantidad por tanque y último tanque parcial."},
-  {v:"caldo", sel:"#pProblemas", t:"Los 31 problemas", d:"El estado de cada problema posible del caldo (queso, cristales, espuma, antagonismo, fitotoxicidad…). Tocá uno para ver cómo se ve, cómo se previene y qué hacer si ya ocurrió."},
+  {v:"caldo", sel:"#pProblemas", t:`Los ${D.catalogo_problemas.length} problemas`, d:"El estado de cada problema posible del caldo (queso, cristales, espuma, antagonismo, fitotoxicidad…). Tocá uno para ver cómo se ve, cómo se previene y qué hacer si ya ocurrió."},
   {v:"caldo", sel:"#pOrden", t:"Orden de carga", d:"El orden en que van los productos según su presentación, cómo cargar cada uno y cuánto va por tanque."},
   {v:"caldo", sel:"#pJarra", t:"Prueba de jarra", d:"Elegí el tamaño del recipiente (de 250 mL a un balde de 20 L, u otro) y la app calcula cuánto poner de cada producto, en orden, para probar la mezcla antes de cargar el tanque."},
   {v:"caldo", sel:"#btnRegistrar", t:"Registrar la aplicación", d:"Después de aplicar, guardá fecha, lotes, productos, dosis y condiciones en el historial. “Guardar este caldo” guarda solo la receta para reusarla."},
@@ -2962,6 +3157,7 @@ function equipoPanelHTML(ev){
       <details class="box" style="margin-top:10px" open><summary>Gota y cobertura</summary><div class="in">${gotaHTML(ev, true)}</div></details>
       <details class="box" style="margin-top:8px"><summary>Recomendaciones de vuelo</summary><div class="in"><ul class="clean">
         ${[["Volumen", rec.volumen], ["Altura", rec.altura], ["Velocidad", rec.velocidad], ["Faja", rec.faja], ["Gota", rec.gota], ["Clima", rec.clima], ["Preparación del caldo", rec.mezcla]].map(([k, t]) => `<li><b>${k}:</b> ${esc(t)}</li>`).join("")}</ul></div></details>
+      ${q && modoDe(q) === m ? eqFunHTML(q, true) : ""}
       <details class="box" style="margin-top:8px"><summary>Antes de ${dr ? "volar" : "despegar"} (${hechos.length}/${chk.length})</summary><div class="in chklist">${chk.map((t, i) => `<label><input type="checkbox" class="vChk" data-i="${i}" ${hechos.includes(i) ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div></details>
       <details class="box" style="margin-top:8px"><summary>Normativa</summary><div class="in"><ul class="clean note">${EQD.normativa[dr ? "drone" : "aereo"].concat(dr ? EQD.normativa.aereo.slice(0, 2) : []).map(t => `<li>${esc(t)}</li>`).join("")}</ul></div></details>
     </div>`;
@@ -2977,7 +3173,7 @@ function equipoPanelHTML(ev){
       ${Vm ? `<p>La mochila aplica <b>${fmt(Vm, 0)} L/ha</b>: cada carga de ${fmt(q.tanque, 0)} L cubre ${fmt(q.tanque / Vm * 10000, 0)} m².</p>
         <div class="tw" style="margin-top:6px"><table><thead><tr><th>Producto</th><th style="text-align:right">Por mochila</th></tr></thead><tbody>${ev.xs.filter(x => x.dosis > 0).map(x => `<tr><td>${esc(x.n)}</td><td class="n">${fmt(x.dosis * q.tanque / Vm * 1000, 1)} ${unitOf(x) === "kg" ? "g" : "mL"}</td></tr>`).join("")}</tbody></table></div>`
         : `<p class="note">Calibrá la mochila en “Equipos y calibración” para saber cuántos litros por hectárea aplica.</p>`}
-      <details class="box" style="margin-top:10px"><summary>Gota recomendada</summary><div class="in">${gotaHTML(ev, false)}</div></details></div>`;
+      <details class="box" style="margin-top:10px"><summary>Gota recomendada</summary><div class="in">${gotaHTML(ev, false)}</div></details>${eqFunHTML(q, true)}</div>`;
   }
   const v = velEq(q, m), esp = (nv(q.espaciado) || 50) / 100, A = anchoEq(q);
   const qn = V ? CAL.q(V, v, esp) : null, tipo = q.pastilla_tipo || "std", t = EQD.tipos_pastilla[tipo];
@@ -2998,7 +3194,7 @@ function equipoPanelHTML(ev){
     </div>
     ${Pact != null ? `<p style="margin-top:8px">${pill(okP ? 0 : 2, okP ? "Presión dentro del rango" : "Presión fuera del rango")} <span class="note">${esc(t.nombre)}: ${t.pmin} a ${t.pmax} bar.</span></p>` : ""}
     ${recs.length ? `<p class="note" style="margin-top:6px">Pastillas de tipo ${esc(t.nombre)} que dan ${fmt(qn, 2)} L/min dentro de su rango: ${recs.map(r => `${isoChip(r.s)} a ${fmt(r.P, 1)} bar`).join(" · ")}.</p>` : qn ? `<p class="rnote" style="margin-top:6px">Ningún tamaño de ${esc(t.nombre)} da ${fmt(qn, 2)} L/min dentro de su rango de presión: cambiar la velocidad o el tipo de pastilla.</p>` : ""}
-    <details class="box" style="margin-top:10px"><summary>Gota recomendada</summary><div class="in">${gotaHTML(ev, false)}</div></details></div>`;
+    <details class="box" style="margin-top:10px"><summary>Gota recomendada</summary><div class="in">${gotaHTML(ev, false)}</div></details>${eqFunHTML(q, true)}</div>`;
 }
 function bindEquipoPanel(ev){
   renderEquipoSel();
@@ -3024,18 +3220,76 @@ function renderEquipos(){
   if(q) bindEqDetalle(q);
 }
 function eqDatosTabla(q){
-  const m = modoDe(q), filas = [["Tipo", TIPOS_EQ[q.tipo]], ["Marca y modelo", q.marca || (q.modelo ? ((EQD.drones.concat(EQD.aviones)).find(x => x.id === q.modelo) || {}).nombre : "")], [m === "avion" ? "Tolva" : "Tanque", q.tanque ? fmt(q.tanque, 0) + " L" : null], ["Remanente (no aplicable)", q.remanente ? fmt(q.remanente, 1) + " L" : null]];
-  if(m === "terrestre") filas.push(["Barra", anchoEq(q) ? `${fmt(anchoEq(q), 1)} m · ${q.n_pastillas || "—"} pastillas a ${q.espaciado || "—"} cm` : null], ["Pastillas", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}${q.angulo ? " · " + q.angulo + "°" : ""}`], ["Presión de trabajo", q.presion ? fmt(q.presion, 1) + " bar" : null], ["Velocidad", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Altura de barra", q.altura ? q.altura + " cm" : null], ["Bomba", q.bomba ? fmt(q.bomba, 0) + " L/min" : null], ["Eficiencia de campo", q.eficiencia ? q.eficiencia + " %" : null]);
-  if(m === "mochila") filas.push(["Ancho de faja", q.faja ? fmt(q.faja, 2) + " m" : null], ["Velocidad de marcha", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Pastilla", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}`], ["Presión", q.presion ? fmt(q.presion, 1) + " bar" : null]);
+  const m = modoDe(q), filas = [["Tipo", TIPOS_EQ[q.tipo]], ["Marca y modelo", q.marca || (q.modelo ? (eqCatalogo().find(x => x.id === q.modelo) || {}).nombre : "")], [m === "avion" ? "Tolva" : "Tanque", q.tanque ? fmt(q.tanque, 0) + " L" : null], ["Remanente (no aplicable)", q.remanente ? fmt(q.remanente, 1) + " L" : null]];
+  if(m === "terrestre") filas.push(["Barra", anchoEq(q) ? `${fmt(anchoEq(q), 1)} m · ${q.n_pastillas || "—"} pastillas a ${q.espaciado || "—"} cm` : null], ["Pastillas", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}${q.angulo ? " · " + q.angulo + "°" : ""}`], ["Presión de trabajo", q.presion ? fmt(q.presion, 1) + " bar" : null], ["Velocidad", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Altura de barra", q.altura ? q.altura + " cm" : null], ["Bomba", q.bomba ? fmt(q.bomba, 0) + " L/min" : null], ["Secciones de barra", q.secciones ? String(q.secciones) : null], ["Tanque de agua limpia", q.agua_limpia ? fmt(q.agua_limpia, 0) + " L" : null], ["Velocidad máxima del equipo", q.vel_max ? fmt(q.vel_max, 0) + " km/h" : null], ["Eficiencia de campo", q.eficiencia ? q.eficiencia + " %" : null]);
+  if(m === "mochila") filas.push(["Ancho de faja", q.faja ? fmt(q.faja, 2) + " m" : null], ["Velocidad de marcha", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Pastilla", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}`], ["Presión", q.presion ? fmt(q.presion, 1) + " bar" : null], ["Presión máxima", q.pmax ? fmt(q.pmax, 1) + " bar" : null]);
   if(m === "drone" || m === "avion") filas.push(["Ancho de faja", q.faja ? fmt(q.faja, 1) + " m" : null], ["Velocidad de trabajo", q.vel ? fmt(q.vel, 1) + (m === "drone" ? " m/s" : " km/h") : null], ["Altura de vuelo", q.alt ? fmt(q.alt, 1) + " m" : null], ["Caudal máximo", q.caudal_max ? fmt(q.caudal_max, 1) + " L/min" : null], ["Atomizadores", q.atom ? `${q.n_atom || ""} ${q.atom === "centrifugo" ? "centrífugos" : q.atom === "rotativo" ? "rotativos" : "hidráulicos (picos)"}` : null], ["Gota", q.gota ? q.gota + " µm" : null]);
   if(m === "drone") filas.push(["Baterías", q.autonomia ? `${q.baterias || "—"} de ${q.autonomia} min` : null]);
   return `<div class="tw"><table><tbody>${filas.filter(f => f[1]).map(([k, v]) => `<tr><th style="width:42%">${esc(k)}</th><td>${String(v).includes("<span") ? v : esc(v)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+/* ---------- Funciones de cada equipo: qué tiene y qué cambia al regular y aplicar ---------- */
+const funsDe = q => new Set((q && q.funciones) || []);
+const eqCatalogo = () => EQD.drones.concat(EQD.aviones, EQD.terrestres, EQD.mochilas);
+const funNombre = (m, id) => ((EQD.funciones[m] || []).find(x => x[0] === id) || [id, id])[1];
+function funAvisos(q){
+  const m = modoDe(q), f = funsDe(q), out = [], silvo = RUBRO === "SP" || RUBRO === "FO";
+  if(m === "terrestre"){
+    const t = EQD.tipos_pastilla[q.pastilla_tipo || "std"], P = nv(q.presion), v = nv(q.vel);
+    if(f.has("pwm")) out.push([0, "PWM: el caudal sigue a la velocidad sin tocar la presión, así la gota no cambia. Elegí la pastilla para trabajar con un ciclo de 70 a 80 % a la velocidad normal; evitar bajar de 50 % (con menos de 40 % quedan franjas sin cubrir)."]);
+    else if(f.has("computadora")){
+      if(P && v && t && P >= t.pmin && P <= t.pmax) out.push([1, `La computadora mantiene la dosis cambiando la presión, y con la presión cambia la gota. Con ${fmt(P, 1)} bar a ${fmt(v, 1)} km/h, la pastilla queda en su rango (${t.pmin} a ${t.pmax} bar) entre ${fmt(v * Math.sqrt(t.pmin / P), 1)} y ${fmt(v * Math.sqrt(t.pmax / P), 1)} km/h: no salir de esas velocidades.`]);
+      else out.push([1, "La computadora mantiene la dosis cambiando la presión, y con la presión cambia la gota: trabajar a velocidad pareja."]);
+    } else out.push([1, "Sin computadora de caudal: la dosis depende de mantener la velocidad y la presión de la calibración. Ir 10 % más rápido es aplicar casi 10 % menos."]);
+    if(!f.has("secciones") && !f.has("picoapico")) out.push([1, "Sin corte de secciones: aplicar primero las cabeceras y cerrar la barra a mano; contar 5 a 10 % más de caldo por superposición."]);
+    else if(f.has("secciones") && !f.has("picoapico") && q.secciones) out.push([0, `${q.secciones} secciones de ${anchoEq(q) ? fmt(anchoEq(q) / q.secciones, 1) + " m" : "barra"}: en cabeceras en ángulo queda superposición de hasta media sección.`]);
+    if(!f.has("altura")){ const alt = EQD.altura_barra[String(q.angulo)]; out.push([0, `Altura de barra a mano: ${alt ? alt + " cm sobre el blanco con pastillas de " + q.angulo + "°" : "según el ángulo de la pastilla"}; revisarla en cada lote y en terreno ondulado.`]); }
+    if(!f.has("suspension")) out.push([0, "Sin suspensión de barra: bajar la velocidad en terreno desparejo, porque el rebote de la barra deja franjas con más y menos producto."]);
+    if(!f.has("agitador") && !f.has("recirculacion")) out.push([1, "Sin agitador ni recirculación: los WG, WP y SC se asientan; agitar antes de arrancar y no dejar el caldo parado."]);
+    if(f.has("inyeccion")) out.push([0, "Inyección directa: lo que va por inyección no se mezcla en el tanque; el semáforo vale para los productos que se cargan juntos."]);
+    if(f.has("selectiva")) out.push([0, "Aplicación selectiva: sirve para herbicidas de post sin residual; los residuales y los preemergentes van en cobertura total."]);
+    if(!f.has("agua_limpia")) out.push([0, "Sin tanque de agua limpia: llevar agua para el triple lavado y para limpiar el circuito al cambiar de producto."]);
+  }
+  if(m === "mochila"){
+    if(!f.has("cfvalve") && !f.has("bateria") && !f.has("motor")) out.push([1, "Bombeo manual sin válvula de caudal constante: la presión sube y baja con el bombeo y la dosis también. Una válvula de 1 o 2 bar en la lanza mantiene el caudal parejo."]);
+    if(f.has("motor")) out.push([1, "Atomizador motorizado: gota fina con mucha deriva; no usarlo con herbicidas hormonales ni cerca de cultivos sensibles."]);
+    if(silvo) out.push([f.has("pantalla") ? 0 : 1, f.has("pantalla") ? "Con pantalla protectora: dirigir el herbicida sin mojar la corteza ni las hojas de los árboles." : "Para herbicidas cerca de los árboles conviene una pantalla o campana protectora en la lanza."]);
+  }
+  if(m === "drone"){
+    if(!f.has("agitador")) out.push([1, "Sin agitación en el tanque: el semáforo marca los WG, WP y SC (regla DRN01). Premezclar en un bidón, cargar justo antes de cada vuelo y agitar el bidón entre cargas."]);
+    if(!f.has("radar") && silvo) out.push([2, "Sin radar ni visión para obstáculos: en silvopastoril y forestal volar en modo manual o cargar cada hilera de árboles como obstáculo."]);
+    else if(!f.has("radar")) out.push([1, "Sin radar ni visión para obstáculos: recorrer el lote antes y marcar cables, postes y árboles aislados."]);
+    if(!f.has("terreno")) out.push([1, "Sin seguimiento del terreno: en lotes ondulados cambia la altura sobre el cultivo, y con ella la faja y la deriva; subir un poco la altura y achicar la faja."]);
+    if(!f.has("rtk")) out.push([1, "Sin RTK: el GPS común puede desviarse 1 a 2 m; achicar la faja de trabajo para no dejar huecos."]);
+    if(f.has("centrifugo")) out.push([0, "Atomizadores centrífugos: la gota se elige por las revoluciones del disco; usar la gota recomendada en el panel del caldo."]);
+    if(f.has("caudalimetro")) out.push([0, "Calibrar el caudalímetro con agua al empezar la campaña y cuando cambia la densidad del caldo."]);
+    const b = q.modelo && EQD.baterias[q.modelo]; if(b) out.push([0, "Baterías: " + b + "."]);
+  }
+  if(m === "avion"){
+    if(!f.has("dgps")) out.push([1, "Sin banderillero satelital: marcar las pasadas con banderilleros y registrar el vuelo a mano."]);
+    if(!f.has("caudal_auto")) out.push([0, "Sin control automático de caudal: mantener la velocidad de calibración en cada pasada."]);
+    if(f.has("rotativos") || (!f.has("hidraulicos") && q.atom === "rotativo")) out.push([0, "Atomizadores rotativos: la gota se ajusta con el ángulo de las palas y la velocidad del avión; usar la tabla del fabricante."]);
+    if(f.has("hidraulicos") || (!f.has("rotativos") && q.atom === "hidraulico")) out.push([0, "Picos hidráulicos: la gota cambia con el pico, la presión y el ángulo respecto al viento; con mucha velocidad el aire la achica."]);
+    if(!f.has("registro")) out.push([0, "Guardar el registro de cada aplicación (fecha, lote, productos, dosis y condiciones): lo pide el SENAVE."]);
+  }
+  return out;
+}
+function eqFunHTML(q, compacto){
+  const m = modoDe(q), funs = EQD.funciones[m] || [], f = funsDe(q);
+  const si = funs.filter(x => f.has(x[0])), no = funs.filter(x => !f.has(x[0])), av = funAvisos(q);
+  const li = ([id, n, p]) => `<li><b>${esc(n)}</b>${esc(p)}</li>`;
+  const avisos = av.length ? `<ul class="funav">${av.map(([l, t]) => `<li class="l${l}">${esc(t)}</li>`).join("")}</ul>` : "";
+  if(compacto) return `<details class="box" style="margin-top:8px"><summary>Funciones del equipo (${si.length ? si.map(x => esc(x[1])).join(", ") : "ninguna marcada"})</summary><div class="in">${avisos || `<p class="note">Sin observaciones.</p>`}</div></details>`;
+  return `<div class="panel"><div class="panel-h"><h3>Funciones</h3><span class="note">${si.length} de ${funs.length} marcadas · se cambian en «Editar datos»</span></div>
+    ${si.length ? `<ul class="funlist">${si.map(li).join("")}</ul>` : `<p class="note">No hay funciones marcadas. Tocá «Editar datos» y marcá lo que tiene el equipo: así la app ajusta los avisos de regulación y del semáforo.</p>`}
+    ${av.length ? `<h4 style="margin:12px 0 0">Qué tener en cuenta con este equipo</h4>${avisos}` : ""}
+    ${no.length ? `<details class="box" style="margin-top:10px"><summary>Otras funciones que existen (${no.length})</summary><div class="in"><ul class="funlist off">${no.map(li).join("")}</ul></div></details>` : ""}</div>`;
 }
 function eqDetalleHTML(q){
   const m = modoDe(q), st = eqEstado(q), cals = q.calibraciones || [];
   const chk = m === "drone" ? EQD.check_drone : m === "avion" ? EQD.check_avion : m === "mochila" ? EQD.check_insp.filter((_, i) => [0, 5, 6, 7].includes(i)) : EQD.check_insp;
   const ins = q.inspeccion || {};
   return `<div class="panel"><div class="panel-h"><h3>${esc(q.nombre)}</h3><span class="row" style="gap:6px">${pill(st.l, st.t)}<button class="btn sm" id="eqEdit">Editar datos</button><button class="btn sm" id="eqDup">Duplicar</button><button class="btn sm" id="eqDel">Borrar</button></span></div>${eqDatosTabla(q)}</div>
+    ${eqFunHTML(q)}
     <div class="panel"><div class="panel-h"><h3>Regulación</h3><span class="note">Qué pastilla, presión o velocidad usar para el volumen buscado</span></div><div id="eqReg">${eqRegHTML(q)}</div></div>
     <div class="panel"><div class="panel-h"><h3>Calibración a campo</h3><span class="note">Medí, compará y guardá</span></div><div id="eqCal">${eqCalHTML(q)}</div></div>
     <div class="panel"><div class="panel-h"><h3>${m === "drone" || m === "avion" ? "Lista de control antes de aplicar" : "Inspección del equipo"}</h3><span class="note">${ins.fecha ? "Última: " + fmtFecha(ins.fecha) + ` · ${ins.ok.length}/${ins.total} en orden` : "Sin registrar"}</span></div>
@@ -3238,13 +3492,17 @@ function openEqForm(q0){
     const m = modoDe(q), num = (k, lab, st = "any", ph = "") => `<label class="f">${lab}<input data-k="${k}" type="number" step="${st}" value="${q[k] ?? ""}" placeholder="${ph}"></label>`;
     const selTipoPast = `<label class="f">Tipo de pastilla<select data-k="pastilla_tipo">${Object.entries(EQD.tipos_pastilla).map(([k, t]) => `<option value="${k}"${q.pastilla_tipo === k ? " selected" : ""}>${esc(t.nombre)}</option>`).join("")}</select></label>`;
     const selIso = `<label class="f">Tamaño ISO (color)<select data-k="pastilla_iso"><option value="">—</option>${EQD.pastillas.map(([s, c, h, q3]) => `<option value="${s}"${q.pastilla_iso === s ? " selected" : ""}>${s} · ${esc(c)} (${fmt(q3, 1)} L/min a 3 bar)</option>`).join("")}</select></label>`;
-    const modelos = m === "drone" ? EQD.drones : m === "avion" ? EQD.aviones : null;
+    const modelos = m === "drone" ? EQD.drones : m === "avion" ? EQD.aviones : m === "mochila" ? EQD.mochilas : EQD.terrestres.filter(x => x.tipo === q.tipo);
+    const xm = q.modelo ? modelos.find(x => x.id === q.modelo) : null;
+    const selModelo = modelos.length ? `<label class="f" style="grid-column:1/-1">Modelo de catálogo <span class="note">(carga los datos de fábrica y sus funciones)</span><select data-k="modelo"><option value="">— Otro o armado propio —</option>${modelos.map(x => `<option value="${x.id}"${q.modelo === x.id ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}</select>${xm && xm.barras ? `<span class="note">De fábrica: barras de ${xm.barras.map(b => fmt(b, 1)).join(", ")} m${xm.esp ? ` · pastillas a ${xm.esp.map(e => fmt(e, 1)).join(" o ")} cm` : ""}${xm.vel ? ` · hasta ${xm.vel} km/h` : ""}. Verificá la versión que tenés.</span>` : ""}</label>` : "";
+    const funs = EQD.funciones[m] || [], fset = funsDe(q);
+    const funHTML = `<fieldset class="funset"><legend>Funciones que tiene el equipo</legend><div class="funchk">${funs.map(([id, n, p]) => `<label><input type="checkbox" data-fun="${id}"${fset.has(id) ? " checked" : ""}><span>${esc(n)}<small>${esc(p)}</small></span></label>`).join("")}</div></fieldset>`;
     let campos = "";
-    if(m === "terrestre") campos = `${num("n_pastillas", "N.º de pastillas", 1)}${num("espaciado", "Separación entre pastillas (cm)", 1, "50")}${num("ancho", "Ancho de barra (m)", 0.5, q.n_pastillas && q.espaciado ? fmt(q.n_pastillas * q.espaciado / 100, 1) : "")}${selTipoPast}${selIso}
+    if(m === "terrestre") campos = `${selModelo}${num("n_pastillas", "N.º de pastillas", 1)}${num("espaciado", "Separación entre pastillas (cm)", 1, "50")}${num("ancho", "Ancho de barra (m)", 0.5, q.n_pastillas && q.espaciado ? fmt(q.n_pastillas * q.espaciado / 100, 1) : "")}${selTipoPast}${selIso}
       <label class="f">Ángulo (°)<select data-k="angulo">${[110, 80, 65, 120].map(a => `<option${+q.angulo === a ? " selected" : ""}>${a}</option>`).join("")}</select></label>
-      ${num("presion", "Presión de trabajo (bar)", 0.1)}${num("vel", "Velocidad de trabajo (km/h)", 0.5)}${num("altura", "Altura de barra (cm)", 1)}${num("bomba", "Caudal de la bomba (L/min)", 1)}${num("eficiencia", "Eficiencia de campo (%)", 1, "60")}`;
-    if(m === "mochila") campos = `${num("faja", "Ancho de faja (m)", 0.1, "1")}${num("vel", "Velocidad de marcha (km/h)", 0.1, "2,4")}${selTipoPast}${selIso}${num("presion", "Presión (bar)", 0.1, "2")}`;
-    if(m === "drone" || m === "avion") campos = `<label class="f">Modelo<select data-k="modelo"><option value="">— Otro —</option>${modelos.map(x => `<option value="${x.id}"${q.modelo === x.id ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}</select></label>
+      ${num("presion", "Presión de trabajo (bar)", 0.1)}${num("vel", "Velocidad de trabajo (km/h)", 0.5)}${num("altura", "Altura de barra (cm)", 1)}${num("bomba", "Caudal de la bomba (L/min)", 1)}${num("secciones", "Secciones de barra", 1)}${num("agua_limpia", "Tanque de agua limpia (L)", 1)}${num("eficiencia", "Eficiencia de campo (%)", 1, "60")}`;
+    if(m === "mochila") campos = `${selModelo}${num("faja", "Ancho de faja (m)", 0.1, "1")}${num("vel", "Velocidad de marcha (km/h)", 0.1, "2,4")}${selTipoPast}${selIso}${num("presion", "Presión (bar)", 0.1, "2")}`;
+    if(m === "drone" || m === "avion") campos = `${selModelo}
       ${num("faja", "Ancho de faja (m)", 0.5)}${num("vel", m === "drone" ? "Velocidad de trabajo (m/s)" : "Velocidad de trabajo (km/h)", m === "drone" ? 0.5 : 5)}${num("alt", "Altura de vuelo (m)", 0.5)}${num("caudal_max", "Caudal máximo (L/min)", 0.5)}
       <label class="f">Atomizadores<select data-k="atom">${[["centrifugo", "Centrífugos"], ["rotativo", "Rotativos (tipo Micronair)"], ["hidraulico", "Hidráulicos (picos)"]].map(([k, t]) => `<option value="${k}"${q.atom === k ? " selected" : ""}>${t}</option>`).join("")}</select></label>
       ${num("n_atom", "Cantidad de atomizadores", 1)}${num("gota", "Gota de trabajo (µm)", 10)}${m === "drone" ? num("autonomia", "Minutos por batería", 1) + num("baterias", "Baterías disponibles", 1) : ""}`;
@@ -3256,6 +3514,7 @@ function openEqForm(q0){
           <label class="f">Marca y modelo<input data-k="marca" value="${esc(q.marca || "")}"></label>
           ${num("tanque", m === "avion" ? "Tolva (L)" : m === "mochila" ? "Capacidad de la mochila (L)" : "Tanque (L)", 1)}${num("remanente", "Remanente que no se aplica (L)", 0.5, "0")}
           ${campos}
+          ${funHTML}
         </div>
         <div class="row"><button class="btn pri" type="submit">Guardar</button></div>
       </form></div>`);
@@ -3263,12 +3522,22 @@ function openEqForm(q0){
       q[k] = v;
       if(k === "tipo"){ const mm = modoDe(q);
         if(q.nombre && q.nombre === q.marca) q.nombre = "";
-        ["caudal_max", "modelo", "marca", "autonomia", "baterias"].forEach(x => delete q[x]);
+        ["caudal_max", "modelo", "marca", "autonomia", "baterias", "vel_max", "pmax"].forEach(x => delete q[x]);
+        if(mm !== m) q.funciones = [];
+        if(mm !== "terrestre") ["secciones", "agua_limpia"].forEach(x => delete q[x]);
         if(mm !== "terrestre") ["n_pastillas", "espaciado", "ancho", "angulo", "altura", "bomba", "eficiencia"].forEach(x => delete q[x]);
         if(esAereo(mm)) ["pastilla_tipo", "pastilla_iso", "presion"].forEach(x => delete q[x]); else ["modelo", "faja", "alt", "caudal_max", "atom", "n_atom", "gota", "autonomia", "baterias"].forEach(x => { if(!(mm === "mochila" && x === "faja")) delete q[x]; });
         if(mm === "terrestre") Object.assign(q, {tanque: 3000, n_pastillas: 54, espaciado: 50, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 3, vel: 16, altura: 50, eficiencia: 60}); if(mm === "drone"){ Object.assign(q, {tanque: 40, faja: 7, vel: 6, alt: 2.5, caudal_max: 12, atom: "centrifugo", n_atom: 2, gota: 300}); } else if(mm === "avion"){ Object.assign(q, {tanque: 1893, faja: 28, vel: 210, alt: 4, atom: "rotativo", n_atom: 8, gota: 250}); } else if(mm === "mochila"){ Object.assign(q, {tanque: 20, faja: 1, vel: 2.4, presion: 2, pastilla_tipo: "std", pastilla_iso: "02"}); } draw(); }
-      if(k === "modelo" && v){ const x = (EQD.drones.concat(EQD.aviones)).find(y => y.id === v); if(x){ q.tanque = x.tanque; if(x.caudal) q.caudal_max = x.caudal; q.vel = x.vel; q.faja = Array.isArray(x.faja) ? x.faja[0] + Math.round((x.faja[1] - x.faja[0]) * 0.5) : (x.faja || q.faja); if(x.atom) q.atom = x.atom; if(x.n) q.n_atom = x.n; if(x.gota) q.gota = Math.max(250, x.gota[0]); if(!q.nombre) q.nombre = x.nombre; q.marca = x.nombre; draw(); } }
+      if(k === "modelo" && v && (m === "terrestre" || m === "mochila")){ const x = modelos.find(y => y.id === v); if(x){
+        q.tanque = x.tanque; q.marca = x.nombre; if(!q.nombre) q.nombre = x.nombre; q.funciones = (x.fun || []).slice();
+        if(m === "terrestre"){ q.ancho = x.barras[0]; q.espaciado = x.esp ? x.esp[0] : (q.espaciado || 50); q.n_pastillas = Math.round(q.ancho * 100 / q.espaciado);
+          [["bomba", "bomba"], ["secciones", "secciones"], ["agua_limpia", "agua_limpia"], ["vel_max", "vel"]].forEach(([a, b]) => { if(x[b] != null) q[a] = x[b]; else delete q[a]; });
+          if(q.vel_max && q.vel > q.vel_max) q.vel = q.vel_max; }
+        else { if(x.pmax) q.pmax = x.pmax; else delete q.pmax; if(x.fun.includes("motor")) q.pastilla_tipo = "std"; }
+        draw(); return; } }
+      if(k === "modelo" && v){ const x = (EQD.drones.concat(EQD.aviones)).find(y => y.id === v); if(x){ if(EQD.fun_drone[x.id]) q.funciones = EQD.fun_drone[x.id].slice(); q.tanque = x.tanque; if(x.caudal) q.caudal_max = x.caudal; q.vel = x.vel; q.faja = Array.isArray(x.faja) ? x.faja[0] + Math.round((x.faja[1] - x.faja[0]) * 0.5) : (x.faja || q.faja); if(x.atom) q.atom = x.atom; if(x.n) q.n_atom = x.n; if(x.gota) q.gota = Math.max(250, x.gota[0]); if(!q.nombre) q.nombre = x.nombre; q.marca = x.nombre; draw(); } }
       if(k === "n_pastillas" || k === "espaciado"){ const a = $('#fEq [data-k="ancho"]'); if(a && q.n_pastillas && q.espaciado) a.placeholder = fmt(q.n_pastillas * q.espaciado / 100, 1); } });
+    document.querySelectorAll("#fEq [data-fun]").forEach(el => el.onchange = () => { q.funciones = [...document.querySelectorAll("#fEq [data-fun]:checked")].map(x => x.dataset.fun); });
     $("#fEq").onsubmit = e => { e.preventDefault(); document.querySelectorAll("#fEq [data-k]").forEach(el => { const k = el.dataset.k; q[k] = el.type === "number" ? nv(el.value) : el.value; });
       if(!q.nombre){ toast("Poné un nombre"); return; }
       if(nuevo) EQUIPOS.push(q); else { q.ejemplo = false; Object.assign(q0, q); }
@@ -3276,6 +3545,207 @@ function openEqForm(q0){
   };
   draw();
 }
+
+/* ---------- Silvopastoril y pasturas: árboles y animales ---------- */
+function silvoPanelHTML(ev){
+  if(RUBRO !== "SP" && RUBRO !== "PA") return "";
+  const SV = D.silvo, sv = S.silvo || (S.silvo = {arbol: "euc", animales: true});
+  const ais = []; const vistos = new Set();
+  ev.xs.forEach(x => { if(x.virt) return; x.k.forEach(c => { if(c.t !== "ai" || !c.o || vistos.has(c.id)) return; vistos.add(c.id); ais.push(c); }); });
+  const filas = ais.filter(c => ["herbicida", "insecticida", "fungicida"].includes(c.o.clase)).map(c => {
+    let r = SV.riesgo[c.id] ? SV.riesgo[c.id][sv.arbol] : null;
+    if(!r && c.o.grupo === "HRAC 1") r = SV.riesgo_gram;
+    if(!r && c.o.clase === "herbicida") r = [1, "Sin datos de selectividad para árboles: aplicar dirigido"];
+    if(!r) r = [0, "Sin efecto conocido sobre los árboles"];
+    return {c, r, re: SV.reingreso[c.id] || "Ver la etiqueta del producto (reingreso, heno y faena)."};
+  });
+  const sp = RUBRO === "SP";
+  return `<div class="panel" id="pSilvo"><div class="panel-h"><h3>${sp ? "Sistema silvopastoril" : "Pasturas: animales y estiércol"}</h3><span class="note">${sp ? "Árboles, pastura y ganado" : "Reingreso según la etiqueta"}</span></div>
+    ${sp ? `<div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-bottom:10px">
+      <label class="f">Árboles<select id="svArbol">${Object.entries(SV.arboles).map(([k, t]) => `<option value="${k}"${sv.arbol === k ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
+      <label class="f">Altura de los árboles (m)<input id="svAlt" type="number" min="0" step="0.5" value="${sv.alt ?? ""}"></label>
+      <label class="f">Animales en el potrero<select id="svAnim"><option value="1"${sv.animales ? " selected" : ""}>Sí</option><option value="0"${!sv.animales ? " selected" : ""}>No</option></select></label></div>
+      ${sv.alt != null && sv.alt < 2.5 ? `<p class="rnote" style="margin-bottom:8px">Con árboles de menos de 2,5 m los animales los dañan: mantener el alambrado de las filas.</p>` : ""}` : ""}
+    ${filas.length ? `<div class="tw"><table><thead><tr><th>Activo</th>${sp ? `<th>Riesgo para ${esc(SV.arboles[sv.arbol].toLowerCase())}</th>` : ""}<th>Animales y heno (referencia)</th></tr></thead><tbody>
+      ${filas.map(f => `<tr><td><b>${esc(f.c.o.nombre)}</b></td>${sp ? `<td>${pill(f.r[0], ["Sin riesgo", "Precaución", "Daña", "Muy dañino"][f.r[0]])}<br><span class="note">${esc(f.r[1])}</span></td>` : ""}<td class="note">${esc(f.re)}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note" style="margin-top:6px">Los plazos de animales y heno son de referencia (etiquetas de EE. UU. y Brasil); en Paraguay vale la etiqueta registrada en el SENAVE.</p>`
+      : `<p class="note">Agregá productos para ver el riesgo para los árboles y los plazos de reingreso.</p>`}
+    ${sp ? `<details class="box" style="margin-top:10px"><summary>Buenas prácticas en silvopastoriles</summary><div class="in"><ul class="clean">${SV.practicas.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div></details>` : ""}
+  </div>`;
+}
+function bindSilvo(){
+  const a = $("#svArbol"); if(a) a.onchange = e => { S.silvo.arbol = e.target.value; save(); renderCaldo(); };
+  const h = $("#svAlt"); if(h) h.onchange = e => { S.silvo.alt = nv(e.target.value); save(); renderCaldo(); };
+  const n = $("#svAnim"); if(n) n.onchange = e => { S.silvo.animales = e.target.value === "1"; if(!S.silvo.animales){ const i = S.medidas.indexOf("retiro"); if(i < 0) S.medidas.push("retiro"); } save(); renderCaldo(); };
+}
+
+/* ====================================================================
+   Pronóstico (Open-Meteo, modelos ECMWF y GFS) y momento de aplicar
+   ==================================================================== */
+const CLIMA = {data: null, loc: null, dia: 0, sel: null, cargando: false, error: null, abierto: false};
+const WKEYS = ["temperatura_ambiente_C", "HR", "viento_kmh", "rafagas_kmh", "delta_T", "lluvia_h", "lluvia_margen_h", "fuera_ley"];
+const WRULES = new Set(D.reglas.filter(r => Object.keys(r.condiciones.caldo || {}).some(k => WKEYS.includes(k))).map(r => r.id));
+const DIRS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+const dirTxt = g => g == null ? null : DIRS[Math.round(((g % 360) + 360) % 360 / 45) % 8];
+const nubTxt = c => c == null ? null : c < 25 ? "Despejado" : c < 70 ? "Parcial" : "Nublado";
+
+/* Ubicación: lotes elegidos del campo, todo el campo, o la guardada (GPS o coordenadas) */
+function climaLoc(){
+  const c = typeof findCampo === "function" ? findCampo(S.ap.campo) : null;
+  if(c){
+    const ls = (S.ap.lotes.length ? S.ap.lotes.map(id => findLote(c, id)) : c.lotes).filter(l => l && l.geom);
+    const pts = []; ls.forEach(l => polysOf(l.geom).forEach(p => p[0].forEach(q => pts.push(q))));
+    if(pts.length){ const lon = pts.reduce((s, p) => s + p[0], 0) / pts.length, lat = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      return {lat, lon, txt: `${c.nombre}${S.ap.lotes.length ? " · " + S.ap.lotes.map(id => (findLote(c, id) || {}).nombre).filter(Boolean).join(", ") : ""}`}; }
+  }
+  const g = load("clima_loc", null); if(g) return g;
+  return null;
+}
+const locKey = l => l ? `${l.lat.toFixed(2)},${l.lon.toFixed(2)}` : "";
+async function cargarClima(forzar){
+  const loc = climaLoc(); CLIMA.loc = loc; CLIMA.error = null;
+  if(!loc){ renderClima(); return; }
+  const cache = load("clima_cache", null);
+  if(!forzar && cache && cache.key === locKey(loc) && Date.now() - cache.at < 3 * 3600e3){ CLIMA.data = parseOM(cache.json); CLIMA.data.at = cache.at; renderClima(); return; }
+  CLIMA.cargando = true; renderClima();
+  const om = D.clima.om;
+  const url = `${om.url}?latitude=${loc.lat.toFixed(4)}&longitude=${loc.lon.toFixed(4)}&hourly=${om.hourly}&models=${om.modelos.map(m => m[0]).join(",")}&timezone=America%2FAsuncion&forecast_days=${om.dias}&wind_speed_unit=kmh`;
+  try {
+    const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 15000);
+    const r = await fetch(url, {signal: ctl.signal}); clearTimeout(to);
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json(); if(j.error) throw new Error(j.reason || "error");
+    store("clima_cache", {key: locKey(loc), at: Date.now(), json: j});
+    CLIMA.data = parseOM(j); CLIMA.data.at = Date.now();
+  } catch(e){
+    if(cache && cache.key === locKey(loc)){ CLIMA.data = parseOM(cache.json); CLIMA.data.at = cache.at; CLIMA.error = "Sin conexión: se muestra el último pronóstico guardado."; }
+    else { CLIMA.data = null; CLIMA.error = "No se pudo obtener el pronóstico (sin conexión o el servicio no responde). Probá de nuevo más tarde."; }
+  }
+  CLIMA.cargando = false; renderClima();
+}
+function parseOM(j){
+  const H = j.hourly || {}, vars = {T: "temperature_2m", T80: "temperature_80m", H: "relative_humidity_2m", P: "precipitation", PP: "precipitation_probability", V: "wind_speed_10m", G: "wind_gusts_10m", D: "wind_direction_10m", C: "cloud_cover", day: "is_day"};
+  const mods = {};
+  D.clima.om.modelos.forEach(([m, nombre]) => { const o = {nombre}; let ok = false;
+    Object.entries(vars).forEach(([k, v]) => { const a = H[v + "_" + m] || null; o[k] = a || []; if(a && k === "T" && a.some(x => x != null)) ok = true; });
+    if(ok) mods[m] = o; });
+  if(!Object.keys(mods).length && H.temperature_2m){ const o = {nombre: "Pronóstico"}; Object.entries(vars).forEach(([k, v]) => { o[k] = H[v] || []; }); mods.best = o; }
+  const day = H.is_day || (Object.values(mods)[0] || {}).day || [];
+  Object.values(mods).forEach(o => { if(!o.day.length || o.day.every(x => x == null)) o.day = day.length ? day : (H.time || []).map(t => { const h = +t.slice(11, 13); return h >= 6 && h < 19 ? 1 : 0; }); });
+  return {time: H.time || [], mods};
+}
+function horasHastaLluvia(o, i){
+  for(let j = i; j < Math.min(o.P.length, i + 48); j++) if((o.P[j] || 0) >= 0.3) return j - i;
+  return null;
+}
+/* Nivel de una hora: reglas del semáforo que dependen del tiempo, con las medidas aplicadas, más lluvia, ráfagas, inversión y vuelo nocturno */
+function evalHora(i){
+  const out = {lv: null, mot: [], por: {}};
+  const modos = Object.entries(CLIMA.data.mods);
+  modos.forEach(([m, o]) => {
+    const T = o.T[i], H = o.H[i], V = o.V[i]; if(T == null || H == null || V == null) return;
+    const lluvia = horasHastaLluvia(o, i);
+    const c = {temperatura_ambiente_C: T, HR: H, viento_kmh: V, rafagas_kmh: o.G[i], lluvia_h: lluvia};
+    const ev = evaluate(Object.assign({}, S, {caldo: Object.assign({}, S.caldo, c)}));
+    let lv = 0; const mot = [];
+    ev.fired.forEach(f => { if(WRULES.has(f.r.id)){ lv = Math.max(lv, f.level); if(f.level >= 1) mot.push([f.level, f.r.titulo]); } });
+    if((o.P[i] || 0) >= 0.3){ lv = 3; mot.push([3, `Llueve (${fmt(o.P[i], 1)} mm)`]); }
+    if(o.G[i] != null && o.G[i] > D.clima.rafaga){ lv = Math.max(lv, 2); mot.push([2, `Ráfagas de ${fmt(o.G[i], 0)} km/h`]); }
+    const noche = !o.day[i];
+    const INV = D.clima.inversion, T80 = (o.T80 || [])[i], difT = T80 != null ? T80 - T : null;
+    if(difT != null && difT >= INV.dif_80m && V < INV.viento_max_80m){ lv = Math.max(lv, 2); mot.push([2, `Inversión térmica: a 80 m hace ${fmt(difT, 1)} °C más que a 2 m`]); }
+    else if((noche || isBordeDia(o, i)) && V < INV.viento_max && (o.C[i] == null || o.C[i] <= INV.nubes_max)){ lv = Math.max(lv, 2); mot.push([2, "Posible inversión térmica (calma y cielo despejado)"]); }
+    if(S.modo === "drone" && noche){ lv = 3; mot.push([3, "Drones: solo de día (DINAC R 1103)"]); }
+    if(o.PP[i] != null && o.PP[i] >= 60 && lluvia == null){ lv = Math.max(lv, 1); mot.push([1, `Probabilidad de lluvia ${o.PP[i]} %`]); }
+    out.por[m] = {lv, T, H, V, G: o.G[i], D: o.D[i], C: o.C[i], P: o.P[i], PP: o.PP[i], lluvia, dT: deltaT(T, H), noche};
+    if(out.lv == null || lv > out.lv) out.lv = lv;
+    mot.forEach(x => { if(!out.mot.some(y => y[1] === x[1])) out.mot.push(x); });
+  });
+  const lvs = Object.values(out.por).map(x => x.lv); out.desacuerdo = lvs.length > 1 && Math.max(...lvs) - Math.min(...lvs) >= 2;
+  out.mot.sort((a, b) => b[0] - a[0]);
+  return out;
+}
+function isBordeDia(o, i){ return (o.day[i] && (!o.day[i - 1] || !o.day[i - 2])) || (o.day[i] && (!o.day[i + 1] || !o.day[i + 2])); }
+function horasNecesarias(){
+  const q = findEq(S.equipo); if(!q || !S.sup) return null;
+  const m = modoDe(q), v = velEq(q, m);
+  const cap = m === "terrestre" ? (anchoEq(q) ? CAL.capTerr(anchoEq(q), v, (nv(q.eficiencia) || 60) / 100) : null) : m === "drone" ? CAL.capDrone(nv(q.faja) || 7, v, 0.5) : m === "avion" ? CAL.capAvion(nv(q.faja) || 25, v, 0.45) : null;
+  return cap ? S.sup / cap : null;
+}
+function ventanas(ev){
+  const t = CLIMA.data.time, now = Date.now(), out = []; let ini = null, peor = 0;
+  for(let i = 0; i <= t.length; i++){
+    const okH = i < t.length && new Date(t[i]).getTime() >= now - 3600e3 && ev[i].lv != null && ev[i].lv <= 1;
+    if(okH){ if(ini == null){ ini = i; peor = 0; } peor = Math.max(peor, ev[i].lv); }
+    else if(ini != null){ out.push({ini, fin: i - 1, h: i - ini, lv: peor}); ini = null; }
+  }
+  return out.filter(w => w.h >= 2).sort((a, b) => a.lv - b.lv || b.h - a.h || a.ini - b.ini);
+}
+const hTxt = t => t.slice(11, 16);
+const diaTxt = t => { const d = new Date(t.slice(0, 10) + "T12:00"), hoy = new Date(); hoy.setHours(12, 0, 0, 0); const n = Math.round((d - hoy) / 864e5);
+  return n === 0 ? "Hoy" : n === 1 ? "Mañana" : d.toLocaleDateString("es-PY", {weekday: "long", day: "numeric"}); };
+function usarHora(i){
+  const ev = evalHora(i), m = Object.keys(ev.por)[0], o = ev.por[m]; if(!o) return;
+  Object.assign(S.caldo, {fecha_hora: CLIMA.data.time[i].slice(0, 16), temperatura_ambiente_C: Math.round(o.T * 10) / 10, HR: Math.round(o.H), viento_kmh: Math.round(o.V * 10) / 10,
+    rafagas_kmh: o.G != null ? Math.round(o.G) : null, viento_dir: dirTxt(o.D), nubosidad: nubTxt(o.C), lluvia_h: o.lluvia, fuente_clima: `${CLIMA.data.mods[m].nombre}, ${CLIMA.loc ? CLIMA.loc.txt || "" : ""}`});
+  S.ejemplo = false; save(); fillInputs(); renderCaldo(); toast("Condiciones del pronóstico cargadas: el semáforo ya las usa");
+  const r = $("#pSemaforo"); if(r && innerWidth < 920) r.scrollIntoView({behavior: "smooth"});
+}
+function renderClima(){
+  const el = $("#clima"); if(!el) return;
+  if(!CLIMA.abierto){ el.innerHTML = ""; return; }
+  const loc = CLIMA.loc;
+  const pie = `<p class="note" style="margin-top:8px">${esc(D.clima.om.atribucion)}. Alertas oficiales: <a href="${esc(D.clima.om.dmh)}" target="_blank" rel="noopener">Dirección de Meteorología e Hidrología</a>.</p>`;
+  if(!loc){ el.innerHTML = `<div class="clima"><p>Para el pronóstico, elegí un campo con lotes dibujados en “2 · Aplicación” o usá tu ubicación.</p>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="clGps">Usar mi ubicación</button><button class="btn sm" id="clCoord">Ingresar coordenadas</button></div>${pie}</div>`; bindClima(); return; }
+  if(CLIMA.cargando){ el.innerHTML = `<div class="clima"><p class="note">Buscando el pronóstico para ${esc(loc.txt || locKey(loc))}…</p></div>`; return; }
+  if(!CLIMA.data){ el.innerHTML = `<div class="clima"><p class="rnote">${esc(CLIMA.error || "Sin pronóstico.")}</p><div class="row" style="margin-top:8px"><button class="btn sm" id="clAct">Reintentar</button></div>${pie}</div>`; bindClima(); return; }
+  const t = CLIMA.data.time, evs = t.map((_, i) => evalHora(i));
+  const dias = [...new Set(t.map(x => x.slice(0, 10)))];
+  if(CLIMA.dia >= dias.length) CLIMA.dia = 0;
+  const dSel = dias[CLIMA.dia], idx = t.map((x, i) => [x, i]).filter(([x]) => x.startsWith(dSel)).map(([, i]) => i);
+  const ws = ventanas(evs).slice(0, 4), nec = horasNecesarias();
+  const _n = new Date(), ahora = ymdLocal(_n) + "T" + String(_n.getHours()).padStart(2, "0");
+  const sel = CLIMA.sel != null ? evs[CLIMA.sel] : null;
+  const lavado = lavadoCaldo(evaluate(S).xs, S.cult && S.cult.momento);
+  const modelos = Object.values(CLIMA.data.mods).map(o => o.nombre).join(" y ");
+  el.innerHTML = `<div class="clima">
+    <div class="row" style="justify-content:space-between"><span class="note">Pronóstico para <b>${esc(loc.txt || locKey(loc))}</b> (${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}) · ${esc(modelos)}${CLIMA.data.at ? " · actualizado " + new Date(CLIMA.data.at).toLocaleTimeString("es-PY", {hour: "2-digit", minute: "2-digit"}) : ""}</span>
+      <span class="row" style="gap:6px"><button class="btn sm" id="clAct">Actualizar</button><button class="btn sm" id="clGps">Mi ubicación</button></span></div>
+    ${CLIMA.error ? `<p class="rnote" style="margin-top:6px">${esc(CLIMA.error)}</p>` : ""}
+    <p class="note" style="margin-top:6px">Cada hora se evalúa con las reglas del semáforo para este caldo y las medidas marcadas (deriva, Delta T, calor, ley 3742/09, lluvia antes de ${fmt(lavado.h, 1)} h${lavado.quien ? " por " + esc(lavado.quien.c.o.nombre) : ""}), más ráfagas, inversión térmica${S.modo === "drone" ? " y vuelo de día" : ""}.${lavado.pre ? " " + esc(D.clima.activacion) : ""}</p>
+    <h4 style="margin-top:10px">Mejores horarios</h4>
+    ${ws.length ? `<div class="stack" style="gap:6px;margin-top:6px">${ws.map(w => `<div class="win l${w.lv}"><span>${pill(w.lv, w.lv ? "Con precaución" : "Bueno")} <b>${esc(diaTxt(t[w.ini]))} de ${hTxt(t[w.ini])} a ${hTxt(t[w.fin]).replace(":00", ":59")}</b> · ${w.h} h${nec ? (w.h >= nec ? " · alcanza para toda la superficie" : ` · cubre ${fmt(w.h / nec * 100, 0)} % de la superficie`) : ""}</span><button class="btn sm" data-usar="${w.ini}">Usar este horario</button></div>`).join("")}</div>`
+      : `<p class="rnote" style="margin-top:6px">No hay horarios aptos de 2 horas o más en el pronóstico: conviene esperar y revisar de nuevo.</p>`}
+    ${nec ? `<p class="note" style="margin-top:4px">Con ${esc(findEq(S.equipo).nombre)} se necesitan unas ${fmt(nec, 1)} h para ${fmt(S.sup, 0)} ha.</p>` : ""}
+    <div class="row" style="gap:4px;margin-top:12px">${dias.map((d, k) => `<button class="chip" data-dia="${k}" aria-pressed="${k === CLIMA.dia}" style="font-size:.8rem;padding:2px 10px">${esc(diaTxt(d + "T12:00"))}</button>`).join("")}</div>
+    <div class="hgrid" style="margin-top:8px">${idx.map(i => { const e = evs[i], o = Object.values(e.por)[0] || {}; const pas = t[i].slice(0, 13) < ahora;
+      return `<button class="hcell l${e.lv ?? "n"}${o.noche ? " noche" : ""}${CLIMA.sel === i ? " sel" : ""}" data-h="${i}" ${pas ? "disabled" : ""} title="${esc(e.mot.map(x => x[1]).join("; ") || "Sin problemas")}"><b>${hTxt(t[i]).slice(0, 2)}</b><span>${o.V != null ? fmt(o.V, 0) : "—"}</span>${e.desacuerdo ? "<i>±</i>" : ""}</button>`; }).join("")}</div>
+    <p class="note" style="margin-top:4px">Cada casilla: hora y viento en km/h. ± = los modelos no coinciden.</p>
+    ${sel ? `<div class="panel" style="margin-top:10px;padding:12px"><div class="row" style="justify-content:space-between"><b>${esc(diaTxt(t[CLIMA.sel]))} ${hTxt(t[CLIMA.sel])}</b>${pill(sel.lv, ["Bueno", "Con precaución", "No conviene", "No aplicar"][sel.lv])}</div>
+      <div class="tw" style="margin-top:8px"><table><thead><tr><th>Modelo</th><th>°C</th><th>HR</th><th>Viento</th><th>Ráfagas</th><th>Delta T</th><th>Lluvia</th></tr></thead><tbody>
+        ${Object.entries(sel.por).map(([m, o]) => `<tr><td>${esc(CLIMA.data.mods[m].nombre)}</td><td class="n">${fmt(o.T, 1)}</td><td class="n">${fmt(o.H, 0)} %</td><td class="n">${fmt(o.V, 0)} ${esc(dirTxt(o.D) || "")}</td><td class="n">${fmt(o.G, 0)}</td><td class="n">${fmt(o.dT, 1)}</td><td class="n">${o.lluvia == null ? "sin lluvia 48 h" : o.lluvia === 0 ? "ahora" : "en " + o.lluvia + " h"}${o.PP != null ? ` (${o.PP} %)` : ""}</td></tr>`).join("")}</tbody></table></div>
+      ${sel.mot.length ? `<ul class="clean note" style="margin-top:8px">${sel.mot.map(x => `<li>${pill(x[0], ["", "Precaución", "Riesgo", "No"][x[0]] || "")} ${esc(x[1])}</li>`).join("")}</ul>` : `<p class="note" style="margin-top:8px">Sin problemas de tiempo para este caldo.</p>`}
+      <div class="row" style="margin-top:8px"><button class="btn pri sm" data-usar="${CLIMA.sel}">Usar este horario para el semáforo</button></div></div>` : ""}
+    ${pie}</div>`;
+  bindClima();
+}
+function bindClima(){
+  const a = $("#clAct"); if(a) a.onclick = () => cargarClima(true);
+  const g = $("#clGps"); if(g) g.onclick = () => { if(!navigator.geolocation){ toast("Este dispositivo no da la ubicación"); return; }
+    navigator.geolocation.getCurrentPosition(p => { store("clima_loc", {lat: p.coords.latitude, lon: p.coords.longitude, txt: "Mi ubicación"}); if(S.ap.campo){ S.ap = {campo: null, lotes: []}; save(); fillInputs(); renderCaldo(); } cargarClima(true); },
+      () => toast("Permiso de ubicación denegado"), {enableHighAccuracy: false, timeout: 15000}); };
+  const c = $("#clCoord"); if(c) c.onclick = () => { openDrawer(`<div class="stack"><h2>Ubicación para el pronóstico</h2><form class="stack" id="fCoord"><div class="fields"><label class="f">Latitud<input id="cLat" type="number" step="0.0001" placeholder="-25.50" required></label><label class="f">Longitud<input id="cLon" type="number" step="0.0001" placeholder="-54.70" required></label><label class="f" style="grid-column:1/-1">Nombre<input id="cNom" placeholder="Ej.: Estancia del norte"></label></div><div class="row"><button class="btn pri" type="submit">Usar</button></div></form></div>`);
+    $("#fCoord").onsubmit = e => { e.preventDefault(); const lat = nv($("#cLat").value), lon = nv($("#cLon").value); if(lat == null || lon == null || Math.abs(lat) > 90 || Math.abs(lon) > 180){ toast("Coordenadas inválidas"); return; }
+      store("clima_loc", {lat, lon, txt: $("#cNom").value || "Ubicación cargada"}); closeDrawer(); cargarClima(true); }; };
+  document.querySelectorAll("#clima [data-dia]").forEach(b => b.onclick = () => { CLIMA.dia = +b.dataset.dia; CLIMA.sel = null; renderClima(); });
+  document.querySelectorAll("#clima [data-h]").forEach(b => b.onclick = () => { CLIMA.sel = +b.dataset.h; renderClima(); });
+  document.querySelectorAll("#clima [data-usar]").forEach(b => b.onclick = () => usarHora(+b.dataset.usar));
+}
+let CLIMA_T = null;
+function refrescarClima(){ if(!CLIMA.abierto || !CLIMA.data) return; clearTimeout(CLIMA_T); CLIMA_T = setTimeout(() => {
+  const l = climaLoc(); if(l && CLIMA.loc && locKey(l) !== locKey(CLIMA.loc)) cargarClima(false); else renderClima(); }, 250); }
+function toggleClima(){ CLIMA.abierto = !CLIMA.abierto; $("#btnClima").setAttribute("aria-pressed", String(CLIMA.abierto)); if(CLIMA.abierto) cargarClima(false); else renderClima(); }
 
 /* ---------- Render general ---------- */
 function renderAll(){
@@ -3292,6 +3762,7 @@ function renderAll(){
 }
 renderRubros(); fillInputs(); bindInputs(); bindSearch(); initProductFilters();
 const h = (location.hash||"").slice(1); if(["caldo","campos","equipos","historial","rotacion","caso","productos","inertes","diag","problemas"].includes(h)) setView(h); else renderAll();
+if(!load("rubro_fijo", false) && !/[?&]sinrubro/.test(location.search)) abrirGate(true);
 </script>
 
 <script>
