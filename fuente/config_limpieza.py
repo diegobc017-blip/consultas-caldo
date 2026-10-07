@@ -1,0 +1,121 @@
+# Limpieza del equipo pulverizador: qué limpiador usar según lo aplicado, paso a paso y advertencias.
+# Fuentes: Purdue PPP-108; UNL G1770; Univ. de Arkansas MP532 (Engenia, XtendiMax); Texas A&M (tabla de limpiadores y cultivos sensibles);
+# PNW Weed Management Handbook (limpieza por herbicida); K-State MF1089; NSW DPI y Herbiguide (dosis en L/100 L, lavandina);
+# Penn State; Sprayers101; etiquetas Enlist, WipeOut, All Clear, Protank; Ley 3742/09 art. 65 (lavado lejos del agua).
+# La etiqueta del herbicida y la del limpiador mandan siempre.
+
+GENERICOS = {
+ "amoniaco": {"nombre": "Amoníaco doméstico (3 % de NH₃)", "L_100L": 1.0, "unidad": "L",
+              "txt": "1 L cada 100 L de agua de enjuague (1 %); para aminopiralida y mesotriona las fuentes llegan a 4 %",
+              "sirve": "Hormonales, sulfonilureas, HPPD, flumioxazin, paraquat",
+              "ojo": "Nunca junto con lavandina ni seguido de lavandina sin enjuagar con agua."},
+ "lavandina": {"nombre": "Lavandina (hipoclorito de sodio al 4 %)", "L_100L": 0.3, "unidad": "L",
+               "txt": "Sulfonilureas: 300 mL cada 100 L, 15 min recirculando y repetir; pastillas y filtros en 500 mL cada 10 L por 30 min o más. Tembotriona: 4 L cada 100 L (etiqueta Laudis)",
+               "sirve": "Sulfonilureas (las degrada) y algunos HPPD",
+               "ojo": "Nunca con amoníaco, sulfato de amonio, fertilizantes amoniacales ni ácidos: forma gas tóxico. Enjuagar 10 min con agua antes. No saca aceites."},
+ "detergente": {"nombre": "Detergente", "L_100L": 0.5, "unidad": "L",
+                "txt": "500 mL de detergente líquido o 125 g en polvo cada 100 L",
+                "sirve": "Glifosato, graminicidas, imidazolinonas, fluroxipir y triclopir, polvos y suspensiones, insecticidas y fungicidas",
+                "ojo": ""},
+ "comercial": {"nombre": "Limpiador de tanque comercial", "L_100L": None, "unidad": "",
+               "txt": "Dosis de la etiqueta",
+               "sirve": "Formulaciones oleosas (EC), restos secos, PPO, glufosinato; también hormonales y sulfonilureas",
+               "ojo": "El amoníaco y la lavandina no sacan aceites ni restos secos: para eso, limpiador comercial o detergente desengrasante."},
+}
+# Tipo de limpiador registrado que cumple cada papel
+REGISTRADOS_PARA = {"amoniaco": ["alcalino", "amoniacal"], "lavandina": [], "detergente": ["detergente"], "comercial": ["alcalino", "amoniacal", "detergente", "desengrasante"]}
+
+# Grupos de restos: el primero que coincide manda. nivel: 3 = crítico ante cultivos sensibles, 2 = alto, 1 = común
+GRUPOS = [
+ {"id": "aux_ester", "nombre": "Hormonales en éster (2,4-D éster, triclopir éster)", "nivel": 3,
+  "match": {"grupo": ["HRAC 4"], "forma": ["ester"]},
+  "limpiadores": ["comercial", "detergente", "amoniaco"],
+  "como": "Primero un enjuague con limpiador comercial o detergente que saque lo oleoso; después amoníaco al 1 % con reposo de varias horas o toda la noche en tanque y barras.",
+  "sensibles": ["soja", "algodon", "girasol", "canola", "poroto", "sesamo", "chia", "mandioca", "hortalizas", "eucalipto", "pastura_leg"]},
+ {"id": "aux", "nombre": "Hormonales (2,4-D, dicamba, picloram, triclopir, fluroxipir, aminopiralida)", "nivel": 3,
+  "match": {"grupo": ["HRAC 4"]},
+  "limpiadores": ["amoniaco", "comercial", "detergente"],
+  "como": "Amoníaco al 1 % (picloram y clopiralida; aminopiralida 4 %) o limpiador comercial, recirculando 15 min y dejando la solución en tanque y barras varias horas o toda la noche. Fluroxipir y triclopir salen con detergente. Remojar filtros y pastillas en la solución.",
+  "sensibles": ["soja", "algodon", "girasol", "canola", "poroto", "sesamo", "chia", "mandioca", "hortalizas", "eucalipto", "pastura_leg"]},
+ {"id": "su", "nombre": "Sulfonilureas (clorimurón, metsulfurón, nicosulfurón…)", "nivel": 3,
+  "match": {"grupo_quimico": ["Sulfonilureas"]},
+  "limpiadores": ["amoniaco", "lavandina", "comercial"],
+  "como": "Amoníaco al 1 % recirculando 15 min, dos veces; o lavandina (300 mL cada 100 L, 15 min, repetir). Usar uno u otro, nunca los dos; si antes hubo amoníaco, sulfato de amonio o fertilizante amoniacal, enjuagar 10 min con agua antes de la lavandina.",
+  "sensibles": ["maiz", "girasol", "algodon", "canola", "soja", "poroto", "sesamo", "hortalizas", "sorgo"],
+  "tolera": {"clorimuron": ["soja"], "nicosulfuron": ["maiz"], "metsulfuron": ["trigo"], "iodosulfuron": ["trigo"], "pirazosulfuron": ["arroz"]}},
+ {"id": "hppd", "nombre": "HPPD (mesotriona, tembotriona, topramezona, isoxaflutol)", "nivel": 3,
+  "match": {"grupo": ["HRAC 27"]},
+  "limpiadores": ["amoniaco", "lavandina", "comercial"],
+  "como": "Mesotriona: amoníaco doméstico (hasta 4 %); tembotriona: lavandina 4 L cada 100 L (etiqueta Laudis); topramezona: limpiador comercial. Recircular y dejar reposar. Amoníaco y lavandina nunca juntos.",
+  "sensibles": ["soja", "algodon", "girasol", "poroto", "sesamo", "hortalizas", "canola"]},
+ {"id": "imi", "nombre": "Imidazolinonas y otros ALS (imazetapir, diclosulam…)", "nivel": 2,
+  "match": {"grupo": ["HRAC 2"]},
+  "limpiadores": ["detergente", "amoniaco", "comercial"],
+  "como": "Detergente, amoníaco o limpiador comercial; triple enjuague.",
+  "sensibles": ["maiz", "girasol", "algodon", "hortalizas", "sorgo", "arroz", "trigo"]},
+ {"id": "ppo", "nombre": "PPO (fomesafen, flumioxazin, saflufenacil, lactofen…)", "nivel": 2,
+  "match": {"grupo": ["HRAC 14"]},
+  "limpiadores": ["comercial", "amoniaco", "detergente"],
+  "como": "Fomesafen: limpiador comercial; flumioxazin: amoníaco; saflufenacil: detergente o limpiador comercial.",
+  "sensibles": ["maiz", "sorgo", "soja", "hortalizas", "algodon", "girasol"],
+  "tolera": {"fomesafen": ["soja"], "lactofen": ["soja"]}},
+ {"id": "contacto", "nombre": "Glufosinato, paraquat y diquat", "nivel": 2,
+  "match": {"grupo": ["HRAC 10", "HRAC 22"]},
+  "limpiadores": ["comercial", "amoniaco"],
+  "como": "Triple enjuague con limpiador comercial o amoníaco.",
+  "sensibles": ["todo cultivo no tolerante"]},
+ {"id": "gram", "nombre": "Graminicidas (cletodim, haloxifop…)", "nivel": 2,
+  "match": {"grupo": ["HRAC 1"]},
+  "limpiadores": ["detergente", "comercial"],
+  "como": "Detergente y triple enjuague.",
+  "sensibles": ["maiz", "sorgo", "trigo", "arroz", "cana", "pastura_gram"]},
+ {"id": "glifo", "nombre": "Glifosato", "nivel": 1,
+  "match": {"grupo": ["HRAC 9"]},
+  "limpiadores": ["detergente"],
+  "como": "Agua o detergente y triple enjuague.",
+  "sensibles": ["todo cultivo no tolerante"]},
+ {"id": "herb", "nombre": "Otros herbicidas (residuales de suelo, triazinas…)", "nivel": 1,
+  "match": {"clase": ["herbicida"]},
+  "limpiadores": ["detergente", "comercial"],
+  "como": "Detergente y triple enjuague; la etiqueta puede pedir un limpiador específico.",
+  "sensibles": []},
+ {"id": "oleosos", "nombre": "Formulaciones oleosas y aceites (EC, OD, EW, aceites)", "nivel": 1,
+  "match": {"oleoso": True},
+  "limpiadores": ["comercial", "detergente"],
+  "como": "Limpiador comercial o detergente desengrasante: el amoníaco y la lavandina no sacan el aceite.",
+  "sensibles": []},
+ {"id": "solidos", "nombre": "Polvos y suspensiones (WP, WG, SC, cobre, mancozeb)", "nivel": 1,
+  "match": {"solido": True},
+  "limpiadores": ["detergente"],
+  "como": "Detergente y triple enjuague; desarmar y cepillar filtros y mallas, donde se junta el barro de los polvos.",
+  "sensibles": []},
+ {"id": "otros", "nombre": "Insecticidas, fungicidas y demás productos", "nivel": 1,
+  "match": {},
+  "limpiadores": ["detergente"],
+  "como": "Agua con detergente y triple enjuague.",
+  "sensibles": []},
+]
+# Residuo de la aplicación anterior (chips del panel 2) → grupo
+RESIDUO_GRUPO = {"hormonal": "aux", "sulfonilurea": "su", "imidazolinona": "imi", "hppd": "hppd"}
+
+PASOS = [
+ "Limpiar enseguida al terminar: no dejar caldo en el tanque ni en las barras de un día para otro.",
+ "Aplicar el sobrante sobre el lote ya tratado, sin pasar la dosis de la etiqueta. Nunca tirarlo al suelo ni cerca del agua.",
+ "Enjuague 1 con agua limpia: al menos 10 % del tanque, recircular 15 min y pulverizar por la barra y los picos sobre el lote tratado (este enjuague lleva casi todo el resto).",
+ "Enjuague 2 con el limpiador: recircular 15 min, llenar las barras y dejar actuar (con hormonales, varias horas o toda la noche); después pulverizar.",
+ "Desarmar y lavar con agua jabonosa y cepillo (nunca alambre): filtros, mallas, pastillas y tapones de punta de barra. Revisar inductor, caudalímetro, turretas y mangueras que quedan colgando.",
+ "Enjuague 3 con agua limpia: al menos 10 % del tanque, recircular y pulverizar.",
+ "Lavar el exterior del equipo. Cargar y lavar lejos de pozos, arroyos y tajamares (Ley 3742/09, art. 65), rotando el lugar o sobre una plataforma de contención.",
+ "Antes de un cultivo sensible, probar el último enjuague sobre unas plantas sensibles y esperar unos días.",
+]
+PASOS_DRONE = [
+ "Drone: 3 enjuagues con agua o agua jabonosa pulverizando al caudal máximo; con atomizadores centrífugos, girar los discos con agua limpia.",
+ "Remojar filtros y boquillas toda la noche (12 h) y lavar el tanque con cepillo suave. No usar hidrolavadora sobre motores, sensores ni baterías.",
+]
+ADVERTENCIAS = [
+ "Nunca mezclar lavandina con amoníaco, sulfato de amonio, fertilizantes amoniacales ni ácidos: forma gas tóxico (cloramina o cloro). Entre un limpiador y otro, enjuagar con agua.",
+ "Usar el mismo equipo de protección que para aplicar: guantes, antiparras y ropa de manga larga.",
+ "Los aceites y adyuvantes del caldo siguiente pueden despegar restos viejos de las paredes: con cultivos sensibles, limpiar a fondo aunque el equipo parezca limpio.",
+ "Antes de biológicos (Bacillus, Trichoderma, Beauveria) el equipo tiene que estar sin restos de agroquímicos: terminar con agua sin cloro ni amoníaco.",
+ "La etiqueta del producto aplicado y la del limpiador mandan sobre esta guía.",
+]

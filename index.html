@@ -209,6 +209,7 @@ details.box>.in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .med .warn{color:var(--s2);font-size:.72rem}
 .floor{font-size:.78rem;color:var(--muted)}
 
+.pgcat{margin:12px 0 6px;font-size:.92rem;color:var(--muted)}
 .probgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
 .pg{display:flex;gap:8px;align-items:center;font-size:.84rem;padding:6px 8px;border-radius:6px;background:var(--sunk);border:0;text-align:left;cursor:pointer;min-width:0}
 .pg .dot{width:12px;height:12px;border-radius:50%;flex:none;background:var(--s-off)}
@@ -471,6 +472,10 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
             <label class="f">Nubosidad<select id="c_nubosidad"><option value="">—</option><option>Despejado</option><option>Parcial</option><option>Nublado</option></select></label>
             <label class="f">Lluvia prevista en (h)<input id="c_lluvia_h" type="number" min="0" step="1" placeholder="sin lluvia"></label>
           </div>
+          <div class="row" style="margin-top:10px;gap:6px"><span class="note">Estado de las plantas:</span><div class="row" id="estChips" style="gap:5px"></div></div>
+          <div class="fields" style="margin-top:8px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+            <label class="f">Abejas<select id="c_abejas"><option value="">— sin dato —</option><option value="no">Sin floración ni colmenas cerca</option><option value="si">Hay floración o colmenas cerca</option></select></label>
+          </div>
           <div class="kv" id="ambKv" style="margin-top:10px"></div>
           <div id="clima"></div>
         </div>
@@ -503,11 +508,14 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
             <option value="dif">Más difundidos</option><option value="mio">Más usados por mí</option><option value="emp">Empresa A–Z</option>
             <option value="new">Registro más nuevo</option><option value="old">Registro más antiguo</option><option value="tox">Menor toxicidad</option></select></label>
           <label class="f pwide">Mostrar<select id="palc"></select></label>
-          <label class="f">Clase<select id="pclase"><option value="">Todas</option><option>HERBICIDA</option><option>INSECTICIDA</option><option>FUNGICIDA</option><option>ACARICIDA</option><option>NEMATICIDA</option><option>COADYUVANTE</option><option>REGULADOR</option><option>MICROBIOL</option><option>SEMILLA</option></select></label>
+          <label class="f">Clase<select id="pclase"></select></label>
           <label class="f">Objetivo<select id="pobj"></select></label>
         </div>
-        <details class="box" id="pMas" style="margin-top:10px"><summary>Más filtros: activo, modo de acción, empresa, origen, toxicidad</summary>
+        <details class="box" id="pMas" style="margin-top:10px"><summary>Más filtros: activo, modo de acción, empresa, químico o biológico, forma de uso, toxicidad</summary>
           <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));padding:0 12px 12px">
+            <label class="f">Origen<select id="porigen"></select></label>
+            <label class="f">Forma de uso<select id="puso"></select></label>
+            <label class="f">Función (coadyuvantes)<select id="pfun"></select></label>
             <label class="f">Principio activo<select id="pai"></select></label>
             <label class="f">Modo de acción<select id="pgru"></select></label>
             <label class="f">Empresa<select id="pemp"><option value="">Todas</option></select></label>
@@ -552,6 +560,7 @@ const byId = (arr,k="id") => Object.fromEntries(arr.map(x=>[x[k],x]));
 const AI = byId(D.activos), ADY = byId(D.coadyuvantes), BIO = byId(D.biologicos), BOT = byId(D.botanicos);
 const FORM = byId(D.formulaciones,"codigo");
 const PROB = byId(D.catalogo_problemas);
+const CAT_PROB = {fisico: "En el tanque: físicos", quimico: "En el tanque: químicos", biologico: "En la planta y la plaga: biológicos", equipo_seguridad: "Equipo, manejo y seguridad", aplicacion: "Durante y después de la aplicación"};
 const RULE = byId(D.reglas);
 const PROD = Object.fromEntries(D.productos.map(p=>[p.r,p]));
 /* Rubros por producto: s = hecho para ese rubro; s2 = uso secundario (oculto salvo "uso general").
@@ -592,7 +601,7 @@ const EJEMPLO = {
   items:[{r:"3140",dosis:2.0},{r:"539",dosis:1.0},{r:"121",dosis:0.45},{r:"4039",dosis:0.035},{r:"4466",dosis:0.5}],
   vol:70, tanque:3000,
   agua:{pH:7.8,dureza_ppm_CaCO3:220,temperatura_C:18,turbidez:"baja",Ca:62,Mg:16,Na:35,K:4,Fe_mg_L:0.1,HCO3_mg_L:260,conductividad_uS_cm:650,cloro_mg_L:0},
-  caldo:{horas_en_tanque:3,temperatura_ambiente_C:28,HR:65,viento_kmh:8,rafagas_kmh:14,viento_dir:"NE",nubosidad:"Parcial",lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null},
+  caldo:{horas_en_tanque:3,temperatura_ambiente_C:28,HR:65,viento_kmh:8,rafagas_kmh:14,viento_dir:"NE",nubosidad:"Parcial",lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],estado_plantas:[],abejas:null,portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null},
   sup:350, ap:{campo:"ej-campo", lotes:["ej-l1","ej-l2","ej-l3","ej-l4","ej-l5"]}, equipo:"ej-eq1", modo:"terrestre",
   cult:{actual:"soja", momento:"barbecho", siembra_act:fechaMas(10), siguiente:"maiz", siembra_sig:fechaMas(150)},
   medidas:[], ejemplo:true
@@ -601,7 +610,7 @@ const MEDIDAS_EJEMPLO = ["ams","antiesp","antideriva","orden","predil","agua70",
 const clone = o => JSON.parse(JSON.stringify(o));
 function migrar(s){
   s = s || clone(EJEMPLO);
-  s.caldo = Object.assign({horas_en_tanque:null,temperatura_ambiente_C:null,HR:null,viento_kmh:null,rafagas_kmh:null,viento_dir:null,nubosidad:null,lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null}, s.caldo||{});
+  s.caldo = Object.assign({horas_en_tanque:null,temperatura_ambiente_C:null,HR:null,viento_kmh:null,rafagas_kmh:null,viento_dir:null,nubosidad:null,lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],estado_plantas:[],abejas:null,portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null}, s.caldo||{});
   if(!s.ap) s.ap = {campo:null, lotes:[]};
   s.cult = Object.assign({actual:null, momento:"barbecho", siembra_act:null, siguiente:null, siembra_sig:null}, s.cult||{});
   if(!s.modo) s.modo = "terrestre";
@@ -648,7 +657,7 @@ function effInputs(state){
   if(m.has("horario") && caldo.temperatura_ambiente_C!=null) caldo.temperatura_ambiente_C = Math.min(caldo.temperatura_ambiente_C,25);
   if(m.has("agitmod")) caldo.agitacion = "normal";
   if(agua.dureza_ppm_CaCO3==null && agua.Ca!=null) agua.dureza_ppm_CaCO3 = 2.497*agua.Ca + 4.118*(agua.Mg||0);
-  return {agua,caldo,vol,modo,aereo};
+  return {agua,caldo,vol,modo,aereo,cult:state.cult||{}};
 }
 const PROPMAP = {efecto_pH:"efecto_pH_caldo"};
 function propVals(x, key){ // valores de una propiedad en el producto y sus componentes
@@ -704,6 +713,11 @@ function caldoDerived(xs, inp){
     ...inp.caldo, volumen_L_ha: inp.vol, modo: inp.modo, rubro: RUBRO,
     dron_sin_agitador: inp.modo === "drone" && !((typeof findEq === "function" && findEq(S.equipo) || {}).funciones || []).includes("agitador"),
     lluvia_margen_h: inp.caldo.lluvia_h != null && inp.caldo.lluvia_h !== "" ? inp.caldo.lluvia_h - lavadoCaldo(xs, inp.cult && inp.cult.momento).h : null,
+    momento: inp.cult && inp.cult.momento || null,
+    hora_inversion: (h => h == null ? null : h < 10 || h >= 17)(inp.caldo.fecha_hora ? +String(inp.caldo.fecha_hora).slice(11, 13) : null),
+    tox_alta: xs.some(x => x.p && /^I(\.?[AB])?$/.test((x.p.t || "").replace(/\s/g, ""))),
+    registro_vencido: xs.some(x => x.p && x.p.m),
+    equipo_sin_calibrar: (() => { if(typeof findEq !== "function" || typeof eqEstado !== "function") return null; const q = findEq(S.equipo); return q && modoDe(q) === inp.modo ? eqEstado(q).l >= 1 : null; })(),
     n_productos: reales.length,
     n_oleosos: xs.filter(x=>x.d.oleoso && !x.virt).length,
     activo_duplicado: Object.values(ais).some(s=>s.size>1),
@@ -746,7 +760,7 @@ function fueraLey(c){
   if(T!=null&&H!=null&&V!=null) return false;
   return null;
 }
-const DATO_NOMBRE = {pH:"pH del agua",dureza_ppm_CaCO3:"dureza",temperatura_C:"temperatura del agua",turbidez:"turbidez",Fe_mg_L:"hierro",HCO3_mg_L:"bicarbonatos",conductividad_uS_cm:"conductividad",cloro_mg_L:"cloro",horas_en_tanque:"horas en el tanque",temperatura_ambiente_C:"temperatura ambiente",pH_final:"pH final del caldo",volumen_L_ha:"volumen",viento_kmh:"viento",HR:"humedad relativa",delta_T:"temperatura y humedad (Delta T)",lluvia_h:"lluvia prevista",lluvia_margen_h:"lluvia prevista",rafagas_kmh:"ráfagas",fuera_ley:"temperatura, humedad y viento"};
+const DATO_NOMBRE = {pH:"pH del agua",dureza_ppm_CaCO3:"dureza",temperatura_C:"temperatura del agua",turbidez:"turbidez",Fe_mg_L:"hierro",HCO3_mg_L:"bicarbonatos",conductividad_uS_cm:"conductividad",cloro_mg_L:"cloro",horas_en_tanque:"horas en el tanque",temperatura_ambiente_C:"temperatura ambiente",pH_final:"pH final del caldo",volumen_L_ha:"volumen",viento_kmh:"viento",HR:"humedad relativa",delta_T:"temperatura y humedad (Delta T)",lluvia_h:"lluvia prevista",lluvia_margen_h:"lluvia prevista",rafagas_kmh:"ráfagas",fuera_ley:"temperatura, humedad y viento",abejas:"floración o colmenas cerca (dato Abejas, panel 4)",nubosidad:"nubosidad"};
 function levelOf(rid, act){
   const cfg = SEM[rid] || [null,0,{}]; const r = RULE[rid];
   const base = cfg[0]!=null ? cfg[0] : SEV[r.severidad];
@@ -754,6 +768,8 @@ function levelOf(rid, act){
   let red = 0; const meds = Object.entries(cfg[2]).filter(([m])=>!(CUR_AEREO && m==="vol")).map(([m,st])=>{ const on = act.has(m); if(on) red+=st; return {m,st,on}; });
   return {base, piso, level: Math.max(piso, base-red), meds};
 }
+/* Datos que, si faltan, hacen que la regla no aplique (en vez de quedar "a verificar") */
+const SIN_DATO_NO_APLICA = new Set(["lluvia_h", "lluvia_margen_h", "hora_inversion", "equipo_sin_calibrar", "momento"]);
 function evaluate(state){
   const items = state.items.concat(virtualItems(state));
   const xs = items.map(expandItem).filter(Boolean);
@@ -771,7 +787,7 @@ function evaluate(state){
     for(const [src,obj] of [["agua",inp.agua],["caldo",cal]]){
       for(const [k,ops] of Object.entries(r.condiciones[src]||{})){
         const v = obj[k];
-        if(v==null || v===""){ if(k==="lluvia_h" || k==="lluvia_margen_h") ok=false; else missing.push(k); continue; }
+        if(v==null || v===""){ if(SIN_DATO_NO_APLICA.has(k)) ok=false; else missing.push(k); continue; }
         for(const [op,b] of Object.entries(ops)) if(!cond(op,v,b)) ok=false;
       }
     }
@@ -879,7 +895,7 @@ function numOrNull(v){ return v===""||v==null ? null : Number(v); }
 function fillInputs(){
   $("#vol").value=S.vol??""; $("#tanque").value=S.tanque??""; $("#horas").value=S.caldo.horas_en_tanque??""; $("#sup").value=S.sup??"";
   AMB_KEYS.forEach(k=>{ const el=$("#c_"+k); el.value = S.caldo[k] ?? ""; });
-  $("#agitacion").value=S.caldo.agitacion; $("#portador").value=S.caldo.portador; $("#bolsas").value=String(!!S.caldo.bolsas_hidrosolubles); $("#phfinal").value=S.caldo.pH_final??"";
+  $("#c_abejas").value=S.caldo.abejas||""; $("#agitacion").value=S.caldo.agitacion; $("#portador").value=S.caldo.portador; $("#bolsas").value=String(!!S.caldo.bolsas_hidrosolubles); $("#phfinal").value=S.caldo.pH_final??"";
   AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.value = S.agua[k] ?? ""; });
   $("#exBanner").hidden = !S.ejemplo;
   $("#ambFuente").hidden = !S.caldo.fuente_clima; $("#ambFuente").textContent = S.caldo.fuente_clima ? `Condiciones del pronóstico (${S.caldo.fuente_clima}) para el ${fmtFH(S.caldo.fecha_hora)}. Si cambiás un dato, pasa a ser tuyo.` : "";
@@ -903,6 +919,7 @@ function bindInputs(){
   $("#apMapBtn").onclick=()=>{ const b=$("#apMap"); b.hidden=!b.hidden; $("#apMapBtn").textContent=b.hidden?"Elegir lotes en el mapa":"Ocultar mapa"; if(!window.L){ toast("El mapa no está disponible en esta vista"); b.hidden=true; return; } refreshApMap(); };
   $("#apCampo").onchange=e=>{ S.ap={campo:e.target.value||null, lotes:[]}; S.supManual=false; upd(); };
   $("#agitacion").onchange=e=>{S.caldo.agitacion=e.target.value;upd()};
+  $("#c_abejas").onchange=e=>{S.caldo.abejas=e.target.value||null;upd()};
   $("#portador").onchange=e=>{S.caldo.portador=e.target.value;upd()};
   $("#bolsas").onchange=e=>{S.caldo.bolsas_hidrosolubles=e.target.value==="true";upd()};
   $("#phfinal").oninput=e=>{S.caldo.pH_final=numOrNull(e.target.value);upd()};
@@ -1059,6 +1076,7 @@ function renderCaldo(){
     S.ejemplo=false; save(); renderCaldo(); });
   chipsRow($("#fertChips"), FERTS.map(f=>[f,f]), S.caldo.fertilizantes);
   chipsRow($("#resChips"), RESID, S.caldo.residuo_previo);
+  chipsRow($("#estChips"), D.estado_plantas, S.caldo.estado_plantas);
   $("#rubroNote").textContent = "Rubro: "+D.rubros[RUBRO].nombre;
   $("#exBanner").hidden = !S.ejemplo;
   renderAplicarEn(); renderAmb();
@@ -1108,8 +1126,8 @@ function renderResult(){
   <div class="panel" id="pCarry">${carryHTML(ev)}</div>
   <div class="panel" id="pDosis">${dosisHTML(ev)}</div>
   <div class="panel" id="pProblemas">
-    <div class="panel-h"><h3>Los ${D.catalogo_problemas.length} problemas del caldo</h3><span class="note">Color de cada problema con las medidas aplicadas</span></div>
-    <div class="probgrid">${D.catalogo_problemas.map(p=>{ const fs=ev.probs[p.id]; const l=fs?Math.max(...fs.map(f=>f.level)):null; return `<button class="pg" data-p="${p.id}" title="${esc(p.nombre)}"><i class="dot ${l!=null?"l"+l:""}"></i><span>${esc(p.nombre.split(" (")[0])}</span></button>`; }).join("")}</div>
+    <div class="panel-h"><h3>Los ${D.catalogo_problemas.length} problemas del caldo y de la aplicación</h3><span class="note">Color de cada problema con las medidas aplicadas</span></div>
+    ${Object.keys(D.categorias_problemas).map(c=>`<h4 class="pgcat">${esc(CAT_PROB[c]||c)}</h4><div class="probgrid">${D.catalogo_problemas.filter(p=>p.categoria===c).map(p=>{ const fs=ev.probs[p.id]; const l=fs?Math.max(...fs.map(f=>f.level)):null; return `<button class="pg" data-p="${p.id}" title="${esc(p.nombre)}"><i class="dot ${l!=null?"l"+l:""}"></i><span>${esc(p.nombre.split(" (")[0])}</span></button>`; }).join("")}</div>`).join("")}
   </div>
   <div class="panel" id="pOrden">
     <div class="panel-h"><h3>Orden de carga</h3><span class="note">Por presentación: sólidos → suspensiones → oleosos → solubles → adyuvantes</span></div>
@@ -1129,10 +1147,12 @@ function renderResult(){
       <label class="f" style="flex-direction:row;align-items:center;gap:6px">Otro<input id="jarOtro" type="number" min="50" step="50" value="${JAR_PRESETS.some(([v])=>v===jarML())?"":jarML()}" placeholder="mL" style="width:90px"><span class="note">mL</span></label></div>
     <div id="jarBody">${jarTable(ev)}</div>
     <p class="note" style="margin-top:8px">${esc(D.prueba_jarra.interpretacion)}</p>
-  </div>`;
+  </div>
+  <div class="panel" id="pLimpieza">${limpiezaResumenHTML(ev)}</div>`;
   el.querySelectorAll(".med").forEach(b=>b.onclick=()=>{ const m=b.dataset.m; const i=S.medidas.indexOf(m); if(i>=0) S.medidas.splice(i,1); else S.medidas.push(m); S.ejemplo=false; save(); renderCaldo(); });
   el.querySelectorAll(".pg").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
   bindDosis(ev); bindRotacion(); bindJarra(ev); bindEquipoPanel(ev); bindSilvo(); refrescarClima();
+  const bl = $("#btnLimpieza"); if(bl) bl.onclick = () => openLimpieza();
 }
 function orderTable(ev){
   const rows = orderPlan(ev);
@@ -1178,6 +1198,76 @@ function bindJarra(ev){
   const o = $("#jarOtro"); if(o) o.oninput = e => { const v = +e.target.value; if(v >= 50){ S.jarra_mL = v; save(); document.querySelectorAll("#pJarra .jarp").forEach(c=>c.setAttribute("aria-pressed", String(+c.dataset.v===v))); $("#jarBody").innerHTML = jarTable(ev); } };
 }
 
+/* ---------- Limpieza del equipo ---------- */
+const FORM_SUSP = new Set(["SC", "SE", "CS", "FS", "ZC", "OD"]);
+function matchLimp(m, c){
+  if(c.t !== "ai" || !c.o) return false;
+  if(m.grupo && !m.grupo.includes(c.o.grupo)) return false;
+  if(m.forma && !m.forma.includes(c.forma)) return false;
+  if(m.grupo_quimico && !m.grupo_quimico.includes(c.o.grupo_quimico)) return false;
+  if(m.clase && !m.clase.includes(c.o.clase)) return false;
+  return !!(m.grupo || m.grupo_quimico || m.clase);
+}
+/* Qué restos deja el caldo (y la aplicación anterior): grupos ordenados del más exigente al más simple */
+function limpiezaPlan(xs, residuo){
+  const L = D.limpieza, G = byId(L.grupos), hits = new Map();
+  const add = (g, n, ai) => { if(!g) return; const h = hits.get(g.id) || {g, prods: [], ais: [], residuo: false}; if(n && !h.prods.includes(n)) h.prods.push(n); if(ai && !h.ais.includes(ai)) h.ais.push(ai); if(!ai && n === "Aplicación anterior") h.residuo = true; hits.set(g.id, h); };
+  xs.forEach(x => { if(x.virt) return; let algo = false;
+    x.k.forEach(c => { const g = L.grupos.find(g => matchLimp(g.match, c)); if(g){ add(g, x.n, c.id); algo = true; } });
+    if(x.d && x.d.oleoso){ add(G.oleosos, x.n); algo = true; }
+    if(SOLIDOS.has(x.f) || FORM_SUSP.has(x.f) || x.k.some(c => c.t === "ai" && ["cobre", "mancozeb"].includes(c.id))){ add(G.solidos, x.n); algo = true; }
+    if(!algo) add(G.otros, x.n); });
+  (residuo || []).forEach(r => add(G[L.residuo_grupo[r]], "Aplicación anterior"));
+  // cultivos sensibles: se quitan los que toleran todos los activos de ese grupo que hay en el caldo (p. ej. soja con clorimurón)
+  hits.forEach(h => { const tol = h.g.tolera || {};
+    h.sens = h.g.sensibles.filter(c => h.residuo || !h.ais.length || !h.ais.every(id => (tol[id] || []).includes(c))); });
+  return [...hits.values()].sort((a, b) => b.g.nivel - a.g.nivel || L.grupos.indexOf(a.g) - L.grupos.indexOf(b.g));
+}
+const limpiadoresReg = () => D.productos.filter(p => p.lt && p.lt.conf !== "desinfectante" && !p.m);
+function limpiezaResumenHTML(ev){
+  const plan = limpiezaPlan(ev.xs, S.caldo.residuo_previo);
+  const top = plan[0], nv = top ? top.g.nivel : 0;
+  return `<div class="panel-h"><h3>Limpieza del equipo</h3><button class="btn sm" id="btnLimpieza">Ver la guía de limpieza</button></div>
+    ${top ? `<p>${pill(nv >= 3 ? 2 : nv >= 2 ? 1 : 0, nv >= 3 ? "Limpieza a fondo" : nv >= 2 ? "Limpieza cuidadosa" : "Triple enjuague")} <b>${esc(top.g.nombre)}</b>: ${esc(top.g.como)}</p>
+      ${plan.length > 1 ? `<p class="note" style="margin-top:6px">También: ${plan.slice(1).map(h => esc(h.g.nombre)).join("; ")}.</p>` : ""}`
+    : `<p class="note">Agregá productos al caldo o marcá el residuo de la aplicación anterior (panel 2) para ver cómo limpiar el equipo.</p>`}`;
+}
+let LIMP_SIG = load("limp_sig", "");
+function limpiezaHTML(eqId){
+  const L = D.limpieza, ev = evaluate(S), plan = limpiezaPlan(ev.xs, S.caldo.residuo_previo);
+  const q = typeof findEq === "function" ? findEq(eqId || S.equipo) : null, tanque = (q && q.tanque) || S.tanque || 2000;
+  const dr = q ? modoDe(q) === "drone" : (S.modo || "terrestre") === "drone";
+  const enj = tanque < 100 ? tanque : Math.round(tanque * 0.1);
+  const roles = []; plan.forEach(h => h.g.limpiadores.forEach(r => { if(!roles.includes(r)) roles.push(r); }));
+  if(!roles.length) roles.push("detergente");
+  const sens = LIMP_SIG ? plan.filter(h => h.sens.includes(LIMP_SIG)) : [];
+  const sirveReg = p => roles.some(r => (L.registrados_para[r] || []).includes(p.lt.tipo));
+  const regs = limpiadoresReg().sort((a, b) => sirveReg(b) - sirveReg(a) || (a.lt.conf === "posible") - (b.lt.conf === "posible") || a.n.localeCompare(b.n, "es"));
+  const dosis = r => { const g = L.genericos[r]; return g.L_100L ? `${fmt(g.L_100L * enj / 100, enj * g.L_100L / 100 < 1 ? 2 : 1)} ${g.unidad} para un enjuague de ${fmt(enj, 0)} L` : g.txt; };
+  return `<div class="stack"><span class="eyebrow">Equipo pulverizador</span><h2>Limpieza del equipo</h2>
+    <p class="lead">${plan.length ? `Según ${ev.xs.filter(x => !x.virt).length ? "el caldo armado" : ""}${ev.xs.filter(x => !x.virt).length && (S.caldo.residuo_previo || []).length ? " y " : ""}${(S.caldo.residuo_previo || []).length ? "el residuo de la aplicación anterior" : ""}${q ? ` · ${esc(q.nombre)}` : ""} · tanque de ${fmt(tanque, 0)} L.` : "Guía general: armá el caldo o marcá el residuo anterior para una guía según los productos."}</p>
+    <label class="f" style="max-width:320px">¿Qué vas a pulverizar después con este equipo?<select id="limpSig"><option value="">— no sé o lo mismo —</option>${Object.entries(D.cultivos).map(([k, n]) => `<option value="${k}"${k === LIMP_SIG ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+    ${sens.length ? `<p class="rnote"><b>Crítico:</b> ${esc(D.cultivos[LIMP_SIG])} es sensible a ${esc(sens.map(h => h.g.nombre.split(" (")[0].toLowerCase()).join(" y "))}. Hacer la limpieza completa con el limpiador indicado y probar el último enjuague sobre unas plantas antes de pulverizar.</p>` : ""}
+    ${plan.length ? `<div class="panel"><div class="panel-h"><h3>Qué hay que sacar</h3><span class="note">Del más exigente al más simple</span></div><ul class="funav">${plan.map(h => `<li class="l${h.g.nivel >= 3 ? 2 : h.g.nivel >= 2 ? 1 : 0}"><b>${esc(h.g.nombre)}</b> <span class="note">(${esc(h.prods.join(", "))})</span><br>${esc(h.g.como)}${h.sens.length ? `<br><span class="note">Cultivos sensibles a los restos: ${esc(h.sens.map(c => D.cultivos[c] || c).join(", "))}.</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+    <div class="panel"><div class="panel-h"><h3>Qué usar</h3><span class="note">En orden de preferencia para estos restos</span></div>
+      <ul class="funlist">${roles.map(r => { const g = L.genericos[r]; return `<li><b>${esc(g.nombre)}</b>${esc(dosis(r))}<br><span class="note">Sirve para: ${esc(g.sirve)}.</span>${g.ojo ? `<br><span class="note"><b>Ojo:</b> ${esc(g.ojo)}</span>` : ""}</li>`; }).join("")}</ul>
+      ${roles.includes("amoniaco") && roles.includes("lavandina") ? `<p class="rnote" style="margin-top:8px">Amoníaco y lavandina son alternativas: usar uno u otro, nunca juntos ni seguidos sin enjuagar con agua.</p>` : ""}
+      <h4 style="margin:12px 0 6px">Limpiadores registrados en el SENAVE</h4>
+      <div class="stack" style="gap:6px">${regs.map(p => { const sirve = sirveReg(p); return `<button class="prow limpreg" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)} · ${esc(p.pa)}</span><br><span class="s">${esc(p.lt.nota)}</span></span><span>${sirve ? `<span class="tag esp">Sirve para estos restos</span>` : ""}${p.lt.conf === "posible" ? `<span class="tag">Verificar la etiqueta</span>` : ""}</span></button>`; }).join("")}</div>
+      <p class="note" style="margin-top:6px">Ninguno publica la etiqueta en internet: la dosis y el modo de uso están en la etiqueta del envase. Los desinfectantes (cloro, amonio cuaternario) no sacan restos de herbicidas.</p></div>
+    <div class="panel"><div class="panel-h"><h3>Paso a paso</h3><span class="note">Triple enjuague</span></div>
+      <ol class="help-steps" style="margin-top:6px">${L.pasos.concat(dr ? L.pasos_drone : []).map(t => `<li><div>${esc(t)}</div></li>`).join("")}</ol></div>
+    <div class="panel"><div class="panel-h"><h3>Cuidado</h3></div><ul class="clean">${L.advertencias.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
+    ${(S.caldo.residuo_previo || []).length ? `<div class="row"><button class="btn pri" id="limpHecha">${S.medidas.includes("lavado") ? "Quitar la marca de limpieza" : "Ya limpié el equipo: marcarlo en el semáforo"}</button></div>` : ""}
+  </div>`;
+}
+function openLimpieza(eqId){
+  openDrawer(limpiezaHTML(eqId));
+  $("#limpSig").onchange = e => { LIMP_SIG = e.target.value; store("limp_sig", LIMP_SIG); const y = $("#drawerIn").scrollTop; openLimpieza(eqId); $("#drawerIn").scrollTop = y; };
+  document.querySelectorAll(".limpreg").forEach(b => b.onclick = () => openProduct(b.dataset.r));
+  const h = $("#limpHecha"); if(h) h.onclick = () => { const i = S.medidas.indexOf("lavado"); if(i >= 0) S.medidas.splice(i, 1); else S.medidas.push("lavado"); save(); closeDrawer(); renderCaldo(); toast(i >= 0 ? "Marca de limpieza quitada" : "Limpieza marcada: el semáforo la tiene en cuenta"); };
+}
+
 /* ---------- Ventana de detalle ---------- */
 function openDrawer(html){ const d=$("#drawer"); $("#drawerIn").innerHTML = `<div class="drawer-h"><span></span><button class="btn" id="dClose">Cerrar</button></div>`+html; d.hidden=false; $("#dClose").onclick=closeDrawer; $("#dClose").focus(); }
 function closeDrawer(){ $("#drawer").hidden=true; }
@@ -1188,7 +1278,7 @@ function problemHTML(p, ev){
   const fs = ev && ev.probs[p.id];
   const rules = [...new Set([...p.reglas_relacionadas, ...D.reglas.filter(r=>r.problemas.includes(p.id)).map(r=>r.id)])];
   return `<div class="stack">
-    <span class="eyebrow">${esc(D.categorias_problemas[p.categoria]?p.categoria.replace("_"," / "):"")} · ${esc(p.id)}</span>
+    <span class="eyebrow">${esc(CAT_PROB[p.categoria]||"")} · ${esc(p.id)}</span>
     <h2>${esc(p.nombre)}</h2>
     ${fs?`<div class="row">${pill(Math.max(...fs.map(f=>f.level)),"En tu mezcla: "+NIV[Math.max(...fs.map(f=>f.level))].nombre)}<span class="note">${fs.map(f=>esc(f.r.id)).join(", ")}</span></div>`:ev?`<div>${pill(null,"Sin alerta en tu mezcla")}</div>`:""}
     <p>${esc(p.que_es)}</p>
@@ -1241,13 +1331,15 @@ function productHTML(p){
   const eq = sig ? D.productos.filter(q=>q.r!==p.r && !q.m && inRubro(q) && q.k.filter(c=>c[0]!=="ady").map(c=>c[1]).sort().join("+")===sig) : [];
   const d=p.d||{};
   return `<div class="stack">
-    <span class="eyebrow">Registro SENAVE N° ${esc(p.r)} · ${esc(p.c)}</span>
+    <span class="eyebrow">Registro SENAVE N° ${esc(p.r)} · ${esc(claseTxt(p))}</span>
     <h2>${esc(p.n)}</h2>
     <div class="row">${famChip(p.f)}${rubBadges(p.s, p.s2)}${secRubro(p)?`<span class="tag">Uso secundario en ${esc(D.rubros[RUBRO].nombre)}</span>`:!inRubro(p)?`<span class="tag">Fuera del rubro ${esc(D.rubros[RUBRO].nombre)}</span>`:""}${p.m?`<span class="tag">Mantenimiento vencido: verificar si está en el mercado</span>`:""}${p.u!=="pulverizacion"?`<span class="tag">${p.u==="tratamiento_semillas"?"Tratamiento de semillas":"No va en caldo"}</span>`:""}</div>
-    ${p.nt?`<p class="rnote">${esc(p.nt)}</p>`:""}
+    ${p.nt?`<p class="rnote">${esc(p.nt)}</p>`:""}${p.cx?`<p class="note">${esc(p.cx)}</p>`:""}
+    ${p.lt?`<p class="rnote">${p.lt.conf==="posible"?"Posible limpiador de tanque: ":p.lt.conf==="desinfectante"?"Desinfectante: ":"Limpiador de tanque: "}${esc(p.lt.nota)} <button class="linkbtn" id="verLimpieza">Ver la guía de limpieza</button></p>`:""}
     <div class="row"><button class="btn pri" id="addFromDrawer">Agregar al caldo</button></div>
     <div class="tw"><table><tbody>
       <tr><th style="width:34%">Principio activo (SENAVE)</th><td>${esc(p.pa)}</td></tr>
+      <tr><th>Clase</th><td>${esc(claseTxt(p))}${p.c && NORM(p.c) !== NORM(claseTxt(p)) ? `<br><span class="note">Según el SENAVE: ${esc(p.c)}</span>` : ""}${p.fn ? `<br><span class="note">Función: ${esc(p.fn.map(f => D.catalogo.funciones[f] || f).join(", "))}</span>` : ""}</td></tr>
       <tr><th>Registrante</th><td>${esc(p.e)}</td></tr>
       <tr><th>Fabricante / origen</th><td>${esc(p.fa)} · ${esc(p.po)}</td></tr>
       <tr><th>Formulación (SENAVE)</th><td>${esc(p.fs)}</td></tr>
@@ -1276,7 +1368,7 @@ function productHTML(p){
     ${eq.length?`<h3>Mismo activo, otras marcas en ${esc(D.rubros[RUBRO].nombre)} (${eq.length})</h3><div class="tw"><table><thead><tr><th>Producto</th><th>Registrante</th><th>Formulación</th></tr></thead><tbody>${eq.slice(0,40).map(q=>`<tr><td>${esc(q.n)}</td><td>${esc(q.e)}</td><td>${famChip(q.f)}</td></tr>`).join("")}</tbody></table></div>${eq.length>40?`<p class="note">Y ${eq.length-40} más.</p>`:""}`:""}
   </div>`;
 }
-function openProduct(r){ const p=PROD[r]; openDrawer(productHTML(p)); $("#addFromDrawer").onclick=()=>{ S.items.push({r:p.r,dosis:null}); S.ejemplo=false; save(); closeDrawer(); setView("caldo"); };
+function openProduct(r){ const p=PROD[r]; openDrawer(productHTML(p)); const vl=$("#verLimpieza"); if(vl) vl.onclick=()=>{ closeDrawer(); openLimpieza(); }; $("#addFromDrawer").onclick=()=>{ S.items.push({r:p.r,dosis:null}); S.ejemplo=false; save(); closeDrawer(); setView("caldo"); };
   const reabrir = () => { const y = $("#drawerIn").scrollTop; renderAll(); openProduct(r); $("#drawerIn").scrollTop = y; };
   document.querySelectorAll("#rbEdit .chip").forEach(b => b.onclick = () => { const k = b.dataset.k;
     let s = RUBK.filter(x => x === k ? !p.s.includes(x) : p.s.includes(x)).join("");
@@ -1288,9 +1380,17 @@ function openProduct(r){ const p=PROD[r]; openDrawer(productHTML(p)); $("#addFro
 /* ---------- Productos ---------- */
 let PLIM = 80;
 /* Filtros del listado de productos (se recuerdan en este dispositivo) */
-const PF0 = {q:"", ord:"rec", alc:"todos", clase:"", obj:"", ai:"", gru:"", emp:"", orig:"", fam:"", tox:"", mant:"0"};
+const PF0 = {q:"", ord:"rec", alc:"todos", clase:"", obj:"", ai:"", gru:"", emp:"", orig:"", fam:"", tox:"", mant:"0", origen:"", uso:"", fun:""};
 let PF = Object.assign({}, PF0, load("pfiltros", {}), {q:""});
-const PFSEL = {pq:"q", pord:"ord", palc:"alc", pclase:"clase", pobj:"obj", pai:"ai", pgru:"gru", pemp:"emp", porig:"orig", pfam:"fam", ptox:"tox", pmant:"mant"};
+if(PF.clase && !D.catalogo.clases[PF.clase]) PF.clase = D.catalogo.clases[PF.clase.toLowerCase()] ? PF.clase.toLowerCase() : "";   // filtros guardados con el texto del SENAVE
+const PFSEL = {pq:"q", pord:"ord", palc:"alc", pclase:"clase", pobj:"obj", pai:"ai", pgru:"gru", pemp:"emp", porig:"orig", pfam:"fam", ptox:"tox", pmant:"mant", porigen:"origen", puso:"uso", pfun:"fun"};
+/* Clase normalizada del producto (con origen y forma de uso cuando no es lo habitual) */
+function claseTxt(p){
+  const t = (p.cl || []).map(k => D.catalogo.clases[k] || k);
+  if(p.or) t.push(D.catalogo.origenes[p.or].split(" (")[0].toLowerCase());
+  if(p.us) t.push(D.catalogo.usos[p.us].toLowerCase());
+  return t.join(" · ") || (p.c || "Sin clase");
+}
 const NORM = t => (t||"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 const TOXN = t => { t = (t||"").replace(/[.\s]/g,"").toUpperCase(); return t==="IV"?"IV":t==="III"?"III":t==="II"?"II":/^I(A|B)?$/.test(t)?"I":""; };
 const TOXORD = {IV:0, III:1, II:2, I:3, "":4};
@@ -1351,12 +1451,18 @@ function renderProductos(){
   const origs = Object.entries(vig.reduce((m,p) => (m[p.po] = (m[p.po]||0) + 1, m), {})).sort((a,b) => b[1]-a[1]);
   opts("#porig", origs.map(([o,n]) => [o, `${o || "Sin dato"} (${n})`]), PF.orig, "Todos");
   opts("#pfam", Object.entries(D.familias).map(([k,v]) => [k, v.nombre]), PF.fam, "Todas");
-  ["pq","pord","pclase","ptox","pmant"].forEach(id => { $("#"+id).value = PF[PFSEL[id]]; });
+  const cuenta = f => vig.reduce((m, p) => { [].concat(f(p)).forEach(k => { if(k) m[k] = (m[k] || 0) + 1; }); return m; }, {});
+  const cc = cuenta(p => p.cl || []), co = cuenta(p => p.or || "quimico"), cus = cuenta(p => p.us || "pulverizacion"), cf = cuenta(p => p.fn || []);
+  opts("#pclase", Object.entries(D.catalogo.clases).filter(([k]) => cc[k]).map(([k, t]) => [k, `${t} (${cc[k]})`]), PF.clase, "Todas");
+  opts("#porigen", Object.entries(D.catalogo.origenes).filter(([k]) => co[k]).map(([k, t]) => [k, `${t} (${co[k]})`]), PF.origen, "Todos");
+  opts("#puso", Object.entries(D.catalogo.usos).filter(([k]) => cus[k]).map(([k, t]) => [k, `${t} (${cus[k]})`]), PF.uso, "Todas");
+  opts("#pfun", Object.entries(D.catalogo.funciones).filter(([k]) => cf[k]).map(([k, t]) => [k, `${t} (${cf[k]})`]), PF.fun, "Todas");
+  ["pq","pord","ptox","pmant"].forEach(id => { $("#"+id).value = PF[PFSEL[id]]; });
   $("#pAmplio").checked = AMPLIO;
   // filtrar
   const q = NORM(PF.q.trim());
   const qAI = new Set(q.length >= 2 ? buscarAI(PF.q).filter(x => x.sc >= 50).slice(0, 8).map(x => x.a.id) : []);
-  const list = base.filter(p => (!PF.clase || (p.c||"").toUpperCase().includes(PF.clase)) && (!PF.fam || famOf(p.f)===PF.fam) && (!PF.emp || p.e===PF.emp) &&
+  const list = base.filter(p => (!PF.clase || (p.cl||[]).includes(PF.clase)) && (!PF.origen || (p.or||"quimico")===PF.origen) && (!PF.uso || (p.us||"pulverizacion")===PF.uso) && (!PF.fun || (p.fn||[]).includes(PF.fun)) && (!PF.fam || famOf(p.f)===PF.fam) && (!PF.emp || p.e===PF.emp) &&
     (PF.mant==="" || String(p.m)===PF.mant) && (!PF.orig || p.po===PF.orig) && (!PF.tox || TOXN(p.t)===PF.tox) &&
     (!PF.ai || aisDe(p).includes(PF.ai)) && (!PF.gru || aisDe(p).some(id => (AI[id]||{}).grupo === PF.gru)) &&
     (!PF.obj || aisDe(p).some(id => objR(objOf(id)).includes(PF.obj))) &&
@@ -1367,7 +1473,7 @@ function renderProductos(){
   // resumen de filtros activos
   const act = [];
   if(alc !== "todos") act.push(["alc", alc==="esp" ? `Solo específicos` : `También en ${D.rubros[otro].nombre}`]);
-  [["clase","pclase"],["obj","pobj"],["ai","pai"],["gru","pgru"],["emp","pemp"],["orig","porig"],["fam","pfam"],["tox","ptox"]].forEach(([k,id]) => { if(PF[k]) act.push([k, $("#"+id).selectedOptions[0]?.textContent || PF[k]]); });
+  [["clase","pclase"],["obj","pobj"],["origen","porigen"],["uso","puso"],["fun","pfun"],["ai","pai"],["gru","pgru"],["emp","pemp"],["orig","porig"],["fam","pfam"],["tox","ptox"]].forEach(([k,id]) => { if(PF[k]) act.push([k, $("#"+id).selectedOptions[0]?.textContent || PF[k]]); });
   if(PF.mant !== "0") act.push(["mant", PF.mant==="" ? "Con mantenimiento vencido" : "Solo vencidos"]);
   $("#pchips").innerHTML = act.map(([k,t]) => `<button class="chip" data-k="${k}" aria-pressed="true" title="Quitar filtro">${esc(t)} ✕</button>`).join("");
   $("#pchips").querySelectorAll(".chip").forEach(b => b.onclick = () => { PF[b.dataset.k] = PF0[b.dataset.k]; store("pfiltros", Object.assign({}, PF, {q:""})); renderProductos(); });
@@ -1377,7 +1483,7 @@ function renderProductos(){
   $("#plist").innerHTML = list.slice(0,PLIM).map(p=>{ const dif = difusion(p), u = mios[p.r];
     return `<button class="prow" data-r="${esc(p.r)}"><span><span class="t">${esc(p.n)}</span><br><span class="s">${esc(p.e)} · Reg. ${esc(p.r)}${p.ha?` · desde ${esc(p.ha.slice(0,4))}`:""}${p.po?` · ${esc(p.po)}`:""}</span>
       <span class="row" style="gap:4px;margin-top:3px">${esEsp(p)?`<span class="tag esp">Específico de ${esc(RN)}</span>`:""}${secRubro(p)?`<span class="tag">uso secundario</span>`:""}${u?`<span class="tag mio">Usado ${u} ${u===1?"vez":"veces"}</span>`:""}${dif>1?`<span class="tag" title="Marcas vigentes en ${esc(RN)} con la misma composición">${dif} marcas iguales</span>`:""}${TOXN(p.t)?`<span class="tag" title="Clase toxicológica">Tox. ${esc(TOXN(p.t)==="I"?p.t.replace(/\s/g,""):TOXN(p.t))}</span>`:""}</span></span>
-      <span class="pa s">${esc(paTxt(p))}<br>${esc(p.c)}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s, p.s2)}</span></button>`; }).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros. <button class="linkbtn" id="pclr2">Limpiar filtros</button></p>`;
+      <span class="pa s">${esc(paTxt(p))}<br>${esc(claseTxt(p))}</span><span class="row" style="gap:5px;justify-content:flex-end">${famChip(p.f)}${rubBadges(p.s, p.s2)}</span></button>`; }).join("") || `<p class="note" style="padding:12px">Sin productos con esos filtros. <button class="linkbtn" id="pclr2">Limpiar filtros</button></p>`;
   $("#plist").querySelectorAll(".prow").forEach(b=>b.onclick=()=>openProduct(b.dataset.r));
   if($("#pclr2")) $("#pclr2").onclick = () => $("#pclr").click();
   $("#pmore").hidden = list.length<=PLIM;
@@ -1445,7 +1551,7 @@ function renderProblemas(){
     <div class="cols">${NIV.map(n=>`<div class="row" style="align-items:flex-start;gap:10px;flex-wrap:nowrap">${lampHTML(n.n,true)}<div><b class="c${n.n}">${esc(n.nombre)} · ${esc(n.lema)}</b><p class="note">${esc(n.texto)}</p></div></div>`).join("")}</div>
     <p class="note" style="margin-top:10px">Nivel de partida: gravedad de la regla (baja = verde, media = amarillo, alta = naranja, crítica = rojo); las reglas cuya recomendación es “no mezclar” arrancan en rojo. Cada medida resta niveles (−1 o −2). El <b>piso</b> es el color mínimo: un antagonismo puede quedar en amarillo aunque se corrija, y una reacción peligrosa queda siempre en rojo.</p>
   </div>
-  ${cats.map(c=>`<div class="stack"><h3>${esc(c==="equipo_seguridad"?"Equipo, manejo y seguridad":c==="fisico"?"Físicos":c==="quimico"?"Químicos":"Biológicos")}</h3><p class="note">${esc(D.categorias_problemas[c])}</p>
+  ${cats.map(c=>`<div class="stack"><h3>${esc(CAT_PROB[c]||c)}</h3><p class="note">${esc(D.categorias_problemas[c])}</p>
     <div class="cols">${D.catalogo_problemas.filter(p=>p.categoria===c).map(p=>{ const fs=ev.probs[p.id]; const l=fs?Math.max(...fs.map(f=>f.level)):null; return `<button class="panel stack" data-p="${p.id}" style="gap:6px;text-align:left;cursor:pointer"><span class="row" style="justify-content:space-between"><span class="mono note">${p.id}</span>${pill(l, l==null?"Sin alerta":NIV[l].nombre)}</span><b>${esc(p.nombre)}</b><span class="note">${esc(p.que_es)}</span></button>`; }).join("")}</div></div>`).join("")}`;
   el.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>openProblem(b.dataset.p, ev));
 }
@@ -2842,7 +2948,7 @@ function helpHTML(){
     <li><div><b>Elegí tu rubro</b> al entrar (se cambia cuando quieras con el botón del encabezado): Agrícola, Hortícola y frutícola, Forestal, Pasturas, Silvopastoril o Granos almacenados. El buscador, el listado de productos y la rotación muestran solo lo de ese rubro: en Pasturas no aparecen los productos ni las opciones de rotación de soja o de hortalizas. Si buscás algo que no está, el buscador ofrece “Buscar en todos los rubros”.</div></li>
     <li><div><b>Agregá los productos</b> en “Armar caldo”: empezá a escribir y el buscador completa primero el <b>principio activo</b> (con el nombre como figura en el SENAVE, aunque lo escribas sin tildes o en inglés) y después los nombres comerciales. Al elegir un activo ves todos los productos que lo llevan. Cargá la dosis por hectárea (L/ha o kg/ha según la presentación).</div></li>
     <li><div><b>Elegí dónde vas a aplicar</b>: campo y lotes (se cargan en “Campos y lotes”). La superficie se suma sola y la app compara la mezcla con el historial de esos lotes para avisarte si repetís el mismo modo de acción.</div></li>
-    <li><div><b>Completá la aplicación, el agua y las condiciones ambientales</b>: volumen por hectárea, tanque, cuánto tiempo va a esperar el caldo, el análisis de agua y la temperatura, humedad y viento del momento, o tocá <b>“Pronóstico y mejor horario”</b> para traerlas del pronóstico en la ubicación de los lotes. La app calcula el Delta T y controla la Ley 3742/09. Lo que falte queda “a verificar”.</div></li>
+    <li><div><b>Completá la aplicación, el agua y las condiciones ambientales</b>: volumen por hectárea, tanque, cuánto tiempo va a esperar el caldo, el análisis de agua y la temperatura, humedad y viento del momento, o tocá <b>“Pronóstico y mejor horario”</b> para traerlas del pronóstico en la ubicación de los lotes. Marcá también el <b>estado de las plantas</b> (sequía, helada reciente, rocío, polvo, suelo anegado) y si hay <b>floración o colmenas cerca</b>. La app calcula el Delta T y controla la Ley 3742/09. Lo que falte queda “a verificar”.</div></li>
     <li><div><b>Leé el semáforo</b> y bajá el riesgo: cada alerta muestra las medidas que la corrigen. Al tocar una medida (por ejemplo “Antiespumante” o “Agitación constante”) se aplica y el color se recalcula. Al lado de la flecha ves el color que quedaría antes de tocarla.</div></li>
     <li><div><b>Revisá dosis y cantidades</b>: cargá la dosis de etiqueta (queda guardada) y la dosis a aplicar, o la cantidad que ponés en cada tanque. La app te da el total para la superficie, los tanques y el último tanque parcial.</div></li>
     <li><div><b>Prepará y registrá</b>: seguí el “Orden de carga”, hacé la prueba de jarra (elegí el tamaño del recipiente y la app calcula las cantidades) y, después de aplicar, tocá “Registrar aplicación”. Queda en el historial del lote, se ve en el mapa y se puede exportar a QGIS.</div></li>
@@ -2877,11 +2983,12 @@ function helpHTML(){
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
       <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo, siempre dentro del rubro elegido.</dd>
       <dt>Caso práctico</dt><dd>Un ejemplo agrícola completo: la mezcla tal como se planeó, qué medidas se aplicaron y cómo quedó. Se puede abrir en el armador para probarlo.</dd>
-      <dt>Productos</dt><dd>El listado del SENAVE con solo los productos del rubro elegido. Primero van los específicos del rubro. Se puede ordenar por nombre, difusión, uso propio, empresa, antigüedad del registro o toxicidad, y filtrar por clase, objetivo, principio activo, modo de acción, empresa, país de origen, presentación y toxicología. En “Mostrar” podés ver solo los específicos o los que sirven en tu rubro y también en otro. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
+      <dt>Productos</dt><dd>El listado del SENAVE con solo los productos del rubro elegido. Primero van los específicos del rubro. Se puede ordenar por nombre, difusión, uso propio, empresa, antigüedad del registro o toxicidad, y filtrar por clase, objetivo, principio activo, modo de acción, empresa, país de origen, presentación y toxicología. La <b>clase</b> está ordenada: el SENAVE la escribe de más de 130 formas distintas y la app la unifica (herbicida, insecticida, acaricida, fungicida, coadyuvante, limpiador de tanque…) y la cruza con la composición; cuando no coinciden lo avisa en la ficha. También se filtra por <b>origen</b> (químico, biológico, botánico), <b>forma de uso</b> (pulverización, semillas, cebo) y, en los coadyuvantes, por <b>función</b> (aceite, tensioactivo, organosiliconado, regulador de pH, antiespumante…). En “Mostrar” podés ver solo los específicos o los que sirven en tu rubro y también en otro. Al tocar un producto ves sus activos con la ficha química, la formulación, sus inertes típicos, la calidad esperada y las otras marcas con el mismo activo.</dd>
       <dt>Formulaciones e inertes</dt><dd>Qué lleva cada tipo de formulación además del activo, qué parámetros de calidad debe cumplir, qué problemas da una formulación de mala calidad y cómo hacer una prueba casera.</dd>
       <dt>Diagnóstico</dt><dd>Si ya preparaste el caldo y ves algo raro (grumos, cristales, espuma, capas, calor), elegí el síntoma: la app muestra las causas probables y qué hacer.</dd>
       <dt>Cultivos y carry-over</dt><dd>En “2 · Aplicación” elegí el cultivo actual, el momento de la aplicación (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo actual tolera cada herbicida y cuántos días hay que esperar para sembrar, también por aplicaciones anteriores registradas en los lotes.</dd>
-      <dt>Problemas y reglas</dt><dd>Los ${D.catalogo_problemas.length} problemas posibles del caldo, con su explicación, y las reglas del semáforo con su color de partida, su piso y las medidas que lo bajan.</dd>
+      <dt>Problemas y reglas</dt><dd>Los ${D.catalogo_problemas.length} problemas posibles, en cinco grupos: en el tanque (físicos y químicos), en la planta y la plaga, del equipo y el manejo, y <b>durante y después de la aplicación</b> (deriva, inversión térmica, volatilización, evaporación, lavado por lluvia, escurrimiento, cobertura, franjas, plantas estresadas, abejas, intoxicación del operario, agua y envases, residuos en cosecha, carry-over, productos ilegales y errores de dosis). Cada uno con su explicación, y las reglas del semáforo con su color de partida, su piso y las medidas que lo bajan.</dd>
+      <dt>Limpieza del equipo</dt><dd>Debajo de la prueba de jarra, en la ficha de cada equipo y en la de los limpiadores. Según los productos del caldo y el residuo de la aplicación anterior, dice qué restos hay que sacar (del más exigente al más simple), qué limpiador usar con la cantidad para tu tanque (amoníaco doméstico, lavandina, detergente o limpiador comercial), los limpiadores registrados en el SENAVE, el triple enjuague paso a paso y lo que nunca hay que hacer (lavandina con amoníaco o sulfato de amonio). Si elegís lo que vas a pulverizar después, avisa cuando ese cultivo es sensible a los restos.</dd>
     </dl>
   </div>
 
@@ -2930,9 +3037,10 @@ const TOUR = [
   {v:"caldo", sel:"#pCarry", t:"Cultivos y carry-over", d:"Si el cultivo actual tolera cada herbicida, cuántos días esperar para sembrar el siguiente y qué residuos dejan las aplicaciones anteriores del lote."},
   {v:"caldo", sel:"#pRot", t:"Rotación de modos de acción", d:"Cada activo con su grupo (HRAC, IRAC o FRAC). Si ese grupo ya se usó en los lotes elegidos, avisa y propone alternativas con otro modo de acción."},
   {v:"caldo", sel:"#pDosis", t:"Dosis y cantidades", d:"Dosis de etiqueta y dosis a aplicar, total para la superficie, cantidad por tanque y último tanque parcial."},
-  {v:"caldo", sel:"#pProblemas", t:`Los ${D.catalogo_problemas.length} problemas`, d:"El estado de cada problema posible del caldo (queso, cristales, espuma, antagonismo, fitotoxicidad…). Tocá uno para ver cómo se ve, cómo se previene y qué hacer si ya ocurrió."},
+  {v:"caldo", sel:"#pProblemas", t:`Los ${D.catalogo_problemas.length} problemas`, d:"El estado de cada problema posible, en el tanque y durante la aplicación (queso, cristales, espuma, antagonismo, deriva, inversión térmica, lavado, abejas…). Tocá uno para ver cómo se ve, cómo se previene y qué hacer si ya ocurrió."},
   {v:"caldo", sel:"#pOrden", t:"Orden de carga", d:"El orden en que van los productos según su presentación, cómo cargar cada uno y cuánto va por tanque."},
   {v:"caldo", sel:"#pJarra", t:"Prueba de jarra", d:"Elegí el tamaño del recipiente (de 250 mL a un balde de 20 L, u otro) y la app calcula cuánto poner de cada producto, en orden, para probar la mezcla antes de cargar el tanque."},
+  {v:"caldo", sel:"#pLimpieza", t:"Limpieza del equipo", d:"Qué restos deja el caldo, qué limpiador usar y cuánto para tu tanque, y el triple enjuague paso a paso."},
   {v:"caldo", sel:"#btnRegistrar", t:"Registrar la aplicación", d:"Después de aplicar, guardá fecha, lotes, productos, dosis y condiciones en el historial. “Guardar este caldo” guarda solo la receta para reusarla."},
   {v:"campos", sel:"#map", t:"Campos y lotes en el mapa", d:"Cada lote es un polígono con su forma real. Tocá un lote para ver su historial de pulverizaciones, editar sus límites o dividirlo. El color muestra la rotación, la última aplicación o el cultivo."},
   {v:"campos", sel:"#mTools", t:"Marcar los límites", d:"“Dibujar lote”: tocá el mapa en cada quiebre del borde. “Recorrer el borde con GPS”: caminá o andá en vehículo por el límite con el celular. “Mi ubicación” e “Ir a coordenadas” te llevan al lugar. Es opcional: un lote también puede cargarse sin mapa."},
@@ -3288,7 +3396,7 @@ function eqDetalleHTML(q){
   const m = modoDe(q), st = eqEstado(q), cals = q.calibraciones || [];
   const chk = m === "drone" ? EQD.check_drone : m === "avion" ? EQD.check_avion : m === "mochila" ? EQD.check_insp.filter((_, i) => [0, 5, 6, 7].includes(i)) : EQD.check_insp;
   const ins = q.inspeccion || {};
-  return `<div class="panel"><div class="panel-h"><h3>${esc(q.nombre)}</h3><span class="row" style="gap:6px">${pill(st.l, st.t)}<button class="btn sm" id="eqEdit">Editar datos</button><button class="btn sm" id="eqDup">Duplicar</button><button class="btn sm" id="eqDel">Borrar</button></span></div>${eqDatosTabla(q)}</div>
+  return `<div class="panel"><div class="panel-h"><h3>${esc(q.nombre)}</h3><span class="row" style="gap:6px">${pill(st.l, st.t)}<button class="btn sm" id="eqEdit">Editar datos</button><button class="btn sm" id="eqLimp">Guía de limpieza</button><button class="btn sm" id="eqDup">Duplicar</button><button class="btn sm" id="eqDel">Borrar</button></span></div>${eqDatosTabla(q)}</div>
     ${eqFunHTML(q)}
     <div class="panel"><div class="panel-h"><h3>Regulación</h3><span class="note">Qué pastilla, presión o velocidad usar para el volumen buscado</span></div><div id="eqReg">${eqRegHTML(q)}</div></div>
     <div class="panel"><div class="panel-h"><h3>Calibración a campo</h3><span class="note">Medí, compará y guardá</span></div><div id="eqCal">${eqCalHTML(q)}</div></div>
@@ -3465,6 +3573,7 @@ function calAereoRes(q){
 function bindEqDetalle(q){
   const m = modoDe(q), cw = CW[q.id];
   $("#eqEdit").onclick = () => openEqForm(q);
+  $("#eqLimp").onclick = () => openLimpieza(q.id);
   $("#eqDup").onclick = () => { const c = clone(q); c.id = uid("eq"); c.nombre = q.nombre + " (copia)"; c.ejemplo = false; c.calibraciones = []; c.inspeccion = null; EQUIPOS.push(c); saveEquipos(); EQ_SEL = c.id; renderEquipos(); };
   $("#eqDel").onclick = e => { const b = e.target; if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Seguro?"; return; } EQUIPOS = EQUIPOS.filter(x => x !== q); saveEquipos(); if(S.equipo === q.id){ S.equipo = null; save(); } EQ_SEL = null; renderEquipos(); toast("Equipo borrado"); };
   const regBind = () => { const r = $("#eqReg"); r.innerHTML = eqRegHTML(q); [["rgV", "rV"], ["rgv", "rv"], ["rgW", "rW"]].forEach(([id, k]) => { const el = $("#" + id); if(el) el.onchange = ev => { const x = nv(ev.target.value); if(x == null || x <= 0){ toast("Cargá un valor mayor que cero"); regBind(); return; } cw[k] = x; regBind(); }; }); };

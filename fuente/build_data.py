@@ -11,6 +11,9 @@ import config_equipos as EQ
 import config_silvo as SV
 import config_clima as CL
 from config_reglas_extra import REGLAS_EXTRA, SEMAFORO_EXTRA, MEDIDAS_EXTRA, PROBLEMAS_EXTRA
+import config_problemas as PB
+import config_catalogo as CAT
+import config_limpieza as LP
 import re
 
 _AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -110,6 +113,63 @@ def rubros_producto(p):
         if "AL" not in s: s.append("AL")
     return "".join(s), "".join(sec)
 
+_AI_CLASE = {a["id"]: a["clase"] for a in d["principios_activos"]}
+_BIO_CLASE = {"bio_bt": "insecticida", "bio_virus": "insecticida", "bio_hongo_entomo": "insecticida", "bio_macro": "insecticida",
+              "bio_trichoderma": "fungicida", "bio_bacillus": "fungicida", "bio_pseudomonas": "fungicida", "bio_consorcio": "fungicida"}
+_FAM = {"insecticida": "animal", "acaricida": "animal", "nematicida": "animal", "molusquicida": "animal", "rodenticida": "animal",
+        "fungicida": "enf", "bactericida": "enf"}
+_ORD = list(CAT.CLASES)
+catalogo_notas = collections.Counter()
+def catalogar(p):
+    """Clase normalizada, origen, forma de uso y función (coadyuvantes) de un producto comercial."""
+    cu = p.get("clase_uso") or ""
+    sen = CAT.clases_senave(cu)
+    comps = p["componentes"]
+    tiene_ai = any(c["tipo"] in ("ai", "bio", "bot") for c in comps)
+    comp = []
+    for c in comps:
+        x = None
+        if c["tipo"] == "ai": x = CAT.COMP_CLASE.get(c["id"]) or CAT.CLASE_ACTIVO.get(_AI_CLASE.get(c["id"]))
+        elif c["tipo"] == "bio" and not sen: x = _BIO_CLASE.get(c["id"])
+        elif c["tipo"] == "bot" and not sen: x = "insecticida"
+        elif c["tipo"] == "ady" and not tiene_ai and (not sen or "coadyuvante" in sen): x = CAT.COMP_CLASE.get(c["id"]) or "coadyuvante"
+        if x and x not in comp: comp.append(x)
+    cl = [k for k in _ORD if k in sen or k in comp]
+    cx = None
+    if sen and comp:
+        fs = {_FAM.get(k, k) for k in sen}
+        extra = [k for k in comp if _FAM.get(k, k) not in fs and k not in ("protector", "regulador")]
+        if extra:
+            cx = f"El SENAVE lo lista como {cu.strip()}; por su composición también es {', '.join(CAT.CLASES[k].lower() for k in extra)}."
+            catalogo_notas[cu.strip() + " -> " + ",".join(extra)] += 1
+    lt = CAT.LIMPIADORES.get(p["registro"])
+    if lt: cl = ["limpiador"]
+    elif p["registro"] in CAT.DESINFECTANTES: cl = ["desinfectante"]
+    if any(c["tipo"] == "bio" for c in comps): org = "biologico"
+    elif any(c["tipo"] == "bot" for c in comps): org = "botanico"
+    elif any(_AI_CLASE.get(c["id"]) == "feromona" for c in comps if c["tipo"] == "ai"): org = "semioquimico"
+    else: org = CAT.origen_senave(cu) or "quimico"
+    cun = CAT._nk(cu)
+    if p["uso"] == "tratamiento_semillas" or "SEMILLA" in cun or "CURASEM" in cun: us = "curasemillas"
+    elif p["formulacion"] == "GB": us = "cebo"
+    elif p["formulacion"] == "FUM": us = "fumigante"
+    elif p["uso"] == "no_caldo": us = "otro"
+    else: us = "pulverizacion"
+    fn = []
+    if lt: fn = ["limpiador"]
+    elif "coadyuvante" in cl or "desinfectante" in cl:
+        for c in comps:
+            f = CAT.ADY_FUNCION.get(c["id"]) if c["tipo"] == "ady" else ("desinfectante" if CAT.COMP_CLASE.get(c["id"]) == "desinfectante" else None)
+            if f and f not in fn: fn.append(f)
+    out = {"cl": cl}
+    if org != "quimico": out["or"] = org          # por defecto: químico
+    if us != "pulverizacion": out["us"] = us      # por defecto: pulverización
+    if fn: out["fn"] = fn
+    if cx: out["cx"] = cx
+    if lt: out["lt"] = lt
+    elif p["registro"] in CAT.DESINFECTANTES: out["lt"] = {"conf": "desinfectante", "tipo": "desinfectante", "nota": CAT.DESINFECTANTES[p["registro"]]}
+    return out
+
 def compact(p, mant):
     rp = rubros_producto(p)
     return {
@@ -122,9 +182,16 @@ def compact(p, mant):
         "d": p["derivado"], "s": rp[0], "s2": rp[1], "es": especificos(p, rp[0]), "m": mant,
         "ha": HAB.get(p["registro"]), **({"nt": CORR.NOTAS_PRODUCTO[p["registro"]]} if p["registro"] in CORR.NOTAS_PRODUCTO else {}),
         "v": p.get("vencimiento_registro"), "mh": p.get("mantenimiento_hasta"),
+        **catalogar(p),
     }
 
 prods = [compact(p, 0) for p in d["productos"]] + [compact(p, 1) for p in d["productos_mantenimiento_vencido"]]
+print("clases:", collections.Counter(k for p in prods for k in p["cl"]).most_common())
+print("sin clase:", [(p["r"], p["n"], p["c"]) for p in prods if not p["cl"]])
+print("origen:", collections.Counter(p.get("or", "quimico") for p in prods), "uso:", collections.Counter(p.get("us", "pulverizacion") for p in prods))
+print("clase SENAVE distinta de la composición:", catalogo_notas.most_common())
+for p in prods:
+    if "cx" in p: print("  ", p["r"], p["n"], "|", p["c"], "|", p["pa"][:90])
 # Silvopastoril (SP): productos de pasturas o forestal
 def _rs(x): return [x[i:i+2] for i in range(0, len(x), 2)]
 for p in prods:
@@ -197,27 +264,48 @@ sin_usos = [a["id"] for a in activos if a["id"] not in USOS]
 print("activos sin usos:", sin_usos)
 for k, v in USOS.items():
     for t in v[1].split(): assert t in OBJETIVOS, (k, t)
-catalogo = d["catalogo_problemas"] + PROBLEMAS_EXTRA
+catalogo = [dict(x) for x in d["catalogo_problemas"] + PROBLEMAS_EXTRA]
+for x in catalogo:
+    if x["id"] in PB.A_APLICACION: x["categoria"] = "aplicacion"
+    if x["id"] in PB.RENOMBRAR: x.update(PB.RENOMBRAR[x["id"]])
+catalogo += PB.PROBLEMAS_APLICACION
+assert len({x["id"] for x in catalogo}) == len(catalogo)
 diag = [dict(x) for x in d["diagnostico_por_sintoma"]]
 for x in diag:
     if x["sintoma"].startswith("Daño en cultivos vecinos") or x["sintoma"].startswith("Más deriva"):
         x["problemas"] = x["problemas"] + ["PR32"]
     if x["sintoma"].startswith("El caldo se ve normal"):
         x["problemas"] = x["problemas"] + ["PR33"]
-reglas = d["reglas_compatibilidad"] + REGLAS_EXTRA
-REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS); REGLAS_ALL.update(EQ.SEMAFORO_AEREAS); REGLAS_ALL.update(SV.SEMAFORO_SILVO); REGLAS_ALL.update(CL.SEMAFORO_CLIMA)
+    for k, v in PB.DIAG_AGREGAR.items():
+        if x["sintoma"].startswith(k): x["problemas"] = x["problemas"] + [i for i in v if i not in x["problemas"]]
+diag += PB.DIAG_NUEVOS
+ABEJAS_AI = sorted(a["id"] for a in activos if a["id"] not in PB.ABEJAS_EXCLUIR and any((a.get("modo_accion") or "").startswith(g + " ") or (a.get("modo_accion") or "") == g for g in PB.IRAC_ABEJAS))
+print("activos tóxicos para abejas:", len(ABEJAS_AI))
+ABEJAS_MEDIO_AI = sorted(a["id"] for a in activos if a["id"] not in ABEJAS_AI and a["id"] not in ("cadusafos", "sulfluramida") and (a["id"] in PB.ABEJAS_MEDIO_AI or any((a.get("modo_accion") or "").startswith(g + " ") for g in PB.IRAC_ABEJAS_MEDIO)))
+print("tóxicos para abejas (medio):", ABEJAS_MEDIO_AI)
+_aplic = json.loads(json.dumps(PB.REGLAS_APLIC).replace('"__ABEJAS__"', json.dumps(ABEJAS_AI)).replace('"__ABEJAS_MEDIO__"', json.dumps(ABEJAS_MEDIO_AI)))
+reglas = d["reglas_compatibilidad"] + REGLAS_EXTRA + _aplic
+reglas = [dict(r, problemas=PB.REGLAS_PROBLEMAS[r["id"]]) if r["id"] in PB.REGLAS_PROBLEMAS else r for r in reglas]
+_ids_prob = {x["id"] for x in catalogo}
+for r in reglas:
+    for i in r.get("problemas", []): assert i in _ids_prob, (r["id"], i)
+REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS); REGLAS_ALL.update(EQ.SEMAFORO_AEREAS); REGLAS_ALL.update(SV.SEMAFORO_SILVO); REGLAS_ALL.update(CL.SEMAFORO_CLIMA); REGLAS_ALL.update(PB.SEMAFORO_APLIC)
 for _id, v in CORR.SEMAFORO_MOD.items():
     assert _id in REGLAS_ALL, _id
     REGLAS_ALL[_id] = v
 MEDIDAS_ALL = {k: dict(v) for k, v in MEDIDAS.items()}; MEDIDAS_ALL.update(MEDIDAS_EXTRA)
 for _id, campos in CORR.MEDIDAS.items(): MEDIDAS_ALL[_id].update(campos)
-MEDIDAS_ALL.update(EQ.MEDIDAS_AEREAS); MEDIDAS_ALL.update(SV.MEDIDAS_SILVO)
+MEDIDAS_ALL.update(EQ.MEDIDAS_AEREAS); MEDIDAS_ALL.update(SV.MEDIDAS_SILVO); MEDIDAS_ALL.update(PB.MEDIDAS_APLIC)
 
 RUBROS = dict(list(RUBROS.items())[:4] + [("SP", SV.RUBRO_SP)] + list(RUBROS.items())[4:])
 AI_RUBROS_SP = {k: (v + " SP" if ("PA" in v.split() or "FO" in v.split()) else v) for k, v in AI_RUBROS.items()}
 DB = {
     "meta": {k: d["meta"][k] for k in ("titulo", "version", "fecha_generacion", "fuente_productos", "criterio_productos_actuales", "advertencias", "estadisticas", "fuentes_datos_quimicos")},
-    "categorias_problemas": d["categorias_problemas"],
+    "categorias_problemas": dict(d["categorias_problemas"], aplicacion=PB.CATEGORIA_APLICACION),
+    "estado_plantas": PB.ESTADO_PLANTAS,
+    "limpieza": {"genericos": LP.GENERICOS, "registrados_para": LP.REGISTRADOS_PARA, "grupos": LP.GRUPOS, "residuo_grupo": LP.RESIDUO_GRUPO,
+                 "pasos": LP.PASOS, "pasos_drone": LP.PASOS_DRONE, "advertencias": LP.ADVERTENCIAS},
+    "catalogo": {"clases": CAT.CLASES, "origenes": CAT.ORIGENES, "usos": CAT.USOS, "funciones": CAT.FUNCIONES_ADY},
     "catalogo_problemas": catalogo,
     "diagnostico": diag,
     "calidad_agua": d["calidad_agua"],
