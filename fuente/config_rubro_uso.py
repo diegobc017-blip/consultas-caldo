@@ -32,7 +32,7 @@ USO_RUBRO = {
   "PA": ("Hoja ancha de potrero (compuestas y leguminosas invasoras).", "hoja", "pri")},
  "dicamba": {
   "AG": ("Hoja ancha y buva en barbecho y en soja o algodón tolerantes; volátil, cuidar deriva.", "hoja", ""),
-  "PA": ("Malezas de hoja ancha y arbustivas en potreros.", "hoja len", "")},
+  "PA": ("Malezas de hoja ancha y arbustivas en potreros (las formulaciones para soja tolerante no).", "hoja len", "sec")},
  "diquat": {
   "AG": ("Desecación precosecha (soja, trigo) y control total de contacto.", "total", ""),
   "HO": ("Desecación de papa antes de cosechar y malezas entre filas, dirigido.", "total", "solo")},
@@ -64,9 +64,9 @@ USO_RUBRO = {
   "FO": ("Graminicida en plantaciones forestales jóvenes (pastos entre filas).", "gram", "solo sec")},
  "hexazinona": {
   "AG": ("Pre y postemergente en caña de azúcar.", "pre hoja gram", ""),
-  "FO": ("Pre y postemergente en plantaciones de eucalipto y pino.", "pre hoja gram len", "pri")},
+  "FO": ("Pre y postemergente en plantaciones de pino (el eucalipto es sensible). Los productos registrados son hexazinona + diurón para caña.", "pre hoja gram len", "sec")},
  "imazapir": {
-  "AG": ("Maíz y girasol tolerantes (Clearfield).", "gram hoja", ""),
+  "AG": ("Maíz, girasol y arroz tolerantes (Clearfield).", "gram hoja", ""),
   "FO": ("Control total y residual en preplantío forestal y áreas no cultivadas.", "total gram hoja len", "solo pri")},
  "isoxaflutol": {
   "AG": ("Preemergente de hoja ancha y gramíneas en maíz y caña.", "pre hoja gram", ""),
@@ -92,7 +92,7 @@ USO_RUBRO = {
   "HO": ("Preemergente en cebolla, ajo, zanahoria y tomate trasplantado.", "pre gram", "solo")},
  "picloram": {
   "PA": ("Leñosas y hoja ancha de potrero, con 2,4-D, fluroxipir o triclopir; muy persistente.", "len hoja", ""),
-  "AG": ("Hoja ancha en barbecho largo; respetar el carry-over (muy persistente).", "hoja", "")},
+  "AG": ("Hoja ancha en barbecho largo; respetar el carry-over (muy persistente).", "hoja", "sec")},
  "propaquizafop": {
   "AG": ("Graminicida post en soja.", "gram", ""),
   "HO": ("Graminicida post en hortalizas de hoja ancha.", "gram", "solo")},
@@ -113,8 +113,7 @@ USO_RUBRO = {
   "AG": ("Preemergente de hoja ancha y tiririca en soja y caña.", "pre hoja cip", ""),
   "FO": ("Preemergente en eucalipto.", "pre hoja cip", "solo")},
  "sulfometuron": {
-  "FO": ("Control total y preemergente en plantaciones forestales y áreas no cultivadas.", "pre total", ""),
-  "AG": ("Madurador de caña de azúcar a dosis baja.", "regu", "")},
+  "AG": ("Barbecho largo o corto con residual de hoja ancha (buva, rama negra), con clorimurón; solo soja STS.", "pre hoja", "")},
  "tebutiuron": {
   "AG": ("Preemergente en caña de azúcar.", "pre hoja", ""),
   "PA": ("Control de leñosas y arbustivas en potreros.", "len hoja", "pri")},
@@ -281,7 +280,7 @@ USO_RUBRO = {
  "deltametrina": {
   "AG": ("Lagartas y chinches.", "lag chin", ""),
   "HO": ("Lagartas en hortalizas.", "lag", "solo"),
-  "AL": ("Protección de granos almacenados (gorgojos, polillas), con o sin butóxido de piperonilo.", "alm", "pri")},
+  "AL": ("Protección de granos almacenados (Rhyzopertha, polillas), con o sin butóxido de piperonilo; solo los productos registrados para granos.", "alm", "sec")},
  "diafentiuron": {
   "HO": ("Mosca blanca y ácaros en hortalizas.", "mbla acar", ""),
   "AG": ("Mosca blanca y ácaros en algodón y soja.", "mbla acar", "")},
@@ -303,8 +302,7 @@ USO_RUBRO = {
   "HO": ("Trips, minadores y lagartas en hortalizas.", "trips minad lag", "")},
  "espinosad": {
   "HO": ("Trips, lagartas y mosca de la fruta.", "trips lag", "pri"),
-  "AG": ("Lagartas.", "lag", ""),
-  "AL": ("Protección de granos almacenados.", "alm", "solo")},
+  "AG": ("Lagartas.", "lag", "")},
  "espirotetramato": {
   "HO": ("Pulgones, mosca blanca y cochinillas en hortalizas y cítricos.", "pulg mbla cochi", ""),
   "AG": ("Mosca blanca en soja y algodón.", "mbla", "")},
@@ -331,7 +329,7 @@ USO_RUBRO = {
  "lambdacialotrina": {
   "AG": ("Lagartas y chinches en soja, maíz y algodón.", "lag chin", ""),
   "HO": ("Lagartas en hortalizas.", "lag", "solo"),
-  "PA": ("Salivazo, langostas e isocas de pasturas.", "chich lang lag", "solo sec")},
+  "PA": ("Salivazo, langostas e isocas de pasturas.", "chich lang lag", "sec")},
  "lufenuron": {
   "AG": ("Lagartas.", "lag", ""),
   "HO": ("Lagartas en hortalizas.", "lag", "solo")},
@@ -346,7 +344,7 @@ USO_RUBRO = {
   "AG": ("Lagartas.", "lag", ""),
   "HO": ("Lagartas en hortalizas.", "lag", "solo")},
  "permetrina": {
-  "AL": ("Plagas de depósitos y granos almacenados.", "alm", ""),
+  "AL": ("Plagas de depósitos y estructuras vacías (verificar la etiqueta).", "alm", "sec"),
   "HO": ("Lagartas en hortalizas.", "lag", "")},
  "pirimicarb": {
   "HO": ("Pulgones en hortalizas y frutales.", "pulg", ""),
@@ -369,7 +367,8 @@ USO_RUBRO = {
   "FO": ("Lagartas defoliadoras del eucalipto.", "lag", "solo sec")},
  "tiametoxam": {
   "AG": ("Chinches, pulgones y plagas iniciales (semillas).", "chin pulg suelo", ""),
-  "HO": ("Pulgones y mosca blanca en hortalizas.", "pulg mbla", "solo")},
+  "HO": ("Pulgones y mosca blanca en hortalizas.", "pulg mbla", "solo"),
+  "PA": ("Salivazo de las pasturas, con lambdacialotrina.", "chich", "sec")},
  "triflumuron": {
   "AG": ("Lagartas.", "lag", ""),
   "FO": ("Lagartas defoliadoras del eucalipto.", "lag", "solo sec")},
@@ -397,8 +396,7 @@ USO_RUBRO = {
   "AG": ("Defoliante de algodón.", "regu", ""),
   "HO": ("Cuaje y tamaño de frutos.", "regu", "")},
  "pbo": {
-  "AG": ("Sinergista de piretroides.", "sine", ""),
-  "AL": ("Sinergista de piretroides para granos almacenados.", "sine", "pri")},
+  "AL": ("Sinergista de piretroides para granos almacenados.", "sine", "")},
  "feromona": {
   "HO": ("Confusión sexual y monitoreo de plagas en frutales y hortalizas.", "lag", ""),
   "AG": ("Monitoreo y confusión sexual (picudo del algodón, lagartas).", "lag coleo", "")},
@@ -407,7 +405,7 @@ USO_RUBRO = {
  "bio_bt": {
   "AG": ("Lagartas (Bacillus thuringiensis).", "lag", ""),
   "HO": ("Lagartas en hortalizas (Bacillus thuringiensis).", "lag", ""),
-  "FO": ("Lagartas defoliadoras del eucalipto (Bacillus thuringiensis).", "lag", "pri")},
+  "FO": ("Lagartas defoliadoras del eucalipto (Bacillus thuringiensis).", "lag", "")},
  "bio_bacillus": {
   "AG": ("Enfermedades foliares y de suelo; nematodos (Bacillus).", "manch suelf nema", ""),
   "HO": ("Enfermedades foliares y de suelo; nematodos (Bacillus).", "manch suelf nema", "")},
@@ -436,3 +434,17 @@ USO_RUBRO = {
   "HO": ("Insectos y enfermedades varias (extractos botánicos).", "pulg manch", ""),
   "AG": ("Insectos y enfermedades varias (extractos botánicos).", "pulg manch", "")},
 }
+
+# Rubros fijados por producto (registro SENAVE) cuando la regla por activo no alcanza (revisión del 08/10/2026).
+RUBRO_PRODUCTO = {
+ # protectores de granos: registrados solo para granos almacenados
+ "214": "AL", "5342": "AL", "6509": "AL", "8631": "AL", "8956": "AL", "8971": "AL", "3252": "AL",
+ # dicamba y 2,4-D colina para soja y algodón tolerantes; baculovirus y tratamiento de semillas de soja
+ "5350": "AG", "6839": "AG", "6846": "AG", "7180": "AG", "5596": "AG", "8183": "AG", "6322": "AG", "2664": "AG",
+}
+# Hongos entomopatógenos y nematófagos: rubro según el organismo declarado
+HONGO_RUBROS = [("METARHIZIUM", "AG PA FO"), ("BEAUVERIA", "AG HO FO"), ("ISARIA", "AG HO"), ("CORDYCEPS", "AG HO"),
+                ("PURPUREOCILLIUM", "AG HO"), ("PAECILOMYCES", "AG HO"), ("POCHONIA", "AG HO"), ("TRICHODERMA", "AG HO FO")]
+# Silvopastoril: activos que no van (matan los árboles) y los que solo van en la fila de árboles antes de sembrar la pastura
+SP_EXCLUIR = ["imazapir", "hexazinona", "sulfometuron"]
+SP_SOLO_FILA = ["isoxaflutol", "sulfentrazona", "flumioxazin", "oxifluorfen", "simazina", "haloxifop"]

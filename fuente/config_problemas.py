@@ -176,6 +176,15 @@ PROBLEMAS_APLICACION = [
     ["Usar la calculadora de dosis de la app (por hectárea y por tanque)", "Medir con jarras graduadas", "Calibrar y verificar que sobre o falte lo esperado"],
     ["Registrar la dosis real aplicada y evaluar el efecto"],
     ["EQ01"]),
+ _p("PR50", "Grano húmedo, caliente o infestado (granos almacenados)",
+    "El grano se guarda o se trata con humedad alta, caliente o ya con insectos: el protector dura menos, se forman hongos y la plaga sigue.",
+    "Con más de 13 % de humedad el grano respira y se calienta; los insectos se multiplican rápido entre 25 y 32 °C. Mucha agua en el tratamiento (más de 1 a 1,5 L/t) sube la humedad. Un protector no controla una infestación ya instalada: para eso se fumiga.",
+    ["Grano caliente o con olor a humedad", "Insectos vivos al calar", "CO₂ alto en el silo (más de 1100 ppm)"],
+    ["Cosechar o guardar sin secar", "Sin aireación", "Tratar grano ya infestado", "Demasiado caldo por tonelada"],
+    "Todos los granos; el maíz y el trigo son los más atacados por gorgojos y taladrillo.",
+    ["Secar a 13 % o menos", "Airear para bajar la temperatura", "Limpiar y tratar el silo vacío antes de cargar", "Fumigar con fosfina si ya hay insectos y después proteger"],
+    ["Fumigar en silo hermético con los tiempos de la etiqueta", "Bajar la humedad y la temperatura con aireación"],
+    ["AL03", "AL04"]),
 ]
 
 # Reglas nuevas (aplicación) y su semáforo

@@ -5,7 +5,7 @@ from config_semaforo import NIVELES, MEDIDAS, REGLAS
 from config_inertes import FAMILIAS, FORM_FAMILIA, INERTES, IMPUREZAS, SENALES_MAL_ESTADO, PRUEBA_CALIDAD_CASERA
 from config_usos import OBJETIVOS, USOS, RESISTENCIA, PRINCIPIOS_ROTACION
 from config_carryover import CULTIVOS, GRAM, HOJA, CARRY, SELECT, MOMENTOS
-from config_rubro_uso import USO_RUBRO
+from config_rubro_uso import USO_RUBRO, RUBRO_PRODUCTO, HONGO_RUBROS, SP_EXCLUIR, SP_SOLO_FILA
 import config_correcciones as CORR
 import config_equipos as EQ
 import config_silvo as SV
@@ -14,6 +14,7 @@ from config_reglas_extra import REGLAS_EXTRA, SEMAFORO_EXTRA, MEDIDAS_EXTRA, PRO
 import config_problemas as PB
 import config_catalogo as CAT
 import config_limpieza as LP
+import config_rubro_app as RA
 import re
 
 _AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -72,12 +73,17 @@ def especificos(p, s):
     ids = list(dict.fromkeys(c["id"] for c in p["componentes"] if c["tipo"] != "ady"))
     if not ids: return ""
     rs = [s[i:i+2] for i in range(0, len(s), 2)]
-    return "".join(x for x in rs if len(rs) == 1 or any(_es_pri(i, x) for i in ids))
+    # una mezcla es específica de un rubro solo si TODOS sus activos tienen ese rubro como principal
+    return "".join(x for x in rs if len(rs) == 1 or all(_es_pri(i, x) for i in ids))
 def rubros_producto(p):
     """Devuelve (rubros propios, rubros de uso secundario) del producto comercial."""
+    if p["registro"] in RUBRO_PRODUCTO:
+        return RUBRO_PRODUCTO[p["registro"]], ""
     comps = [c for c in p["componentes"] if c["tipo"] != "ady"]
     if not comps:
-        return "AGHOFOPA", ""
+        # sin activo: coadyuvantes y limpiadores sirven en todos; aceites y jabones insecticidas, en agrícola y hortícola
+        cs = CAT.clases_senave(p.get("clase_uso") or "")
+        return ("AGHO" if cs and not any(k in cs for k in ("coadyuvante", "limpiador", "desinfectante")) else "AGHOFOPA"), ""
     ids = list(dict.fromkeys(c["id"] for c in comps))
     n = len(ids)
     sets, union, crudo = [], [], []
@@ -99,6 +105,13 @@ def rubros_producto(p):
         mx = max(cnt.values()); s = [x for x in union if cnt.get(x) == mx]
     if p["uso"] == "tratamiento_semillas" and "AG" in s:
         s = ["AG"]
+    # hongos entomopatógenos: según el organismo
+    if any(c["id"] == "bio_hongo_entomo" for c in comps):
+        org = " ".join((c.get("nombre_original") or "") for c in comps).upper()
+        perm = set(x for k, r in HONGO_RUBROS if k in org for x in r.split())
+        if perm:
+            s2 = [x for x in s if x in perm]
+            s = s2 or [sorted(perm)[0]]
     # uso secundario: algún activo solo se usa dirigido en ese rubro
     sec = [x for x in s if any(_es_sec(i, x) for i in ids)]
     s = [x for x in s if x not in sec]
@@ -185,6 +198,11 @@ def compact(p, mant):
         **catalogar(p),
     }
 
+# curasemillas que el listado marca como pulverización (FS, WS, DS, ES o "semilla" en el nombre)
+import re as _re
+for _p in d["productos"] + d["productos_mantenimiento_vencido"]:
+    if _p["uso"] == "pulverizacion" and _re.search(r"\b(FS|WS|DS|ES)\b|SEED|SEMILLA", _p["producto"].upper()):
+        _p["uso"] = "tratamiento_semillas"
 prods = [compact(p, 0) for p in d["productos"]] + [compact(p, 1) for p in d["productos_mantenimiento_vencido"]]
 print("clases:", collections.Counter(k for p in prods for k in p["cl"]).most_common())
 print("sin clase:", [(p["r"], p["n"], p["c"]) for p in prods if not p["cl"]])
@@ -196,7 +214,10 @@ for p in prods:
 def _rs(x): return [x[i:i+2] for i in range(0, len(x), 2)]
 for p in prods:
     s_, s2_, es_ = _rs(p["s"]), _rs(p["s2"]), _rs(p["es"])
-    if "PA" in s_ or "FO" in s_: s_.append("SP")
+    _ids = {c[1] for c in p["k"]}
+    if _ids & set(SP_EXCLUIR): pass
+    elif _ids & set(SP_SOLO_FILA) and ("PA" in s_ or "FO" in s_ or "PA" in s2_ or "FO" in s2_): s2_.append("SP")
+    elif "PA" in s_ or "FO" in s_: s_.append("SP")
     elif "PA" in s2_ or "FO" in s2_: s2_.append("SP")
     if ("PA" in es_ or "FO" in es_) and "SP" in s_: es_.append("SP")
     p["s"], p["s2"], p["es"] = "".join(s_), "".join(s2_), "".join(es_)
@@ -235,6 +256,9 @@ for a in activos + biologicos + botanicos:
         nom = {"PA": "Pasturas", "FO": "Forestal"}
         a["ur"]["SP"] = {"u": " ".join(f"{nom[k]}: {e['u']}" for k, e in partes), "o": list(dict.fromkeys(o for k, e in partes for o in e["o"]))}
         if all(e.get("sec") for k, e in partes): a["ur"]["SP"]["sec"] = 1
+        if a["id"] in SP_EXCLUIR: del a["ur"]["SP"]
+        elif a["id"] in SP_SOLO_FILA:
+            a["ur"]["SP"] = {"u": "Solo en la fila de árboles, en la implantación y antes de sembrar la pastura: también controla los pastos de la pastura.", "o": a["ur"]["SP"]["o"], "sec": 1}
 # variantes de escritura (listado SENAVE, nombres en inglés, errores comunes) para el buscador
 import unicodedata
 def _nk(t):
@@ -284,12 +308,12 @@ print("activos tóxicos para abejas:", len(ABEJAS_AI))
 ABEJAS_MEDIO_AI = sorted(a["id"] for a in activos if a["id"] not in ABEJAS_AI and a["id"] not in ("cadusafos", "sulfluramida") and (a["id"] in PB.ABEJAS_MEDIO_AI or any((a.get("modo_accion") or "").startswith(g + " ") for g in PB.IRAC_ABEJAS_MEDIO)))
 print("tóxicos para abejas (medio):", ABEJAS_MEDIO_AI)
 _aplic = json.loads(json.dumps(PB.REGLAS_APLIC).replace('"__ABEJAS__"', json.dumps(ABEJAS_AI)).replace('"__ABEJAS_MEDIO__"', json.dumps(ABEJAS_MEDIO_AI)))
-reglas = d["reglas_compatibilidad"] + REGLAS_EXTRA + _aplic
+reglas = d["reglas_compatibilidad"] + REGLAS_EXTRA + _aplic + RA.REGLAS_AL
 reglas = [dict(r, problemas=PB.REGLAS_PROBLEMAS[r["id"]]) if r["id"] in PB.REGLAS_PROBLEMAS else r for r in reglas]
 _ids_prob = {x["id"] for x in catalogo}
 for r in reglas:
     for i in r.get("problemas", []): assert i in _ids_prob, (r["id"], i)
-REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS); REGLAS_ALL.update(EQ.SEMAFORO_AEREAS); REGLAS_ALL.update(SV.SEMAFORO_SILVO); REGLAS_ALL.update(CL.SEMAFORO_CLIMA); REGLAS_ALL.update(PB.SEMAFORO_APLIC)
+REGLAS_ALL = dict(REGLAS); REGLAS_ALL.update(SEMAFORO_EXTRA); REGLAS_ALL.update(CORR.SEMAFORO_NUEVAS); REGLAS_ALL.update(EQ.SEMAFORO_AEREAS); REGLAS_ALL.update(SV.SEMAFORO_SILVO); REGLAS_ALL.update(CL.SEMAFORO_CLIMA); REGLAS_ALL.update(PB.SEMAFORO_APLIC); REGLAS_ALL.update(RA.SEMAFORO_AL)
 for _id, v in CORR.SEMAFORO_MOD.items():
     assert _id in REGLAS_ALL, _id
     REGLAS_ALL[_id] = v
@@ -298,11 +322,19 @@ for _id, campos in CORR.MEDIDAS.items(): MEDIDAS_ALL[_id].update(campos)
 MEDIDAS_ALL.update(EQ.MEDIDAS_AEREAS); MEDIDAS_ALL.update(SV.MEDIDAS_SILVO); MEDIDAS_ALL.update(PB.MEDIDAS_APLIC)
 
 RUBROS = dict(list(RUBROS.items())[:4] + [("SP", SV.RUBRO_SP)] + list(RUBROS.items())[4:])
-AI_RUBROS_SP = {k: (v + " SP" if ("PA" in v.split() or "FO" in v.split()) else v) for k, v in AI_RUBROS.items()}
+AI_RUBROS_SP = {k: (v + " SP" if ("PA" in v.split() or "FO" in v.split()) and k not in SP_EXCLUIR else v) for k, v in AI_RUBROS.items()}
+_PR = {p["r"]: p for p in prods}
+for _r, _e in RA.EJEMPLOS.items():
+    for _reg, _d in _e["items"]:
+        assert _reg in _PR and not _PR[_reg]["m"] and _r in _PR[_reg]["s"], ("ejemplo", _r, _reg)
 DB = {
     "meta": {k: d["meta"][k] for k in ("titulo", "version", "fecha_generacion", "fuente_productos", "criterio_productos_actuales", "advertencias", "estadisticas", "fuentes_datos_quimicos")},
     "categorias_problemas": dict(d["categorias_problemas"], aplicacion=PB.CATEGORIA_APLICACION),
     "estado_plantas": PB.ESTADO_PLANTAS,
+    "rubro_app": {"cult": RA.CULT_RUBRO, "sin_select": RA.SIN_SELECT, "modos": RA.MODOS_RUBRO, "tipos": RA.TIPOS_RUBRO, "vol": RA.VOL_RUBRO,
+                  "ejemplos": RA.EJEMPLOS, "casos": RA.CASOS, "granos": RA.GRANOS, "humedad_max": RA.HUMEDAD_MAX, "protectores": RA.PROTECTORES,
+                  "estructuras": RA.ESTRUCTURAS, "fumigacion": RA.FUMIGACION, "grano_cuidados": RA.GRANO_CUIDADOS, "claves_campo": RA.CLAVES_CAMPO,
+                  "tipos_nuevos": RA.TIPOS_NUEVOS, "trv": RA.TRV_INDICE},
     "limpieza": {"genericos": LP.GENERICOS, "registrados_para": LP.REGISTRADOS_PARA, "grupos": LP.GRUPOS, "residuo_grupo": LP.RESIDUO_GRUPO,
                  "pasos": LP.PASOS, "pasos_drone": LP.PASOS_DRONE, "advertencias": LP.ADVERTENCIAS},
     "catalogo": {"clases": CAT.CLASES, "origenes": CAT.ORIGENES, "usos": CAT.USOS, "funciones": CAT.FUNCIONES_ADY},
@@ -323,7 +355,7 @@ DB = {
     "niveles": NIVELES, "medidas": MEDIDAS_ALL, "semaforo": REGLAS_ALL,
     "objetivos": OBJETIVOS, "resistencia": RESISTENCIA, "principios_rotacion": PRINCIPIOS_ROTACION,
     "familias": FAMILIAS, "form_familia": FORM_FAMILIA, "inertes": INERTES, "impurezas": IMPUREZAS,
-    "cultivos": CULTIVOS, "cult_gram": GRAM, "cult_hoja": HOJA, "carry": CARRY, "select": SELECT, "momentos": MOMENTOS,
+    "cultivos": dict(CULTIVOS, **RA.CULTIVOS_NUEVOS), "cult_gram": GRAM, "cult_hoja": HOJA, "carry": CARRY, "select": SELECT, "momentos": MOMENTOS,
     "equipos": {"pastillas": EQ.PASTILLAS_ISO, "tipos_pastilla": EQ.TIPOS_PASTILLA, "clases_gota": EQ.CLASES_GOTA,
                 "gota_producto": EQ.GOTA_PRODUCTO, "gota_drone": EQ.GOTA_DRONE, "gota_clima": EQ.GOTA_CLIMA, "altura_barra": EQ.ALTURA_BARRA,
                 "tolerancias": EQ.TOLERANCIAS, "tiempo_colecta": EQ.TIEMPO_COLECTA, "check_insp": EQ.CHECKLIST_INSPECCION,

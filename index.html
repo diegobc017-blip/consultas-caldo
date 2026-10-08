@@ -389,7 +389,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
 <main>
   <!-- ARMAR CALDO -->
   <section class="view" id="v-caldo">
-    <div class="ex-banner" id="exBanner"><span><b>Ejemplo cargado:</b> barbecho químico pre-siembra de soja (caso práctico). Reemplazá los productos, dosis y datos de agua por los tuyos.</span><span class="row"><button class="btn sm" id="btnTourBanner">Ver cómo funciona</button><button class="btn sm" id="btnVaciar">Empezar de cero</button></span></div>
+    <div class="ex-banner" id="exBanner"><span><b>Ejemplo cargado:</b> <span id="exTitulo">barbecho químico pre-siembra de soja</span> (caso práctico). Reemplazá los productos, dosis y datos de agua por los tuyos.</span><span class="row"><button class="btn sm" id="btnTourBanner">Ver cómo funciona</button><button class="btn sm" id="btnVaciar">Empezar de cero</button></span></div>
     <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn pri sm" id="btnRegistrar">Registrar aplicación</button><button class="btn sm" id="btnGuardar">Guardar este caldo</button><button class="btn sm" id="btnMisCaldos">Mis caldos</button></div>
     <div class="grid2">
       <div class="stack">
@@ -401,7 +401,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
           </div>
           <div class="mix" id="mix" style="margin-top:12px"></div>
           <div class="row" style="margin-top:10px">
-            <span class="note">Fertilizantes foliares:</span>
+            <span class="note" id="fertLbl">Fertilizantes foliares:</span>
             <div class="row" id="fertChips" style="gap:5px"></div>
           </div>
         </div>
@@ -410,12 +410,12 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
           <div class="stack" style="gap:8px;margin-bottom:10px">
             <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
               <label class="f">Aplicar en el campo<select id="apCampo"></select></label>
-              <label class="f">Superficie a aplicar (ha)<input id="sup" type="number" min="0" step="0.5"></label>
+              <label class="f"><span id="supLbl">Superficie a aplicar (ha)</span><input id="sup" type="number" min="0" step="0.5"></label>
             </div>
             <div class="row" id="apLotes" style="gap:5px"></div>
             <div class="row" style="gap:6px"><button class="btn sm" id="apMapBtn" type="button">Elegir lotes en el mapa</button><span class="note" id="apMapNote"></span></div>
             <div id="apMap" class="map ap-map" hidden></div>
-            <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+            <div class="fields" id="cuRow" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
               <label class="f">Cultivo actual<select id="cuAct"></select></label>
               <label class="f">Momento de la aplicación<select id="cuMom"></select></label>
               <label class="f" id="cuSiAW">Siembra del cultivo actual<input id="cuSiA" type="date"></label>
@@ -428,8 +428,9 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
             <div class="f"><span>Modo de aplicación</span><div class="row" id="apModo" style="gap:5px"></div></div>
           </div>
           <p class="note" id="apEqNote" style="margin:-4px 0 10px"></p>
+          <p class="note" id="volHint" style="margin:-4px 0 10px"></p>
           <div class="fields">
-            <label class="f">Volumen (L/ha)<input id="vol" type="number" min="1" step="1"></label>
+            <label class="f"><span id="volLbl">Volumen (L/ha)</span><input id="vol" type="number" min="0" step="any"></label>
             <label class="f"><span id="tanqueLbl">Tanque (L)</span><input id="tanque" type="number" min="1" step="1"></label>
             <label class="f">Horas en el tanque<input id="horas" type="number" min="0" step="0.5"></label>
             <label class="f">Agitación<select id="agitacion"><option value="normal">Moderada</option><option value="excesiva">Excesiva</option></select></label>
@@ -459,6 +460,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
             <label class="f">Cloro (mg/L)<input id="a_cloro_mg_L" type="number" step="0.1"></label>
           </div>
         </div>
+        <div class="panel" id="pGrano" hidden></div>
         <div class="panel" id="pAmb">
           <div class="panel-h"><h3>4 · Condiciones ambientales</h3><span class="row" style="gap:6px"><span id="ambEstado"></span><button class="btn sm" id="btnAhora">Ahora</button><button class="btn sm pri" id="btnClima" aria-pressed="false">Pronóstico y mejor horario</button></span></div>
           <p class="note" id="ambFuente" style="margin:-4px 0 8px" hidden></p>
@@ -608,6 +610,15 @@ const EJEMPLO = {
 };
 const MEDIDAS_EJEMPLO = ["ams","antiesp","antideriva","orden","predil","agua70","agit","inmed","vol","jarra","dosisplena","pastillas"];
 const clone = o => JSON.parse(JSON.stringify(o));
+/* Caldo de ejemplo de cada rubro (el agrícola es el caso práctico original) */
+function ejemploRubro(r){
+  const e = D.rubro_app.ejemplos[r];
+  if(!e) return migrar(clone(EJEMPLO));
+  return migrar({items: e.items.map(([reg, d]) => ({r: reg, dosis: d})), vol: e.vol, tanque: e.tanque, sup: e.sup, supManual: true, modo: e.modo, equipo: null,
+    agua: Object.assign({}, e.agua), caldo: Object.assign({}, e.caldo), medidas: [], ejemplo: true, ap: {campo: null, lotes: []},
+    cult: e.cult ? {actual: e.cult.actual, momento: e.cult.momento, siguiente: e.cult.siguiente || null, siembra_act: e.cult.siembra_act_dias ? fechaMas(e.cult.siembra_act_dias) : null, siembra_sig: null} : undefined,
+    silvo: e.silvo ? Object.assign({}, e.silvo) : undefined, grano: e.grano ? Object.assign({}, e.grano) : undefined});
+}
 function migrar(s){
   s = s || clone(EJEMPLO);
   s.caldo = Object.assign({horas_en_tanque:null,temperatura_ambiente_C:null,HR:null,viento_kmh:null,rafagas_kmh:null,viento_dir:null,nubosidad:null,lluvia_h:null,fecha_hora:null,bolsas_hidrosolubles:false,fertilizantes:[],estado_plantas:[],abejas:null,portador:"agua",residuo_previo:[],agitacion:"normal",pH_final:null}, s.caldo||{});
@@ -618,6 +629,8 @@ function migrar(s){
   s.vuelo = Object.assign({vel:null, faja:null, alt:null, gota:null, chk:[]}, s.vuelo||{});
   if(s.sup===undefined) s.sup = null;
   s.medidas = s.medidas||[]; s.items = s.items||[]; s.agua = s.agua||{};
+  s.grano = Object.assign({tipo:"maiz", humedad:null, temp:null, th:null}, s.grano||{});
+  s.turbo = s.turbo || {};
   return s;
 }
 let S = migrar(load("estado", null));
@@ -649,7 +662,7 @@ function effInputs(state){
   const agua = {...state.agua}, caldo = {...state.caldo}; let vol = state.vol;
   const m = new Set(state.medidas);
   const modo = state.modo || "terrestre", aereo = modo === "drone" || modo === "avion";
-  if(m.has("vol") && !aereo) vol = Math.max(vol||0,100);
+  if(m.has("vol") && !aereo && RUBRO !== "AL" && modo !== "granos") vol = Math.max(vol||0,100);
   if(m.has("inmed") && caldo.horas_en_tanque!=null) caldo.horas_en_tanque = Math.min(caldo.horas_en_tanque,0.5);
   if(m.has("aguatemp") && agua.temperatura_C!=null && (agua.temperatura_C<15||agua.temperatura_C>25)) agua.temperatura_C = 20;
   if(m.has("agualimpia") && agua.turbidez) agua.turbidez = "baja";
@@ -657,7 +670,7 @@ function effInputs(state){
   if(m.has("horario") && caldo.temperatura_ambiente_C!=null) caldo.temperatura_ambiente_C = Math.min(caldo.temperatura_ambiente_C,25);
   if(m.has("agitmod")) caldo.agitacion = "normal";
   if(agua.dureza_ppm_CaCO3==null && agua.Ca!=null) agua.dureza_ppm_CaCO3 = 2.497*agua.Ca + 4.118*(agua.Mg||0);
-  return {agua,caldo,vol,modo,aereo,cult:state.cult||{}};
+  return {agua,caldo,vol,modo,aereo,cult:state.cult||{},grano:state.grano||{}};
 }
 const PROPMAP = {efecto_pH:"efecto_pH_caldo"};
 function propVals(x, key){ // valores de una propiedad en el producto y sus componentes
@@ -714,6 +727,9 @@ function caldoDerived(xs, inp){
     dron_sin_agitador: inp.modo === "drone" && !((typeof findEq === "function" && findEq(S.equipo) || {}).funciones || []).includes("agitador"),
     lluvia_margen_h: inp.caldo.lluvia_h != null && inp.caldo.lluvia_h !== "" ? inp.caldo.lluvia_h - lavadoCaldo(xs, inp.cult && inp.cult.momento).h : null,
     momento: inp.cult && inp.cult.momento || null,
+    grano: RUBRO === "AL" ? (inp.grano.tipo || null) : null,
+    humedad_grano: RUBRO === "AL" ? nvN(inp.grano.humedad) : null,
+    litros_t: RUBRO === "AL" ? inp.vol : null,
     hora_inversion: (h => h == null ? null : h < 10 || h >= 17)(inp.caldo.fecha_hora ? +String(inp.caldo.fecha_hora).slice(11, 13) : null),
     tox_alta: xs.some(x => x.p && /^I(\.?[AB])?$/.test((x.p.t || "").replace(/\s/g, ""))),
     registro_vencido: xs.some(x => x.p && x.p.m),
@@ -769,7 +785,9 @@ function levelOf(rid, act){
   return {base, piso, level: Math.max(piso, base-red), meds};
 }
 /* Datos que, si faltan, hacen que la regla no aplique (en vez de quedar "a verificar") */
-const SIN_DATO_NO_APLICA = new Set(["lluvia_h", "lluvia_margen_h", "hora_inversion", "equipo_sin_calibrar", "momento"]);
+const SIN_DATO_NO_APLICA = new Set(["lluvia_h", "lluvia_margen_h", "hora_inversion", "equipo_sin_calibrar", "momento", "grano", "humedad_grano", "litros_t"]);
+const CLAVES_CAMPO = new Set(D.rubro_app.claves_campo);
+const nvN = v => v === "" || v == null || isNaN(+v) ? null : +v;
 function evaluate(state){
   const items = state.items.concat(virtualItems(state));
   const xs = items.map(expandItem).filter(Boolean);
@@ -780,7 +798,9 @@ function evaluate(state){
   // estabilizadores presentes en productos reales también cuentan como medida activa
   xs.forEach(x=>{ if(x.virt) return; x.k.forEach(c=>{ for(const [m,def] of Object.entries(MED)) if(def.comp && def.comp===c.id) act.add(m); }); });
   const fired=[], pending=[];
+  const AL = RUBRO === "AL";
   for(const r of D.reglas){
+    if(AL && Object.keys(r.condiciones.caldo||{}).some(k => CLAVES_CAMPO.has(k))) continue;   // granos: sin reglas de clima, volumen por ha ni cultivo
     const sels = r.condiciones.presentes||[];
     if(sels.length && !assign(sels, xs)) continue;
     const missing=[]; let ok=true;
@@ -856,7 +876,14 @@ function renderRubros(){
   $("#rubroIco").innerHTML = rubIcon(RUBRO); $("#rubroNom").textContent = D.rubros[RUBRO].nombre;
 }
 function elegirRubro(k){
+  const antesAL = RUBRO === "AL", ahoraAL = k === "AL";
   RUBRO = k; store("rubro", k); if($("#gateRem").checked) store("rubro_fijo", true); else store("rubro_fijo", false);
+  if(antesAL !== ahoraAL){
+    // granos almacenados trabaja por tonelada: su caldo se guarda aparte del de campo (por hectárea)
+    store(antesAL ? "estado_al" : "estado_campo", S);
+    const otro = load(ahoraAL ? "estado_al" : "estado_campo", null);
+    S = otro && !otro.ejemplo ? migrar(otro) : ejemploRubro(k); save(); fillInputs();
+  } else if(S.ejemplo){ S = ejemploRubro(k); save(); fillInputs(); }
   $("#gate").hidden = true; document.body.style.overflow = ""; renderRubros(); renderAll();
 }
 function abrirGate(inicio){
@@ -899,7 +926,10 @@ function fillInputs(){
   AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.value = S.agua[k] ?? ""; });
   $("#exBanner").hidden = !S.ejemplo;
   $("#ambFuente").hidden = !S.caldo.fuente_clima; $("#ambFuente").textContent = S.caldo.fuente_clima ? `Condiciones del pronóstico (${S.caldo.fuente_clima}) para el ${fmtFH(S.caldo.fecha_hora)}. Si cambiás un dato, pasa a ser tuyo.` : "";
-  const opts = (v, vacio) => `<option value="">${vacio}</option>` + Object.entries(D.cultivos).map(([k, n]) => `<option value="${k}"${k === v ? " selected" : ""}>${esc(n)}</option>`).join("");
+  const propios = D.rubro_app.cult[RUBRO] || Object.keys(D.cultivos);
+  const o1 = (k, v) => `<option value="${k}"${k === v ? " selected" : ""}>${esc(D.cultivos[k])}</option>`;
+  const opts = (v, vacio) => `<option value="">${vacio}</option>` + propios.map(k => o1(k, v)).join("") +
+    `<optgroup label="Otros rubros">${Object.keys(D.cultivos).filter(k => !propios.includes(k)).map(k => o1(k, v)).join("")}</optgroup>`;
   $("#cuAct").innerHTML = opts(S.cult.actual, "— elegir —"); $("#cuSig").innerHTML = opts(S.cult.siguiente, "— elegir —");
   $("#cuMom").innerHTML = Object.entries(D.momentos).map(([k, n]) => `<option value="${k}"${k === S.cult.momento ? " selected" : ""}>${esc(n)}</option>`).join("");
   $("#cuSiA").value = S.cult.siembra_act || ""; $("#cuSiS").value = S.cult.siembra_sig || "";
@@ -1058,6 +1088,16 @@ function alertHTML(f, ev, pending){
 function renderCaldo(){
   // lista de productos
   const ev = evaluate(S);
+  // organización por rubro: granos almacenados usa toneladas y no tiene clima de campo ni cultivo
+  const AL = esAL(), mo = S.modo || "terrestre";
+  $("#pAmb").hidden = AL; $("#pGrano").hidden = !AL; if(AL) renderGrano();
+  $("#fertLbl").parentElement.hidden = AL;
+  $("#exTitulo").textContent = RUBRO === "AG" || !D.rubro_app.casos[RUBRO] ? "barbecho químico pre-siembra de soja" : D.rubro_app.casos[RUBRO].titulo.toLowerCase();
+  $("#q").placeholder = "Principio activo o producto (ej.: " + ({AG: "glifosato, lambda, Tordon", HO: "mancozeb, abamectina, Coragen", FO: "isoxaflutol, glifosato, cebo hormiguicida", PA: "picloram, 2,4-D, metsulfurón", SP: "2,4-D, fluroxipir, metsulfurón", AL: "pirimifos, deltametrina, fosfina"}[RUBRO] || "glifosato") + ")";
+  $("#cuRow").hidden = AL;
+  $("#supLbl").textContent = UB().area; $("#volLbl").textContent = AL ? "Caldo por tonelada (L/t)" : "Volumen (L/ha)";
+  const vr = (D.rubro_app.vol[RUBRO] || {})[mo];
+  $("#volHint").textContent = vr ? `Referencia en ${D.rubros[RUBRO].nombre}, ${MODOS[mo].toLowerCase()}: ${vr[2]}.${vr[1] && S.vol != null && (S.vol < vr[0] || S.vol > vr[1]) ? " El volumen cargado está fuera de ese rango." : ""}` : "";
   const mix=$("#mix");
   if(!S.items.length && !virtualItems(S).length){ mix.innerHTML=`<p class="note">Agregá productos con el buscador. Se listan los del rubro ${esc(D.rubros[RUBRO].nombre)}.</p>`; }
   else mix.innerHTML = ev.xs.map((x,i)=>{
@@ -1066,11 +1106,11 @@ function renderCaldo(){
     const offR = x.p && secRubro(x.p) ? `<span class="tag">uso secundario en el rubro</span>` : x.p && !inRubro(x.p) ? `<span class="tag">fuera del rubro</span>` : "";
     const warn = x.p && x.p.u!=="pulverizacion" ? `<span class="tag" style="color:var(--s3)">${x.p.u==="tratamiento_semillas"?"tratamiento de semillas":"no va en caldo"}</span>`:"";
     const mant = x.p && x.p.m ? `<span class="tag">mantenimiento vencido</span>`:"";
-    const dose = isV ? `<span class="note">${x.virt==="ams"||x.virt==="antiesp"?"ver orden de carga":"según etiqueta"}</span>` : `<span class="dose"><input type="number" step="0.005" min="0" value="${x.dosis??""}" data-i="${i}" aria-label="Dosis de ${esc(x.n)}"><span class="note">${u}/ha</span></span>`;
+    const dose = isV ? `<span class="note">${x.virt==="ams"||x.virt==="antiesp"?"ver orden de carga":"según etiqueta"}</span>` : `<span class="dose"><input type="number" step="any" min="0" value="${dVer(x.dosis)??""}" data-i="${i}" aria-label="Dosis de ${esc(x.n)}"><span class="note">${UB().dU(x)}</span></span>`;
     return `<div class="mi${isV?" virt":""}"><span class="nm">${esc(x.n)}</span>${dose}<button class="x" data-i="${i}" data-virt="${x.virt||""}" aria-label="Quitar ${esc(x.n)}">×</button>
       <span class="sub">${famChip(x.f)}<span>Paso ${x.d.paso_orden_carga??"—"}</span>${x.p?`<span>${esc(paTxt(x.p))}</span><span>· ${esc(x.e)}</span>`:`<span>${esc(x.e)}</span>`}${offR}${warn}${mant}</span></div>`;
   }).join("");
-  mix.querySelectorAll(".dose input").forEach(inp=>inp.oninput=e=>{ const x=ev.xs[+e.target.dataset.i]; x.item.dosis=numOrNull(e.target.value); S.ejemplo=false; save(); renderResult(); });
+  mix.querySelectorAll(".dose input").forEach(inp=>inp.oninput=e=>{ const x=ev.xs[+e.target.dataset.i]; x.item.dosis=dGuardar(numOrNull(e.target.value)); S.ejemplo=false; save(); renderResult(); });
   mix.querySelectorAll(".x").forEach(b=>b.onclick=()=>{ const x=ev.xs[+b.dataset.i];
     if(x.virt==="fert"){ S.caldo.fertilizantes=[]; } else if(x.virt){ S.medidas=S.medidas.filter(m=>m!==x.virt); } else { S.items.splice(S.items.indexOf(x.item),1); }
     S.ejemplo=false; save(); renderCaldo(); });
@@ -1091,7 +1131,7 @@ function renderResult(){
   const worst = ev.fired.filter(f=>f.level===o);
   const ph = phTarget(ev), tmax = maxTime(ev), ams = amsKg1000(ev.inp.agua);
   const allMeds = Object.entries(MED);
-  const pract = allMeds.filter(([k,v])=>v.tipo!=="producto" && !(ev.inp.aereo && k==="vol") && !(!ev.inp.aereo && (k==="premezcla")));
+  const pract = allMeds.filter(([k,v])=>v.tipo!=="producto" && !((ev.inp.aereo || esAL()) && k==="vol") && !(!ev.inp.aereo && (k==="premezcla")));
   const prodM = allMeds.filter(([k,v])=>v.tipo==="producto");
   el.innerHTML = `
   <div class="panel" id="pSemaforo">
@@ -1109,8 +1149,8 @@ function renderResult(){
       <div><b>${ph?esc(ph.txt):"—"}</b><span>pH objetivo${ph&&ph.conflict?" (los productos piden pH opuestos)":""}</span></div>
       <div><b>${tmax!=null?fmt(tmax,1)+" h":"—"}</b><span>Tiempo máximo en el tanque</span></div>
       <div><b>${ev.cal.concentracion_formulados_pct!=null?fmt(ev.cal.concentracion_formulados_pct,1)+" %":"—"}</b><span>Formulados en el caldo (alerta > 5 %)</span></div>
-      <div><b>${ev.inp.vol?fmt(ev.inp.vol,0)+" L/ha":"—"}</b><span>Volumen${S.medidas.includes("vol")&&S.vol<100?" (ajustado)":""}</span></div>
-      <div><b>${S.tanque&&ev.inp.vol?fmt(S.tanque/ev.inp.vol,1)+" ha":"—"}</b><span>Hectáreas por ${ev.inp.aereo?"carga":"tanque"}</span></div>
+      <div><b>${ev.inp.vol?fmt(ev.inp.vol,ev.inp.vol<10?2:0)+" "+UB().vol:"—"}</b><span>Volumen${S.medidas.includes("vol")&&S.vol<100&&!esAL()?" (ajustado)":""}</span></div>
+      <div><b>${S.tanque&&ev.inp.vol?fmt(S.tanque/ev.inp.vol,1)+" "+UB().u:"—"}</b><span>${esAL()?"Toneladas por tanque":"Hectáreas por "+(ev.inp.aereo?"carga":"tanque")}</span></div>
       ${ev.inp.aereo&&ev.inp.vol?`<div><b>${fmt(100/ev.inp.vol,1)} veces</b><span>Más concentrado que a 100 L/ha</span></div>`:""}
       <div><b>${ams!=null?fmt(ams,2)+" kg":"—"}</b><span>AMS mínimo por 1000 L (por cationes)</span></div>
     </div>
@@ -1123,7 +1163,7 @@ function renderResult(){
     ${ev.pending.length?`<details class="box" style="margin-top:12px"><summary>A verificar (${ev.pending.length}): faltan datos de agua o del caldo</summary><div class="in alerts">${ev.pending.map(f=>alertHTML(f,ev,true)).join("")}</div></details>`:""}
   </div>
   <div class="panel" id="pRot">${rotacionHTML(ev)}</div>
-  <div class="panel" id="pCarry">${carryHTML(ev)}</div>
+  ${esAL() ? `<div class="panel" id="pFumig">${fumigacionHTML(ev)}</div>` : `<div class="panel" id="pCarry">${carryHTML(ev)}</div>`}
   <div class="panel" id="pDosis">${dosisHTML(ev)}</div>
   <div class="panel" id="pProblemas">
     <div class="panel-h"><h3>Los ${D.catalogo_problemas.length} problemas del caldo y de la aplicación</h3><span class="note">Color de cada problema con las medidas aplicadas</span></div>
@@ -1557,7 +1597,34 @@ function renderProblemas(){
 }
 
 /* ---------- Caso práctico ---------- */
+/* Caso práctico de cada rubro: el caldo de ejemplo, su semáforo y el resultado con las medidas que sugiere la app */
+function renderCasoRubro(){
+  const el = $("#v-caso"), C = D.rubro_app.casos[RUBRO], RN = D.rubros[RUBRO].nombre;
+  const base = ejemploRubro(RUBRO), e0 = evaluate(base);
+  const meds = [...new Set(e0.fired.flatMap(f => f.meds.map(m => m.m)))].filter(m => MED[m] && !(m === "vol" && (esAL() || base.vol >= 100)));
+  const fin = clone(base); fin.medidas = meds; const e1 = evaluate(fin);
+  const lv = l => l == null ? 0 : l, U = UB();
+  const sv = S; S = base; const filas = e0.xs.filter(x => x.p).map(x => `<tr><td><b>${esc(x.n)}</b><br><span class="note">${esc(x.e)} · Reg. ${esc(x.p.r)}</span></td><td>${esc(paTxt(x.p))}</td><td>${famChip(x.f)}</td><td class="n">${fmt(dVer(x.dosis), 3)} ${U.dU(x)}</td><td class="n">${base.vol ? fmt(x.dosis * base.tanque / base.vol, 2) + " " + unitOf(x) : "—"}</td></tr>`).join("");
+  const orden = orderTable(e1); S = sv;
+  const changes = e0.fired.map(f => { const g = e1.fired.find(z => z.r.id === f.r.id); const usadas = f.meds.filter(m => meds.includes(m.m)).map(m => MED[m.m].nombre);
+    return `<tr><td><span class="mono note">${esc(f.r.id)}</span> ${esc(f.r.titulo)}</td><td>${pill(f.level)}</td><td>${usadas.length ? esc(usadas.join(" + ")) : `<span class="note">Sin medida que lo baje</span>`}</td><td>${g ? pill(g.level) : pill(0, "Resuelto")}</td></tr>`; }).join("");
+  el.innerHTML = `<div class="story"><span class="eyebrow">Caso práctico · ${esc(RN)}</span><h2>${esc(C.titulo)}</h2>
+    <p class="lead">${esc(C.escenario)}</p>
+    <div class="case-step"><span class="cn">1</span><div class="stack"><h3>La mezcla</h3>
+      <div class="tw"><table><thead><tr><th>Producto (listado SENAVE)</th><th>Activo</th><th>Presentación</th><th style="text-align:right">Dosis</th><th style="text-align:right">Por tanque de ${fmt(base.tanque, 0)} L</th></tr></thead><tbody>${filas}</tbody></table></div>
+      <p class="note">${esAL() ? `${fmt(base.vol, 2)} L de caldo por tonelada, ${fmt(base.sup, 0)} t de grano.` : `${fmt(base.vol, 0)} L/ha, ${fmt(base.sup, 0)} ha.`} Dosis dentro del rango de etiqueta de la misma formulación en la región; verificá siempre la etiqueta del producto que compraste.</p></div></div>
+    <div class="case-step"><span class="cn">2</span><div class="stack"><h3>Semáforo tal como se planeó</h3>
+      <div class="verdict">${lampHTML(lv(e0.overall))}<div><div class="vt c${lv(e0.overall)}">${e0.overall == null ? "Sin alertas" : NIV[e0.overall].nombre + " · " + NIV[e0.overall].lema}</div><p class="note">${e0.fired.length} alertas${e0.pending.length ? ` y ${e0.pending.length} a verificar` : ""}</p></div></div></div></div>
+    <div class="case-step"><span class="cn">3</span><div class="stack"><h3>Medidas que sugiere la app</h3>
+      ${changes ? `<div class="tw"><table><thead><tr><th>Problema</th><th>Antes</th><th>Medidas</th><th>Después</th></tr></thead><tbody>${changes}</tbody></table></div>` : `<p class="note">No hay alertas para corregir.</p>`}
+      <div class="verdict">${lampHTML(lv(e1.overall))}<div><div class="vt c${lv(e1.overall)}">${e1.overall == null ? "Sin alertas" : NIV[e1.overall].nombre + " · " + NIV[e1.overall].lema}</div><p>${e1.overall == null ? "" : esc(NIV[e1.overall].texto)}</p></div></div></div></div>
+    <div class="case-step"><span class="cn">4</span><div class="stack"><h3>Lo que hay que tener en cuenta</h3><ul class="clean">${C.puntos.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div></div>
+    <div class="case-step"><span class="cn">5</span><div class="stack"><h3>Orden de carga</h3>${orden}
+      <div class="row"><button class="btn pri" id="openCase">Abrir este caso en el armador</button></div></div></div></div>`;
+  $("#openCase").onclick = () => { S = clone(fin); S.ejemplo = true; save(); fillInputs(); setView("caldo"); };
+}
 function renderCaso(){
+  if(RUBRO !== "AG" && D.rubro_app.casos[RUBRO]) return renderCasoRubro();
   const el=$("#v-caso");
   const base = clone(EJEMPLO); base.medidas=[];
   const fin = clone(EJEMPLO); fin.medidas=MEDIDAS_EJEMPLO.slice();
@@ -1852,28 +1919,28 @@ function dosisHTML(ev){
     const tot = d != null && sup ? d * sup : null;
     const ult = d != null && ultimo && vol ? d * ultimo / vol : null;
     return `<tr><td><b>${esc(x.n)}</b>${e.ej ? ` <span class="tag">etiqueta de ejemplo</span>` : ""}</td>
-      <td><span class="row" style="gap:4px;flex-wrap:nowrap"><input class="din" type="number" step="0.005" min="0" data-r="${esc(x.p.r)}" data-k="min" value="${e.min ?? ""}" aria-label="Dosis mínima de etiqueta">–<input class="din" type="number" step="0.005" min="0" data-r="${esc(x.p.r)}" data-k="max" value="${e.max ?? ""}" aria-label="Dosis máxima de etiqueta"></span></td>
-      <td><input class="din" type="number" step="0.005" min="0" data-i="${ev.xs.indexOf(x)}" data-k="dosis" value="${d ?? ""}" aria-label="Dosis a aplicar"> <span class="note">${u}/ha</span></td>
+      <td><span class="row" style="gap:4px;flex-wrap:nowrap"><input class="din" type="number" step="any" min="0" data-r="${esc(x.p.r)}" data-k="min" value="${dVer(e.min) ?? ""}" aria-label="Dosis mínima de etiqueta">–<input class="din" type="number" step="any" min="0" data-r="${esc(x.p.r)}" data-k="max" value="${dVer(e.max) ?? ""}" aria-label="Dosis máxima de etiqueta"></span></td>
+      <td><input class="din" type="number" step="any" min="0" data-i="${ev.xs.indexOf(x)}" data-k="dosis" value="${dVer(d) ?? ""}" aria-label="Dosis a aplicar"> <span class="note">${UB().dU(x)}</span></td>
       <td>${est}</td><td class="note">${ia}</td>
       <td><input class="din" type="number" step="0.01" min="0" data-i="${ev.xs.indexOf(x)}" data-k="tanque" value="${pt != null ? +pt.toFixed(3) : ""}" aria-label="Cantidad por tanque"> <span class="note">${u}</span></td>
       <td class="n">${tot != null ? fmt(tot, 2) + " " + u : "—"}${ult != null && nT > 1 && Math.abs(ultimo - tq) > 1 ? `<br><span class="note">último tanque: ${fmt(ult, 2)} ${u}</span>` : ""}</td></tr>`;
   }).join("");
   return `<div class="panel-h"><h3>Dosis y cantidades</h3><span class="note">La dosis de etiqueta se guarda por producto en este dispositivo</span></div>
     <div class="kv" style="margin-bottom:10px">
-      <div><b>${sup ? fmt(sup, 1) + " ha" : "—"}</b><span>Superficie a aplicar</span></div>
+      <div><b>${sup ? fmt(sup, 1) + " " + UB().u : "—"}</b><span>${esAL() ? "Granos a tratar" : "Superficie a aplicar"}</span></div>
       <div><b>${totalCaldo ? fmt(totalCaldo, 0) + " L" : "—"}</b><span>Caldo total</span></div>
       <div><b>${nT ? (nT === 1 ? "1 tanque" : (Math.abs(ultimo - tq) < 1 ? nT + " tanques llenos" : (nT - 1) + " llenos + 1 de " + fmt(ultimo, 0) + " L")) : "—"}</b><span>Tanques de ${fmt(tq, 0)} L</span></div>
-      <div><b>${hat ? fmt(hat, 1) + " ha" : "—"}</b><span>Hectáreas por tanque</span></div>
+      <div><b>${hat ? fmt(hat, 1) + " " + UB().u : "—"}</b><span>${UB().porT}</span></div>
     </div>
-    ${reales.length ? `<div class="tw"><table class="dtab"><thead><tr><th>Producto</th><th>Etiqueta (mín–máx)</th><th>Dosis a aplicar</th><th>Estado</th><th>Activo por ha</th><th>Por tanque</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="note" style="margin-top:6px">Podés cargar la dosis por hectárea o la cantidad que vas a poner en cada tanque: la otra se calcula sola. El activo por hectárea es aproximado (concentración declarada × dosis).</p>` : `<p class="note">Agregá productos para calcular las cantidades.</p>`}`;
+    ${reales.length ? `<div class="tw"><table class="dtab"><thead><tr><th>Producto</th><th>Etiqueta (mín–máx)</th><th>Dosis a aplicar</th><th>Estado</th><th>Activo por ${UB().u}</th><th>Por tanque</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note" style="margin-top:6px">Podés cargar la dosis por ${esAL() ? "tonelada (mL o g por t)" : "hectárea"} o la cantidad que vas a poner en cada tanque: la otra se calcula sola. El activo por ${esAL() ? "tonelada" : "hectárea"} es aproximado (concentración declarada × dosis).</p>` : `<p class="note">Agregá productos para calcular las cantidades.</p>`}`;
 }
 function bindDosis(ev){
   document.querySelectorAll("#pDosis .din").forEach(inp => inp.addEventListener("change", e => {
     const el = e.target, v = numOrNull(el.value), k = el.dataset.k;
-    if(k === "min" || k === "max"){ const r = el.dataset.r; ETQ[r] = Object.assign({}, ETQ[r] || {}, {[k]: v, ej: false}); saveEtq(); }
+    if(k === "min" || k === "max"){ const r = el.dataset.r; ETQ[r] = Object.assign({}, ETQ[r] || {}, {[k]: dGuardar(v), ej: false}); saveEtq(); }
     else { const x = ev.xs[+el.dataset.i]; const hat = haPorTanque(ev);
-      if(k === "dosis") x.item.dosis = v; else if(k === "tanque" && hat) x.item.dosis = v != null ? v / hat : null;
+      if(k === "dosis") x.item.dosis = dGuardar(v); else if(k === "tanque" && hat) x.item.dosis = v != null ? v / hat : null;
       S.ejemplo = false; save(); }
     renderCaldo();
   }));
@@ -1998,6 +2065,7 @@ function chequeoSiembra(aiId, crop, aplic, siembra){
 function chequeoSelect(aiId, crop, momento){
   if(!crop) return {level: null, txt: "Elegí el cultivo"};
   if(momento === "desecacion") return {level: 0, txt: "Desecación: respetar el intervalo hasta cosecha de la etiqueta"};
+  if(D.rubro_app.sin_select.includes(crop)) return {level: 1, txt: `Sin datos de selectividad en ${nomCult(crop)}: solo dirigido entre filas y según la etiqueta`};
   const s = D.select[aiId];
   if(!s) return {level: 1, txt: "Sin dato de selectividad: ver la etiqueta"};
   const lista = s[momento];
@@ -2074,7 +2142,7 @@ function openRegistrar(){
       <div><span class="eyebrow">Lotes aplicados</span><div class="row" id="rLotes" style="gap:6px;margin-top:6px">${formHTML(c0)}</div></div>
       <label class="f">Observaciones<textarea id="rObs" rows="2"></textarea></label>
       <div class="panel"><h4>Resumen</h4><ul class="clean note" style="margin-top:6px">
-        ${reales.map(x => `<li>${esc(x.n)}: ${x.dosis != null ? fmt(x.dosis, 3) + " " + unitOf(x) + "/ha" : "sin dosis"}</li>`).join("")}
+        ${reales.map(x => `<li>${esc(x.n)}: ${x.dosis != null ? fmt(dVer(x.dosis), 3) + " " + UB().dU(x) : "sin dosis"}</li>`).join("")}
         <li>${esc(MODOS[S.modo || "terrestre"])}${findEq(S.equipo) ? " con " + esc(findEq(S.equipo).nombre) : ""}</li>
         <li>Volumen ${fmt(ev.inp.vol, 0)} L/ha · semáforo ${ev.overall == null ? "sin alertas" : NIV[ev.overall].nombre.toLowerCase()}</li>
         <li>Condiciones: ${S.caldo.temperatura_ambiente_C ?? "—"} °C · HR ${S.caldo.HR ?? "—"} % · viento ${S.caldo.viento_kmh ?? "—"} km/h ${esc(S.caldo.viento_dir || "")} · Delta T ${a.dT ?? "—"}</li>
@@ -2975,9 +3043,11 @@ function helpHTML(){
 
   <div class="panel"><h3>Las demás pestañas</h3>
     <dl class="faq">
+      <dt>Organización por rubro</dt><dd>Cada rubro tiene lo suyo: sus productos, sus cultivos (en Hortícola, hortalizas, cítricos y frutales; en Silvopastoril, pasturas y eucalipto), sus modos de aplicación y tipos de equipo (turboatomizador para frutales y cítricos, manguera con pistola para aplicaciones localizadas en pasturas y forestal, aplicador de granos en cinta o rosca), un volumen de referencia junto al campo de volumen, y su propio caldo de ejemplo y caso práctico: tomate con mancozeb y clorantraniliprol, eucalipto antes de plantar, potrero con picloram + 2,4-D, silvopastoril con 2,4-D + fluroxipir dirigido, y maíz que entra al silo.</dd>
+      <dt>Granos almacenados</dt><dd>Trabaja por tonelada: las dosis van en mL o g por tonelada y el caldo en litros por tonelada, con el caudal para la cinta o la rosca según las toneladas por hora. En lugar del clima aparece el grano (tipo, humedad y temperatura) y se suman reglas propias: fosfina en el tanque, pirimifos-metil en soja, grano con más de 13 % de humedad y demasiado caldo por tonelada. Debajo del semáforo hay una guía de fumigación con fosfina (tabletas por m³ o por tonelada, tiempo mínimo según la temperatura del grano y seguridad), los protectores de granos y el tratamiento de silos vacíos. El caldo de granos se guarda aparte del caldo de campo.</dd>
       <dt>Pronóstico y mejor horario</dt><dd>En “4 · Condiciones ambientales”, el botón “Pronóstico y mejor horario” trae el pronóstico hora por hora de los próximos 4 días para la ubicación de los lotes elegidos (o del campo, o de tu GPS). Usa dos modelos, ECMWF (Centro Europeo) y GFS (NOAA), a través de Open-Meteo; cuando no coinciden, la app toma el peor de los dos. Cada hora se pinta con el color que tendría tu mezcla: viento y ráfagas (deriva), Delta T, inversión térmica (aire más caliente a 80 m que a 2 m según GFS, o calma con cielo despejado de noche, al amanecer y al atardecer), calor con hormonales (volatilización) o con aceites y azufre (quemado), y lluvia antes de las horas que necesita cada producto para no lavarse (glifosato y 2,4-D hasta 6 h, bentazona 8 h, mancozeb unas 4 h, paraquat 30 min; los preemergentes, y atrazina, metribuzina o flumioxazin aplicados en preemergencia, necesitan la lluvia para activarse). La app propone los mejores horarios y, al tocar uno, carga esas condiciones y el semáforo las usa. Necesita internet; sin conexión usa el último pronóstico guardado (hasta 3 h). Para alertas oficiales, ver la Dirección de Meteorología e Hidrología.</dd>
       <dt>Silvopastoril</dt><dd>Con el rubro Silvopastoril (o Pasturas) aparece un panel con los árboles (eucalipto, pino o nativos) y la altura, y si hay animales en el potrero. Avisa qué herbicidas dañan a los árboles por la raíz o por deriva (picloram, aminopiralida, triclopir, 2,4-D, residuales de suelo), cuándo aplicar dirigido o lejos de la zona de raíces, los días de reingreso de los animales y de corte para heno, y el estiércol con herbicidas que no se debe usar en huertas. El semáforo suma estas reglas (SP01 a SP05).</dd>
-      <dt>Equipos y calibración</dt><dd>Cargá cada pulverizadora (autopropulsada, de arrastre o montada), mochila, drone o avión con sus medidas: tanque, barra, número y separación de pastillas, tipo y tamaño ISO (color), presión, velocidad, altura; en drones y aviones, faja, velocidad, altura de vuelo, caudal máximo y atomizadores. Hay un <b>catálogo de modelos</b> (Jacto, Stara, John Deere, Case IH, New Holland, PLA, Metalfor; mochilas Jacto y Stihl; drones DJI y XAG; aviones Air Tractor, Embraer y Thrush) que carga los datos de fábrica. Marcá las <b>funciones</b> que tiene el equipo (computadora de caudal, corte de secciones, pico a pico, PWM, control de altura, piloto automático, agitador; en drones RTK, radar, seguimiento del terreno, atomizadores centrífugos; en mochilas válvula de caudal constante): la ficha explica para qué sirve cada una y qué tener en cuenta con las que faltan, por ejemplo entre qué velocidades no se sale de la presión de la pastilla, o que un drone sin agitador obliga a premezclar (y el semáforo lo marca). <b>Regulación:</b> para el volumen y la velocidad que buscás, el caudal por pastilla y la presión de cada tamaño ISO, en verde los que trabajan dentro de su rango. <b>Calibración a campo:</b> velocidad con el tiempo en 50 m, caudal de cada pastilla con jarra (marca en rojo las que se apartan más de 10 % del nominal, o 15 % si tiran menos de 1 L/min), coeficiente de variación y volumen real; con más de 5 % de error indica qué presión o velocidad usar. Para drones y aviones: caudal medido, faja verificada con tarjetas e impactos por cm². Las calibraciones quedan en el historial del equipo y el estado avisa cuando pasaron más de 180 días.</dd>
+      <dt>Equipos y calibración</dt><dd>Cargá cada pulverizadora (autopropulsada, de arrastre o montada), mochila, drone o avión con sus medidas: tanque, barra, número y separación de pastillas, tipo y tamaño ISO (color), presión, velocidad, altura; en drones y aviones, faja, velocidad, altura de vuelo, caudal máximo y atomizadores. En Hortícola aparece el <b>turboatomizador</b>: calcula el volumen por el volumen de copa (TRV), el caudal por lado y por boquilla, y se calibra con el caudal total y la velocidad. En Granos almacenados, el <b>aplicador en cinta o rosca</b> con su caudal por toneladas por hora. Hay un <b>catálogo de modelos</b> (Jacto, Stara, John Deere, Case IH, New Holland, PLA, Metalfor; mochilas Jacto y Stihl; drones DJI y XAG; aviones Air Tractor, Embraer y Thrush) que carga los datos de fábrica. Marcá las <b>funciones</b> que tiene el equipo (computadora de caudal, corte de secciones, pico a pico, PWM, control de altura, piloto automático, agitador; en drones RTK, radar, seguimiento del terreno, atomizadores centrífugos; en mochilas válvula de caudal constante): la ficha explica para qué sirve cada una y qué tener en cuenta con las que faltan, por ejemplo entre qué velocidades no se sale de la presión de la pastilla, o que un drone sin agitador obliga a premezclar (y el semáforo lo marca). <b>Regulación:</b> para el volumen y la velocidad que buscás, el caudal por pastilla y la presión de cada tamaño ISO, en verde los que trabajan dentro de su rango. <b>Calibración a campo:</b> velocidad con el tiempo en 50 m, caudal de cada pastilla con jarra (marca en rojo las que se apartan más de 10 % del nominal, o 15 % si tiran menos de 1 L/min), coeficiente de variación y volumen real; con más de 5 % de error indica qué presión o velocidad usar. Para drones y aviones: caudal medido, faja verificada con tarjetas e impactos por cm². Las calibraciones quedan en el historial del equipo y el estado avisa cuando pasaron más de 180 días.</dd>
       <dt>Caldo para drone y avión</dt><dd>En “2 · Aplicación” elegí el equipo o el modo (Terrestre, Mochila, Drone, Avión). Con drone o avión aparece el <b>plan de vuelo</b>: caudal necesario frente al máximo del equipo, hectáreas por carga, cargas para la superficie, minutos por carga, baterías, gota recomendada según los productos, revisión del viento, la temperatura, la humedad y el Delta T, recomendaciones de vuelo, la lista de control antes de volar y la normativa (Ley 3742/09: franja de 200 m y aviso al SENAVE 24 h antes; DINAC R 1103 para drones). El semáforo suma reglas propias: el tanque del drone casi no agita, más de 2 productos a bajo volumen, polvos mojables y hormonales por aire.</dd>
       <dt>Campos y lotes</dt><dd>El mapa de tus campos. Cada lote es un polígono con la forma real del lote, con todos los puntos que haga falta. Se puede cargar de cuatro maneras: <b>dibujarlo</b> tocando el mapa en cada quiebre del límite; <b>recorrer el borde con GPS</b> desde el celular; <b>importarlo</b> desde QGIS (GeoPackage, Shapefile .zip, GeoJSON), Google Earth (KML o KMZ), un GPS (GPX) o un CSV de vértices, también arrastrando el archivo sobre el mapa; o cargarlo <b>sin mapa</b>, solo con nombre y hectáreas. El mapa es opcional: nada de la app se bloquea si un lote no tiene límites. En la ficha de cada lote: <b>Editar límites</b> (arrastrar puntos, agregar con +, borrar con doble toque), <b>Dividir</b> con una línea y su <b>historial de pulverizaciones</b> propio. En “Armar caldo” los lotes se marcan con botones o tocándolos en el mapa.</dd>
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
@@ -3116,13 +3186,22 @@ addEventListener("appinstalled",()=>{ $("#btnInstall").hidden=true; });
    Equipos de aplicación, calibración y aplicación aérea (drone y avión)
    ==================================================================== */
 const EQD = D.equipos;
-const TIPOS_EQ = {autopropulsada: "Pulverizadora autopropulsada", arrastre: "Pulverizadora de arrastre", montada: "Pulverizadora montada (3 puntos)", mochila: "Mochila", drone: "Drone", avion: "Avión agrícola"};
-const MODOS = {terrestre: "Terrestre", mochila: "Mochila", drone: "Drone", avion: "Avión"};
-const modoDe = q => !q ? null : q.tipo === "drone" ? "drone" : q.tipo === "avion" ? "avion" : q.tipo === "mochila" ? "mochila" : "terrestre";
+const TIPOS_EQ = Object.assign({autopropulsada: "Pulverizadora autopropulsada", arrastre: "Pulverizadora de arrastre", montada: "Pulverizadora montada (3 puntos)", mochila: "Mochila", drone: "Drone", avion: "Avión agrícola"}, D.rubro_app.tipos_nuevos);
+const MODOS = {terrestre: "Terrestre", turbo: "Turboatomizador", mochila: "Mochila o pistola", drone: "Drone", avion: "Avión", granos: "Granos (cinta o rosca)"};
+const modoDe = q => !q ? null : q.tipo === "drone" ? "drone" : q.tipo === "avion" ? "avion" : q.tipo === "mochila" || q.tipo === "pistola" ? "mochila" : q.tipo === "turbo" ? "turbo" : q.tipo === "cinta" ? "granos" : "terrestre";
+/* Modos y tipos de equipo de cada rubro */
+const modosRubro = () => D.rubro_app.modos[RUBRO] || Object.keys(MODOS);
+const tiposRubro = () => D.rubro_app.tipos[RUBRO] || Object.keys(TIPOS_EQ);
+const esAL = () => RUBRO === "AL";
+/* Unidades del caldo: por hectárea, o por tonelada de grano en granos almacenados (dosis en mL o g por t) */
+const UB = () => esAL() ? {u: "t", vol: "L/t", area: "Granos a tratar (t)", porT: "Toneladas por tanque", mul: 1000, dU: x => (unitOf(x) === "kg" ? "g" : "mL") + "/t", tot: x => unitOf(x)}
+  : {u: "ha", vol: "L/ha", area: "Superficie a aplicar (ha)", porT: "Hectáreas por tanque", mul: 1, dU: x => unitOf(x) + "/ha", tot: x => unitOf(x)};
+const dVer = v => v == null ? null : +(v * UB().mul).toPrecision(6);   // dosis guardada (L o kg por ha o t) → lo que se muestra
+const dGuardar = v => v == null ? null : v / UB().mul;
 const esAereo = m => m === "drone" || m === "avion";
 const ISO = Object.fromEntries(EQD.pastillas.map(([s, c, h, q]) => [s, {s, c, h, q}]));
 /* volumen razonable para el modo si el actual no corresponde */
-const volDef = (m, v) => esAereo(m) ? (v && v <= 50 ? v : m === "drone" ? 15 : 30) : m === "mochila" ? (v && v >= 150 ? v : 200) : (v && v >= 40 ? v : 100);
+const volDef = (m, v) => m === "granos" ? (v && v <= 3 ? v : 0.6) : m === "turbo" ? (v && v >= 300 ? v : 1000) : esAereo(m) ? (v && v <= 50 ? v : m === "drone" ? 15 : 30) : m === "mochila" ? (v && v >= 150 ? v : 200) : (v && v >= 40 ? v : 100);
 const findEq = id => (EQUIPOS || []).find(q => q.id === id) || null;
 const nv = v => v === "" || v == null || isNaN(+v) ? null : +v;
 const oscuro = h => { const n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) < 140; };
@@ -3147,7 +3226,7 @@ function recomPastillas(q, tipo){
 }
 function volEq(q){ const c = (q.calibraciones || [])[0]; return c && c.V_obj ? c.V_obj : volDef(modoDe(q), S.vol); }
 function anchoEq(q){ return nv(q.ancho) || (nv(q.n_pastillas) && nv(q.espaciado) ? q.n_pastillas * q.espaciado / 100 : null); }
-function velEq(q, m){ return nv(q && q.vel) ?? (m === "drone" ? 6 : m === "avion" ? 210 : m === "mochila" ? 2.4 : 16); }
+function velEq(q, m){ return nv(q && q.vel) ?? (m === "drone" ? 6 : m === "avion" ? 210 : m === "mochila" ? 2.4 : m === "turbo" ? 4 : 16); }
 function eqEstado(q){
   const c = (q.calibraciones || [])[0];
   if(!c) return {l: 2, t: "Sin calibrar"};
@@ -3187,9 +3266,10 @@ function renderEquipoSel(){
   const sel = $("#apEquipo"); if(!sel) return;
   const q = findEq(S.equipo);
   if(S.equipo && !q){ S.equipo = null; }
-  sel.innerHTML = `<option value="">— Sin equipo —</option>` + (EQUIPOS || []).map(e => `<option value="${esc(e.id)}"${e.id === S.equipo ? " selected" : ""}>${esc(e.nombre)}</option>`).join("");
-  $("#apModo").innerHTML = Object.entries(MODOS).map(([k, t]) => `<button class="chip" data-m="${k}" aria-pressed="${(S.modo || "terrestre") === k}" style="font-size:.8rem;padding:2px 10px">${t}</button>`).join("");
-  $("#tanqueLbl").textContent = S.modo === "avion" ? "Tolva (L)" : S.modo === "drone" ? "Tanque del drone (L)" : S.modo === "mochila" ? "Mochila (L)" : "Tanque (L)";
+  sel.innerHTML = `<option value="">— Sin equipo —</option>` + (EQUIPOS || []).filter(e => modosRubro().includes(modoDe(e)) || e.id === S.equipo).map(e => `<option value="${esc(e.id)}"${e.id === S.equipo ? " selected" : ""}>${esc(e.nombre)}</option>`).join("");
+  if(!modosRubro().includes(S.modo || "terrestre")){ S.modo = modosRubro()[0]; S.vol = volDef(S.modo, S.vol); const qx = findEq(S.equipo); if(qx && modoDe(qx) !== S.modo) S.equipo = null; save(); }
+  $("#apModo").innerHTML = Object.entries(MODOS).filter(([k]) => modosRubro().includes(k)).map(([k, t]) => `<button class="chip" data-m="${k}" aria-pressed="${(S.modo || "terrestre") === k}" style="font-size:.8rem;padding:2px 10px">${t}</button>`).join("");
+  $("#tanqueLbl").textContent = S.modo === "avion" ? "Tolva (L)" : S.modo === "drone" ? "Tanque del drone (L)" : S.modo === "mochila" ? "Mochila (L)" : S.modo === "granos" ? "Tanque del aplicador (L)" : "Tanque (L)";
   let nota = "";
   if(q){ const e = eqEstado(q), c = (q.calibraciones || [])[0];
     nota = `${pill(e.l, e.t)}${c && c.V_real && S.vol && Math.abs(c.V_real - S.vol) / S.vol > 0.05 ? ` El equipo calibrado aplica ${fmt(c.V_real, 1)} L/ha y el caldo está calculado para ${fmt(S.vol, 0)} L/ha.` : ""}`; }
@@ -3204,12 +3284,72 @@ function renderEquipoSel(){
     S.modo = m; const q2 = findEq(S.equipo); if(q2 && modoDe(q2) !== m) S.equipo = null;
     S.vol = volDef(m, S.vol);
     S.vuelo = Object.assign(S.vuelo || {}, {vel: null, faja: null, alt: null, gota: null});
-    if(!S.equipo) S.tanque = {terrestre: 2000, mochila: 20, drone: 40, avion: 1900}[m];
-    toast(`Volumen ${S.vol} L/ha y ${m === "avion" ? "tolva" : m === "mochila" ? "mochila" : "tanque"} de ${S.tanque} L: ajustalos a tu equipo`);
+    if(!S.equipo) S.tanque = {terrestre: 2000, turbo: 2000, mochila: 20, drone: 40, avion: 1900, granos: 200}[m];
+    toast(`Volumen ${fmt(S.vol, S.vol < 10 ? 1 : 0)} ${UB().vol} y ${m === "avion" ? "tolva" : m === "mochila" ? "mochila" : "tanque"} de ${S.tanque} L: ajustalos a tu equipo`);
     S.ejemplo = false; save(); fillInputs(); renderCaldo(); });
 }
 
-/* Panel del armador: regulación (terrestre/mochila) o plan de vuelo (drone/avión) */
+/* ---------- Granos almacenados: el grano, la fumigación y las estructuras ---------- */
+function renderGrano(){
+  const G = S.grano, RA = D.rubro_app, hum = nvN(G.humedad);
+  $("#pGrano").innerHTML = `<div class="panel-h"><h3>4 · El grano</h3><span class="note">Granos almacenados: sin clima de campo</span></div>
+    <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      <label class="f">Grano<select id="grTipo">${Object.entries(RA.granos).map(([k, t]) => `<option value="${k}"${k === G.tipo ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
+      <label class="f">Humedad del grano (%)<input id="grHum" type="number" step="0.1" min="0" value="${G.humedad ?? ""}"></label>
+      <label class="f">Temperatura del grano (°C)<input id="grTemp" type="number" step="0.5" value="${G.temp ?? ""}"></label>
+    </div>
+    ${hum != null && hum > RA.humedad_max ? `<p class="rnote" style="margin-top:8px">Con ${fmt(hum, 1)} % el grano no está para guardar: secar a ${RA.humedad_max} % o menos antes de tratar.</p>` : ""}
+    <ul class="clean note" style="margin-top:8px">${RA.grano_cuidados.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`;
+  $("#grTipo").onchange = e => { G.tipo = e.target.value; S.ejemplo = false; save(); renderCaldo(); };
+  [["grHum", "humedad"], ["grTemp", "temp"]].forEach(([id, k]) => $("#" + id).onchange = e => { G[k] = nvN(e.target.value); S.ejemplo = false; save(); renderCaldo(); });
+}
+function fumigacionHTML(ev){
+  const RA = D.rubro_app, F = RA.fumigacion, G = S.grano, T = nvN(G.temp), m3 = nvN(G.m3), t = S.sup;
+  const fila = T == null ? -1 : T < 15 ? 0 : T <= 25 ? 1 : 2;
+  const fum = D.productos.filter(p => !p.m && p.k.some(c => c[1] === "fosfuros") && p.s.includes("AL")).map(p => p.n);
+  return `<div class="panel-h"><h3>Fumigación, protectores y estructuras</h3><span class="note">Granos almacenados · la etiqueta manda</span></div>
+    <details class="box" open><summary>Fumigación con fosfina (tabletas o pellets)</summary><div class="in">
+      <p class="note">Productos registrados: ${esc(fum.slice(0, 8).join(", "))}${fum.length > 8 ? "…" : ""}. Nunca van en el tanque de la pulverizadora.</p>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:6px">
+        <label class="f">Volumen a fumigar (m³)<input id="fuM3" type="number" min="0" step="1" value="${G.m3 ?? ""}"></label>
+        <label class="f">Toneladas de grano<input type="number" value="${t ?? ""}" disabled></label></div>
+      <div class="kv" style="margin-top:8px">
+        <div><b>${m3 ? `${fmt(2 * m3, 0)} a ${fmt(3 * m3, 0)}` : "—"}</b><span>Tabletas de 3 g por el volumen (2 a 3 por m³)</span></div>
+        <div><b>${t ? `${fmt(3 * t, 0)} a ${fmt(6 * t, 0)}` : "—"}</b><span>Tabletas de 3 g por las toneladas (3 a 6 por t, INTA)</span></div>
+        <div><b>${fila >= 0 ? esc(F.tiempos[fila][1]) : "—"}</b><span>Exposición mínima ${T != null ? `con el grano a ${fmt(T, 1)} °C` : "(cargá la temperatura del grano)"}</span></div></div>
+      <ul class="clean note" style="margin-top:8px">${F.dosis.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <div class="tw" style="margin-top:6px"><table><thead><tr><th>Temperatura del grano</th><th>Exposición mínima</th></tr></thead><tbody>${F.tiempos.map(([a, b], i) => `<tr${i === fila ? ' style="font-weight:700"' : ""}><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note" style="margin-top:6px">${esc(F.tiempos_nota)}</p>
+      <ul class="funav">${F.seguridad.map(x => `<li class="l1">${esc(x)}</li>`).join("")}</ul></div></details>
+    <details class="box" style="margin-top:8px"><summary>Protectores de granos (en la cinta o la rosca)</summary><div class="in"><div class="tw"><table><thead><tr><th>Producto</th><th>Dosis de referencia</th><th>Para qué</th></tr></thead><tbody>${RA.protectores.map(r => `<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td class="note">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note" style="margin-top:6px">Combinar un piretroide (taladrillo) con un fosforado (gorgojos) y no repetir siempre el mismo. Dosis de etiquetas de Brasil y México e INTA: verificar la etiqueta del producto paraguayo.</p></div></details>
+    <details class="box" style="margin-top:8px"><summary>Silos y depósitos vacíos (antes de cargar)</summary><div class="in"><div class="tw"><table><thead><tr><th>Producto</th><th>Dosis de referencia</th></tr></thead><tbody>${RA.estructuras.map(r => `<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note" style="margin-top:6px">Barrer y sacar los restos de grano viejo antes de tratar: ahí viven los insectos que reinfestan.</p></div></details>`;
+}
+/* ---------- Turboatomizador: volumen por volumen de copa (TRV) ---------- */
+function turboCalc(src){
+  const alt = nvN(src.alt) ?? 3, ancho = nvN(src.ancho) ?? 3, fila = nvN(src.fila) ?? 6, ind = nvN(src.ind) ?? 0.08;
+  const trv = alt > 0 && ancho > 0 && fila > 0 ? alt * Math.min(ancho, fila) * 10000 / fila : null;
+  return {alt, ancho, fila, ind, trv, V: trv ? trv * ind : null};
+}
+function turboHTML(src, V, v, nl, tanque, cls){
+  const c = turboCalc(src), Vu = V || c.V, Q = Vu && v && c.fila ? Vu * v * c.fila / 600 : null;
+  return `<div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+      <label class="f">Altura de copa (m)<input class="${cls}" data-k="alt" type="number" step="0.1" min="0" value="${c.alt}"></label>
+      <label class="f">Ancho de copa (m)<input class="${cls}" data-k="ancho" type="number" step="0.1" min="0" value="${c.ancho}"></label>
+      <label class="f">Distancia entre filas (m)<input class="${cls}" data-k="fila" type="number" step="0.1" min="0" value="${c.fila}"></label>
+      <label class="f">Litros por m³ de copa<input class="${cls}" data-k="ind" type="number" step="0.01" min="0" value="${c.ind}"></label>
+      <label class="f">Velocidad (km/h)<input class="${cls}" data-k="v" type="number" step="0.5" min="0" value="${v}"></label></div>
+    <div class="kv" style="margin-top:10px">
+      <div><b>${c.trv ? fmt(c.trv, 0) + " m³/ha" : "—"}</b><span>Volumen de copa (TRV)</span></div>
+      <div><b>${c.V ? fmt(c.V, 0) + " L/ha" : "—"}</b><span>Volumen sugerido (${fmt(c.ind, 2)} L/m³)</span></div>
+      <div><b>${Q ? fmt(Q, 1) + " L/min" : "—"}</b><span>Caudal total a ${Vu ? fmt(Vu, 0) : "—"} L/ha</span></div>
+      <div><b>${Q ? fmt(Q / 2, 1) + " L/min" : "—"}</b><span>Por lado</span></div>
+      <div><b>${Q && nl ? fmt(Q / 2 / nl, 2) + " L/min" : "—"}</b><span>Por boquilla (${nl} abiertas por lado)</span></div>
+      <div><b>${v && c.fila ? fmt(v * c.fila / 10 * 0.6, 2) + " ha/h" : "—"}</b><span>Capacidad (eficiencia 60 %)</span></div>
+      ${tanque && Vu ? `<div><b>${fmt(tanque / Vu, 2)} ha</b><span>Por tanque de ${fmt(tanque, 0)} L</span></div>` : ""}</div>
+    <p class="note" style="margin-top:8px">TRV = altura × ancho de copa × 10 000 ÷ distancia entre filas. En cítricos: 0,08 a 0,10 L por m³ de copa en aplicación diluida (IVIA), con el valor alto para productos de contacto o plagas en el interior de la copa; contra el psílido, Fundecitrus encontró que alcanzan 0,025 a 0,04 L/m³ (sin mejora con 0,07). Caudal = volumen × velocidad × distancia entre filas ÷ 600. Elegir el disco y el núcleo de cada boquilla con la tabla del fabricante para ese caudal a la presión de trabajo; cerrar las boquillas que apuntan por encima de la copa y ajustar el aire para que mueva las hojas del otro lado de la planta. Verificar con tarjetas arriba, al medio, abajo y adentro de la copa.</p>`;
+}
 function vueloDatos(ev){
   const m = S.modo, q = findEq(S.equipo), vu = S.vuelo || {}, dr = m === "drone";
   const vel = nv(vu.vel) ?? velEq(q, m);
@@ -3270,6 +3410,28 @@ function equipoPanelHTML(ev){
       <details class="box" style="margin-top:8px"><summary>Normativa</summary><div class="in"><ul class="clean note">${EQD.normativa[dr ? "drone" : "aereo"].concat(dr ? EQD.normativa.aereo.slice(0, 2) : []).map(t => `<li>${esc(t)}</li>`).join("")}</ul></div></details>
     </div>`;
   }
+  if(m === "turbo"){
+    const T = S.turbo, v = nvN(T.v) ?? velEq(q, "turbo"), nl = nvN(q && q.n_lado) ?? 8, c = turboCalc(T);
+    return `<div class="panel" id="pRegul"><div class="panel-h"><h3>Turboatomizador · volumen por copa</h3>${q && modoDe(q) === "turbo" ? pill(eqEstado(q).l, eqEstado(q).t) : `<span class="note">valores típicos</span>`}</div>
+      ${turboHTML(T, V, v, nl, S.tanque, "tbx")}
+      ${c.V && (!V || Math.abs(c.V - V) / c.V > 0.1) ? `<div class="row" style="margin-top:8px"><button class="btn sm pri" id="tbUsar">Usar ${fmt(c.V, 0)} L/ha como volumen del caldo</button></div>` : ""}
+      <details class="box" style="margin-top:10px"><summary>Gota recomendada</summary><div class="in">${gotaHTML(ev, false)}</div></details>${q && modoDe(q) === "turbo" ? eqFunHTML(q, true) : ""}</div>`;
+  }
+  if(m === "granos"){
+    const G = S.grano, th = nvN(G.th) ?? nvN(q && q.capacidad) ?? 40, Lt = V, tq = S.tanque;
+    const Q = Lt && th ? th * Lt / 60 : null, tPorTq = Lt ? tq / Lt : null, minTq = Q ? tq / Q : null, nTq = tPorTq && S.sup ? Math.ceil(S.sup / tPorTq - 1e-9) : null;
+    const filas = ev.xs.filter(x => x.p && x.dosis > 0).map(x => { const u = unitOf(x) === "kg" ? "g" : "mL", d = x.dosis * 1000;
+      return `<tr><td>${esc(x.n)}</td><td class="n">${fmt(d, 1)} ${u}/t</td><td class="n">${fmt(d * th / (d * th >= 1000 ? 1000 : 1), d * th >= 1000 ? 2 : 0)} ${d * th >= 1000 ? (u === "g" ? "kg" : "L") : u}/h</td><td class="n">${tPorTq ? fmt(x.dosis * tPorTq, 2) + " " + unitOf(x) : "—"}</td></tr>`; }).join("");
+    return `<div class="panel" id="pRegul"><div class="panel-h"><h3>Aplicación en la cinta o la rosca</h3>${q && modoDe(q) === "granos" ? pill(eqEstado(q).l, eqEstado(q).t) : `<span class="note">valores típicos</span>`}</div>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"><label class="f">Capacidad de la cinta o rosca (t/h)<input class="grx" data-k="th" type="number" step="1" min="0" value="${th}"></label></div>
+      <div class="kv" style="margin-top:10px">
+        <div><b>${Q ? fmt(Q, 2) + " L/min" : "—"}</b><span>Caudal de caldo (${fmt(th, 0)} t/h × ${Lt ? fmt(Lt, 2) : "—"} L/t ÷ 60)</span></div>
+        <div><b>${tPorTq ? fmt(tPorTq, 0) + " t" : "—"}</b><span>Por tanque de ${fmt(tq, 0)} L</span></div>
+        <div><b>${minTq ? fmt(minTq, 0) + " min" : "—"}</b><span>Duración de cada tanque</span></div>
+        <div><b>${nTq ?? "—"}</b><span>Tanques para ${S.sup ? fmt(S.sup, 0) + " t" : "el grano"}</span></div></div>
+      ${filas ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Producto</th><th style="text-align:right">Dosis</th><th style="text-align:right">Por hora</th><th style="text-align:right">Por tanque</th></tr></thead><tbody>${filas}</tbody></table></div>` : ""}
+      <p class="note" style="margin-top:8px">Boquillas de baja presión (al menos 3) que mojen todo el ancho del chorro de grano, justo donde cae a la rosca o la cinta. Calibrar midiendo el caudal real en 1 minuto y la capacidad real de la rosca (toneladas por hora).</p></div>`;
+  }
   // terrestre o mochila
   if(!q || modoDe(q) !== m){
     return `<div class="panel" id="pRegul"><div class="panel-h"><h3>Equipo y gota</h3><button class="btn sm" id="goEquipos">Cargar mi pulverizadora</button></div>
@@ -3306,6 +3468,10 @@ function equipoPanelHTML(ev){
 }
 function bindEquipoPanel(ev){
   renderEquipoSel();
+  document.querySelectorAll(".tbx").forEach(el => el.onchange = e => { S.turbo[el.dataset.k] = nvN(e.target.value); save(); renderCaldo(); });
+  document.querySelectorAll(".grx").forEach(el => el.onchange = e => { S.grano[el.dataset.k] = nvN(e.target.value); save(); renderCaldo(); });
+  const tu = $("#tbUsar"); if(tu) tu.onclick = () => { const c = turboCalc(S.turbo); S.vol = Math.round(c.V / 10) * 10; S.ejemplo = false; save(); fillInputs(); renderCaldo(); toast(`Volumen: ${S.vol} L/ha`); };
+  const fm = $("#fuM3"); if(fm) fm.onchange = e => { S.grano.m3 = nvN(e.target.value); save(); renderCaldo(); };
   const g = $("#goEquipos"); if(g) g.onclick = () => setView("equipos");
   [["vVel", "vel"], ["vFaja", "faja"], ["vAlt", "alt"], ["vGota", "gota"]].forEach(([id, k]) => { const el = $("#" + id); if(el) el.onchange = e => { const x = nv(e.target.value); S.vuelo[k] = x != null && x > 0 ? x : null; save(); renderCaldo(); }; });
   document.querySelectorAll(".vChk").forEach(c => c.onchange = () => { const i = +c.dataset.i, a = S.vuelo.chk || (S.vuelo.chk = []); const j = a.indexOf(i); if(c.checked && j < 0) a.push(i); if(!c.checked && j >= 0) a.splice(j, 1); save(); const sm = c.closest("details").querySelector("summary"); sm.textContent = sm.textContent.replace(/\(\d+\//, `(${a.length}/`); });
@@ -3332,6 +3498,8 @@ function eqDatosTabla(q){
   if(m === "terrestre") filas.push(["Barra", anchoEq(q) ? `${fmt(anchoEq(q), 1)} m · ${q.n_pastillas || "—"} pastillas a ${q.espaciado || "—"} cm` : null], ["Pastillas", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}${q.angulo ? " · " + q.angulo + "°" : ""}`], ["Presión de trabajo", q.presion ? fmt(q.presion, 1) + " bar" : null], ["Velocidad", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Altura de barra", q.altura ? q.altura + " cm" : null], ["Bomba", q.bomba ? fmt(q.bomba, 0) + " L/min" : null], ["Secciones de barra", q.secciones ? String(q.secciones) : null], ["Tanque de agua limpia", q.agua_limpia ? fmt(q.agua_limpia, 0) + " L" : null], ["Velocidad máxima del equipo", q.vel_max ? fmt(q.vel_max, 0) + " km/h" : null], ["Eficiencia de campo", q.eficiencia ? q.eficiencia + " %" : null]);
   if(m === "mochila") filas.push(["Ancho de faja", q.faja ? fmt(q.faja, 2) + " m" : null], ["Velocidad de marcha", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Pastilla", `${esc((EQD.tipos_pastilla[q.pastilla_tipo] || {}).nombre || "—")} · ${isoChip(q.pastilla_iso)}`], ["Presión", q.presion ? fmt(q.presion, 1) + " bar" : null], ["Presión máxima", q.pmax ? fmt(q.pmax, 1) + " bar" : null]);
   if(m === "drone" || m === "avion") filas.push(["Ancho de faja", q.faja ? fmt(q.faja, 1) + " m" : null], ["Velocidad de trabajo", q.vel ? fmt(q.vel, 1) + (m === "drone" ? " m/s" : " km/h") : null], ["Altura de vuelo", q.alt ? fmt(q.alt, 1) + " m" : null], ["Caudal máximo", q.caudal_max ? fmt(q.caudal_max, 1) + " L/min" : null], ["Atomizadores", q.atom ? `${q.n_atom || ""} ${q.atom === "centrifugo" ? "centrífugos" : q.atom === "rotativo" ? "rotativos" : "hidráulicos (picos)"}` : null], ["Gota", q.gota ? q.gota + " µm" : null]);
+  if(m === "turbo") filas.push(["Boquillas por lado", q.n_lado ? String(q.n_lado) : null], ["Boquillas", q.boquilla || null], ["Velocidad", q.vel ? fmt(q.vel, 1) + " km/h" : null], ["Presión", q.presion ? fmt(q.presion, 1) + " bar" : null]);
+  if(m === "granos") filas.push(["Capacidad", q.capacidad ? fmt(q.capacidad, 0) + " t/h" : null], ["Caudal de la bomba", q.bomba ? fmt(q.bomba, 1) + " L/min" : null], ["Boquillas", q.n_boquillas ? String(q.n_boquillas) : null], ["Presión", q.presion ? fmt(q.presion, 1) + " bar" : null]);
   if(m === "drone") filas.push(["Baterías", q.autonomia ? `${q.baterias || "—"} de ${q.autonomia} min` : null]);
   return `<div class="tw"><table><tbody>${filas.filter(f => f[1]).map(([k, v]) => `<tr><th style="width:42%">${esc(k)}</th><td>${String(v).includes("<span") ? v : esc(v)}</td></tr>`).join("")}</tbody></table></div>`;
 }
@@ -3404,7 +3572,7 @@ function eqDetalleHTML(q){
       <div class="chklist" id="eqChk">${chk.map((t, i) => `<label><input type="checkbox" data-i="${i}" ${ins.ok && ins.ok.includes(i) && ins.total === chk.length ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div>
       <div class="row" style="margin-top:10px"><button class="btn sm" id="eqChkSave">Guardar ${m === "drone" || m === "avion" ? "control" : "inspección"} de hoy</button></div></div>
     <div class="panel"><div class="panel-h"><h3>Historial de calibraciones</h3><span class="note">${cals.length} registradas</span></div>
-      ${cals.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Objetivo</th><th>Real</th><th>Error</th><th>Detalle</th><th>Resultado</th><th></th></tr></thead><tbody>${cals.map((c, i) => `<tr><td class="mono">${esc(fmtFecha(c.fecha))}</td><td class="n">${fmt(c.V_obj, 1)} L/ha</td><td class="n">${fmt(c.V_real, 1)} L/ha</td><td class="n">${c.error != null ? (c.error > 0 ? "+" : "") + fmt(c.error, 1) + " %" : "—"}</td><td class="note">${calDetTxt(c)}</td><td>${pill(c.apto ? 0 : 2, c.apto ? "Apto" : "Corregir")}</td><td><button class="btn sm" data-cdel="${i}">Borrar</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="note">Todavía no hay calibraciones guardadas.</p>`}</div>
+      ${cals.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Objetivo</th><th>Real</th><th>Error</th><th>Detalle</th><th>Resultado</th><th></th></tr></thead><tbody>${cals.map((c, i) => `<tr><td class="mono">${esc(fmtFecha(c.fecha))}</td><td class="n">${fmt(c.V_obj, c.tipo === "granos" ? 2 : 1)} ${c.tipo === "granos" ? "L/t" : "L/ha"}</td><td class="n">${fmt(c.V_real, c.tipo === "granos" ? 2 : 1)} ${c.tipo === "granos" ? "L/t" : "L/ha"}</td><td class="n">${c.error != null ? (c.error > 0 ? "+" : "") + fmt(c.error, 1) + " %" : "—"}</td><td class="note">${calDetTxt(c)}</td><td>${pill(c.apto ? 0 : 2, c.apto ? "Apto" : "Corregir")}</td><td><button class="btn sm" data-cdel="${i}">Borrar</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="note">Todavía no hay calibraciones guardadas.</p>`}</div>
     ${m === "drone" || m === "avion" ? `<div class="panel"><div class="panel-h"><h3>Recomendaciones y normativa</h3></div><ul class="clean">${Object.entries({Volumen: "volumen", Altura: "altura", Velocidad: "velocidad", Faja: "faja", Gota: "gota", Clima: "clima", "Preparación del caldo": "mezcla"}).map(([k, v]) => `<li><b>${k}:</b> ${esc(EQD.vuelo[m][v])}</li>`).join("")}</ul>
       <ul class="clean note" style="margin-top:8px">${EQD.normativa[m === "drone" ? "drone" : "aereo"].map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>`
     : `<div class="panel"><div class="panel-h"><h3>Normativa para aplicación terrestre</h3></div><ul class="clean note">${EQD.normativa.terrestre.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>`}`;
@@ -3413,11 +3581,22 @@ function calDetTxt(c){
   const d = c.det || {};
   if(c.tipo === "terrestre") return `${fmt(d.vel, 1)} km/h · ${fmt(d.P, 1)} bar · media ${fmt(d.media, 3)} L/min · CV ${fmt(d.cv, 1)} %${d.fuera && d.fuera.length ? ` · ${d.fuera.length} pastillas fuera` : ""}`;
   if(c.tipo === "mochila") return `${fmt(d.area, 0)} m² · ${fmt(d.gastado, 2)} L promedio`;
+  if(c.tipo === "granos") return `${fmt(d.vel, 0)} t/h · ${fmt(d.Q, 2)} L/min`;
+  if(c.tipo === "turbo") return `${fmt(d.vel, 1)} km/h · filas a ${fmt(d.faja, 1)} m · ${fmt(d.Q, 1)} L/min${d.impactos ? ` · ${d.impactos} impactos/cm²` : ""}`;
   return `${fmt(d.vel, 1)} ${c.tipo === "drone" ? "m/s" : "km/h"} · faja ${fmt(d.faja, 1)} m · ${fmt(d.Q, 2)} L/min${d.impactos ? ` · ${d.impactos} impactos/cm²` : ""}`;
 }
 function eqRegHTML(q){
   const m = modoDe(q), cw = CW[q.id] || (CW[q.id] = {});
   const V = nv(cw.rV) ?? volEq(q);
+  if(m === "turbo") return turboHTML(cw, nvN(cw.rV), nvN(cw.v) ?? velEq(q, m), nvN(q.n_lado) ?? 8, nvN(q.tanque), "rgx") +
+    `<div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:8px"><label class="f">Usar otro volumen (L/ha)<input class="rgx" data-k="rV" type="number" step="10" min="0" value="${cw.rV ?? ""}" placeholder="el sugerido"></label></div>`;
+  if(m === "granos"){ const th = nvN(cw.th) ?? nvN(q.capacidad) ?? 40, Lt = nvN(cw.Lt) ?? 0.6, Q = th * Lt / 60, nb = nvN(q.n_boquillas) || 3;
+    return `<div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      <label class="f">Capacidad (t/h)<input class="rgx" data-k="th" type="number" step="1" min="0" value="${th}"></label>
+      <label class="f">Caldo por tonelada (L/t)<input class="rgx" data-k="Lt" type="number" step="0.1" min="0" value="${Lt}"></label></div>
+      <div class="kv" style="margin-top:10px"><div><b>${fmt(Q, 2)} L/min</b><span>Caudal total</span></div><div><b>${fmt(Q / nb, 2)} L/min</b><span>Por boquilla (${nb})</span></div>
+        ${nvN(q.tanque) ? `<div><b>${fmt(q.tanque / Lt, 0)} t</b><span>Por tanque de ${fmt(q.tanque, 0)} L</span></div>` : ""}</div>
+      <p class="note" style="margin-top:8px">Caudal (L/min) = toneladas por hora × litros por tonelada ÷ 60. Usar 0,3 a 1 L de caldo por tonelada: más agua sube la humedad del grano.</p>`; }
   if(m === "terrestre" || m === "mochila"){
     const v = nv(cw.rv) ?? velEq(q, m), esp = m === "mochila" ? (nv(q.faja) || 1) : (nv(q.espaciado) || 50) / 100;
     const qn = CAL.q(V, v, esp), tipo = q.pastilla_tipo || "std", t = EQD.tipos_pastilla[tipo];
@@ -3492,7 +3671,23 @@ function eqCalHTML(q){
         <label class="f">Volumen buscado (L/ha)<input class="cwi" data-k="cV" type="number" step="1" value="${V}"></label></div>
       <div id="cwRes" style="margin-top:12px">${calMochRes(q)}</div>`;
   }
-  const dr = m === "drone";
+  if(m === "granos") return `<p class="note" style="margin-bottom:8px">1) Con agua, juntá lo que tiran todas las boquillas durante 1 minuto a la presión de trabajo. 2) Medí la capacidad real de la rosca o la cinta: toneladas que pasan en un tiempo conocido (por ejemplo con la balanza o un camión de peso conocido).</p>
+    <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+      <label class="f">Caldo buscado (L/t)<input class="cwi" data-k="cV" type="number" step="0.1" value="${nvN(cw.cV) ?? 0.6}"></label>
+      <label class="f">Litros recogidos<input class="cwi" data-k="L" type="number" step="0.01" value="${cw.L ?? ""}"></label>
+      <label class="f">En (segundos)<input class="cwi" data-k="Ls" type="number" step="1" value="${nvN(cw.Ls) ?? 60}"></label>
+      <label class="f">Capacidad medida (t/h)<input class="cwi" data-k="th" type="number" step="1" value="${cw.th ?? q.capacidad ?? ""}"></label></div>
+    <div id="cwRes" style="margin-top:12px">${calGranosRes(q)}</div>`;
+  const dr = m === "drone", tb = m === "turbo";
+  if(tb) return `<p class="note" style="margin-bottom:8px">1) Con agua y el ventilador encendido, juntá lo que tira cada boquilla en 1 minuto (manguera en la boquilla y balde) y sumá todo; cambiá la que tire 10 % más que una nueva. 2) Medí la velocidad: tiempo para recorrer 100 m en el monte, con el tanque a medio llenar (km/h = 360 ÷ segundos).</p>
+    <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+      <label class="f">Volumen buscado (L/ha)<input class="cwi" data-k="cV" type="number" step="10" value="${V}"></label>
+      <label class="f">Velocidad (km/h)<input class="cwi" data-k="cv" type="number" step="0.5" value="${nv(cw.cv) ?? velEq(q, m)}"></label>
+      <label class="f">Distancia entre filas (m)<input class="cwi" data-k="cW" type="number" step="0.1" value="${nv(cw.cW) ?? nvN(cw.fila) ?? 6}"></label>
+      <label class="f">Litros de todas las boquillas<input class="cwi" data-k="L" type="number" step="0.1" value="${cw.L ?? ""}"></label>
+      <label class="f">En (segundos)<input class="cwi" data-k="Ls" type="number" step="1" value="${nv(cw.Ls) ?? 60}"></label>
+      <label class="f">Impactos/cm² (tarjetas)<input class="cwi" data-k="imp" type="number" step="1" value="${cw.imp ?? ""}"></label></div>
+    <div id="cwRes" style="margin-top:12px">${calAereoRes(q)}</div>`;
   return `<p class="note" style="margin-bottom:8px">${dr ? "1) Hacé la calibración de caudal en la app del drone (o juntá lo que tiran todas las boquillas durante 1 minuto a la presión o velocidad de bomba de trabajo). 2) Verificá el ancho de faja con tarjetas hidrosensibles o papel en una línea perpendicular al vuelo. 3) Contá los impactos por cm² en las tarjetas." : "1) Medí el caudal con el caudalímetro o juntando lo que tiran los atomizadores en un tiempo conocido. 2) Hacé una pasada sobre una línea de tarjetas o colectores para medir la faja efectiva. 3) Contá los impactos por cm²."}</p>
     <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
       <label class="f">Volumen buscado (L/ha)<input class="cwi" data-k="cV" type="number" step="1" value="${V}"></label>
@@ -3551,11 +3746,24 @@ function calMochRes(q){
     <p class="note">Con la mochila calibrada, la cantidad de producto por carga = dosis por hectárea × litros de la mochila ÷ ${fmt(Vr, 0)} L/ha. Se ve en “Armar caldo” al elegir la mochila.</p>
     <div class="row" style="margin-top:10px"><button class="btn pri sm" id="cwSave">Guardar calibración</button></div>`;
 }
+function calGranosRes(q){
+  const cw = CW[q.id], Lb = nvN(cw.cV) ?? 0.6, L = nvN(cw.L), Ls = nvN(cw.Ls) ?? 60, th = nvN(cw.th) ?? nvN(q.capacidad);
+  if(!(Lb > 0) || !(th > 0)) return `<p class="note">Cargá el caldo buscado por tonelada y la capacidad medida.</p>`;
+  const Qn = th * Lb / 60;
+  if(L == null || !Ls) return `<p class="note">Caudal necesario: <b>${fmt(Qn, 2)} L/min</b>. Cargá lo recogido para comparar.</p>`;
+  const Q = L / Ls * 60, Lr = Q * 60 / th, err = (Lr - Lb) / Lb * 100, apto = Math.abs(err) <= EQD.tolerancias.volumen_pct;
+  cw._res = {vel: th, faja: null, Q, Vr: Lr, err, apto, V: Lb};
+  return `<div class="kv"><div><b>${fmt(Qn, 2)} L/min</b><span>Caudal necesario</span></div><div><b>${fmt(Q, 2)} L/min</b><span>Caudal medido</span></div>
+      <div><b>${fmt(Lr, 2)} L/t</b><span>Caldo real por tonelada</span></div><div><b>${err > 0 ? "+" : ""}${fmt(err, 1)} %</b><span>Diferencia con ${fmt(Lb, 2)} L/t</span></div></div>
+    <p style="margin-top:8px">${pill(apto ? 0 : 2, apto ? "Calibrado" : "Corregir antes de aplicar")}</p>
+    ${!apto ? `<p class="note">Ajustar la presión o las boquillas hasta ${fmt(Qn, 2)} L/min.</p>` : ""}
+    <div class="row" style="margin-top:10px"><button class="btn pri sm" id="cwSave">Guardar calibración</button></div>`;
+}
 function calAereoRes(q){
-  const cw = CW[q.id], m = modoDe(q), dr = m === "drone", V = nv(cw.cV) ?? volEq(q), v = nv(cw.cv) ?? velEq(q, m), W = nv(cw.cW) ?? nv(q.faja);
+  const cw = CW[q.id], m = modoDe(q), dr = m === "drone", V = nv(cw.cV) ?? volEq(q), v = nv(cw.cv) ?? velEq(q, m), W = nv(cw.cW) ?? nv(q.faja) ?? (m === "turbo" ? nvN(cw.fila) ?? 6 : null);
   const L = nv(cw.L), Ls = nv(cw.Ls) ?? 60;
   if(!(W > 0) || !(V > 0) || !(v > 0)) return `<p class="note">Cargá el volumen buscado, la velocidad y el ancho de faja verificado.</p>`;
-  const Qn = dr ? CAL.qDrone(V, v, W) : CAL.qAvion(V, v, W);
+  const Qn = dr ? CAL.qDrone(V, v, W) : CAL.qAvion(V, v, W), tb = m === "turbo";
   if(L == null || !Ls) return `<p class="note">Caudal necesario: <b>${fmt(Qn, 2)} L/min</b>. Cargá lo recogido para comparar.</p>`;
   const Q = L / Ls * 60, Vr = dr ? Q / (v * W * 0.006) : Q * 600 / (v * W), err = (Vr - V) / V * 100;
   const imp = nv(cw.imp), objImp = gotaCaldo(evaluate(S)).map(g => parseInt(g.impactos)).filter(x => x > 0), minImp = objImp.length ? Math.max(...objImp) : 20;
@@ -3565,8 +3773,8 @@ function calAereoRes(q){
       <div><b>${fmt(Vr, 1)} L/ha</b><span>Volumen real</span></div><div><b>${err > 0 ? "+" : ""}${fmt(err, 1)} %</b><span>Diferencia con ${fmt(V, 0)} L/ha</span></div>
       ${imp != null ? `<div><b>${fmt(imp, 0)}</b><span>Impactos/cm² (mínimo ${minImp} para el caldo actual)</span></div>` : ""}</div>
     <p style="margin-top:8px">${pill(apto ? 0 : 2, apto ? "Calibrado" : "Corregir antes de aplicar")}</p>
-    ${Math.abs(err) > EQD.tolerancias.volumen_pct ? (() => { const vS = v * Vr / V, vOk = dr ? vS >= 2 && vS <= 8 : vS >= 150 && vS <= 260;
-      return `<p class="note">Ajustar el caudal a ${fmt(Qn, 2)} L/min ${dr ? "en la app del drone (calibración del caudalímetro)" : "(presión, restrictores o palas de los atomizadores)"}${vOk ? ` o la velocidad a ${fmt(vS, 1)} ${dr ? "m/s" : "km/h"}` : ""}.</p>`; })() : ""}
+    ${Math.abs(err) > EQD.tolerancias.volumen_pct ? (() => { const vS = v * Vr / V, vOk = dr ? vS >= 2 && vS <= 8 : tb ? vS >= 2 && vS <= 8 : vS >= 150 && vS <= 260;
+      return `<p class="note">Ajustar el caudal a ${fmt(Qn, 2)} L/min ${dr ? "en la app del drone (calibración del caudalímetro)" : tb ? "(presión o discos y núcleos de las boquillas)" : "(presión, restrictores o palas de los atomizadores)"}${vOk ? ` o la velocidad a ${fmt(vS, 1)} ${dr ? "m/s" : "km/h"}` : ""}.</p>`; })() : ""}
     ${imp != null && imp < minImp ? `<p class="note">Pocos impactos: subir el volumen, bajar la gota o la altura, o achicar la faja.</p>` : ""}
     <div class="row" style="margin-top:10px"><button class="btn pri sm" id="cwSave">Guardar calibración</button></div>`;
 }
@@ -3576,9 +3784,9 @@ function bindEqDetalle(q){
   $("#eqLimp").onclick = () => openLimpieza(q.id);
   $("#eqDup").onclick = () => { const c = clone(q); c.id = uid("eq"); c.nombre = q.nombre + " (copia)"; c.ejemplo = false; c.calibraciones = []; c.inspeccion = null; EQUIPOS.push(c); saveEquipos(); EQ_SEL = c.id; renderEquipos(); };
   $("#eqDel").onclick = e => { const b = e.target; if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Seguro?"; return; } EQUIPOS = EQUIPOS.filter(x => x !== q); saveEquipos(); if(S.equipo === q.id){ S.equipo = null; save(); } EQ_SEL = null; renderEquipos(); toast("Equipo borrado"); };
-  const regBind = () => { const r = $("#eqReg"); r.innerHTML = eqRegHTML(q); [["rgV", "rV"], ["rgv", "rv"], ["rgW", "rW"]].forEach(([id, k]) => { const el = $("#" + id); if(el) el.onchange = ev => { const x = nv(ev.target.value); if(x == null || x <= 0){ toast("Cargá un valor mayor que cero"); regBind(); return; } cw[k] = x; regBind(); }; }); };
+  const regBind = () => { const r = $("#eqReg"); r.innerHTML = eqRegHTML(q); document.querySelectorAll("#eqReg .rgx").forEach(el => el.onchange = ev => { cw[el.dataset.k] = nvN(ev.target.value); regBind(); }); [["rgV", "rV"], ["rgv", "rv"], ["rgW", "rW"]].forEach(([id, k]) => { const el = $("#" + id); if(el) el.onchange = ev => { const x = nv(ev.target.value); if(x == null || x <= 0){ toast("Cargá un valor mayor que cero"); regBind(); return; } cw[k] = x; regBind(); }; }); };
   regBind();
-  const res = () => { const r = $("#cwRes"); if(!r) return; r.innerHTML = m === "terrestre" ? calTerrRes(q) : m === "mochila" ? calMochRes(q) : calAereoRes(q); bindSave(); };
+  const res = () => { const r = $("#cwRes"); if(!r) return; r.innerHTML = m === "terrestre" ? calTerrRes(q) : m === "mochila" ? calMochRes(q) : m === "granos" ? calGranosRes(q) : calAereoRes(q); bindSave(); };
   const calBind = () => { $("#eqCal").innerHTML = eqCalHTML(q);
     document.querySelectorAll("#eqCal .cwi").forEach(el => el.oninput = ev => { cw[el.dataset.k] = ev.target.value; if(el.dataset.k === "n") calBind(); else res(); });
     document.querySelectorAll("#cwMl input").forEach(el => el.oninput = ev => { cw.ml[+el.dataset.i] = ev.target.value; res(); });
@@ -3597,6 +3805,9 @@ function bindEqDetalle(q){
 }
 function openEqForm(q0){
   const nuevo = !q0, q = q0 ? clone(q0) : {id: uid("eq"), tipo: "autopropulsada", nombre: "", tanque: 3000, n_pastillas: 54, espaciado: 50, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 3, vel: 16, altura: 50, eficiencia: 60, calibraciones: []};
+  if(nuevo){ const t0 = tiposRubro()[0]; if(t0 && t0 !== "autopropulsada"){ q.tipo = t0; const mm = modoDe(q);
+    if(mm !== "terrestre") ["n_pastillas", "espaciado", "pastilla_tipo", "pastilla_iso", "angulo", "altura", "eficiencia"].forEach(x => delete q[x]);
+    Object.assign(q, {montada: {tanque: 600}, arrastre: {tanque: 2000}, turbo: {tanque: 2000, n_lado: 8, vel: 4, presion: 10}, cinta: {tanque: 200, capacidad: 40, n_boquillas: 3, presion: 2}}[t0] || {}); } }
   const draw = () => {
     const m = modoDe(q), num = (k, lab, st = "any", ph = "") => `<label class="f">${lab}<input data-k="${k}" type="number" step="${st}" value="${q[k] ?? ""}" placeholder="${ph}"></label>`;
     const selTipoPast = `<label class="f">Tipo de pastilla<select data-k="pastilla_tipo">${Object.entries(EQD.tipos_pastilla).map(([k, t]) => `<option value="${k}"${q.pastilla_tipo === k ? " selected" : ""}>${esc(t.nombre)}</option>`).join("")}</select></label>`;
@@ -3610,6 +3821,8 @@ function openEqForm(q0){
     if(m === "terrestre") campos = `${selModelo}${num("n_pastillas", "N.º de pastillas", 1)}${num("espaciado", "Separación entre pastillas (cm)", 1, "50")}${num("ancho", "Ancho de barra (m)", 0.5, q.n_pastillas && q.espaciado ? fmt(q.n_pastillas * q.espaciado / 100, 1) : "")}${selTipoPast}${selIso}
       <label class="f">Ángulo (°)<select data-k="angulo">${[110, 80, 65, 120].map(a => `<option${+q.angulo === a ? " selected" : ""}>${a}</option>`).join("")}</select></label>
       ${num("presion", "Presión de trabajo (bar)", 0.1)}${num("vel", "Velocidad de trabajo (km/h)", 0.5)}${num("altura", "Altura de barra (cm)", 1)}${num("bomba", "Caudal de la bomba (L/min)", 1)}${num("secciones", "Secciones de barra", 1)}${num("agua_limpia", "Tanque de agua limpia (L)", 1)}${num("eficiencia", "Eficiencia de campo (%)", 1, "60")}`;
+    if(m === "turbo") campos = `${num("n_lado", "Boquillas por lado", 1, "8")}${num("vel", "Velocidad de trabajo (km/h)", 0.5, "4")}${num("presion", "Presión de trabajo (bar)", 0.5, "10")}<label class="f" style="grid-column:1/-1">Boquillas (disco y núcleo, o modelo)<input data-k="boquilla" value="${esc(q.boquilla || "")}" placeholder="Ej.: cono hueco JA-2"></label>`;
+    if(m === "granos") campos = `${num("capacidad", "Capacidad de la rosca o cinta (t/h)", 1, "40")}${num("bomba", "Caudal de la bomba (L/min)", 0.1)}${num("n_boquillas", "Boquillas", 1, "3")}${num("presion", "Presión (bar)", 0.1, "2")}`;
     if(m === "mochila") campos = `${selModelo}${num("faja", "Ancho de faja (m)", 0.1, "1")}${num("vel", "Velocidad de marcha (km/h)", 0.1, "2,4")}${selTipoPast}${selIso}${num("presion", "Presión (bar)", 0.1, "2")}`;
     if(m === "drone" || m === "avion") campos = `${selModelo}
       ${num("faja", "Ancho de faja (m)", 0.5)}${num("vel", m === "drone" ? "Velocidad de trabajo (m/s)" : "Velocidad de trabajo (km/h)", m === "drone" ? 0.5 : 5)}${num("alt", "Altura de vuelo (m)", 0.5)}${num("caudal_max", "Caudal máximo (L/min)", 0.5)}
@@ -3619,7 +3832,7 @@ function openEqForm(q0){
       <form class="stack" id="fEq" style="gap:12px">
         <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
           <label class="f" style="grid-column:1/-1">Nombre<input data-k="nombre" value="${esc(q.nombre || "")}" placeholder="Ej.: Autopropulsada del lote norte" required></label>
-          <label class="f">Tipo<select data-k="tipo">${Object.entries(TIPOS_EQ).map(([k, t]) => `<option value="${k}"${q.tipo === k ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+          <label class="f">Tipo<select data-k="tipo">${Object.entries(TIPOS_EQ).filter(([k]) => tiposRubro().includes(k) || k === q.tipo).map(([k, t]) => `<option value="${k}"${q.tipo === k ? " selected" : ""}>${t}</option>`).join("")}<optgroup label="Otros rubros">${Object.entries(TIPOS_EQ).filter(([k]) => !tiposRubro().includes(k) && k !== q.tipo).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</optgroup></select></label>
           <label class="f">Marca y modelo<input data-k="marca" value="${esc(q.marca || "")}"></label>
           ${num("tanque", m === "avion" ? "Tolva (L)" : m === "mochila" ? "Capacidad de la mochila (L)" : "Tanque (L)", 1)}${num("remanente", "Remanente que no se aplica (L)", 0.5, "0")}
           ${campos}
@@ -3636,6 +3849,9 @@ function openEqForm(q0){
         if(mm !== "terrestre") ["secciones", "agua_limpia"].forEach(x => delete q[x]);
         if(mm !== "terrestre") ["n_pastillas", "espaciado", "ancho", "angulo", "altura", "bomba", "eficiencia"].forEach(x => delete q[x]);
         if(esAereo(mm)) ["pastilla_tipo", "pastilla_iso", "presion"].forEach(x => delete q[x]); else ["modelo", "faja", "alt", "caudal_max", "atom", "n_atom", "gota", "autonomia", "baterias"].forEach(x => { if(!(mm === "mochila" && x === "faja")) delete q[x]; });
+        if(mm === "turbo") Object.assign(q, {tanque: 2000, n_lado: 8, vel: 4, presion: 10});
+        if(mm === "granos") Object.assign(q, {tanque: 200, capacidad: 40, n_boquillas: 3, presion: 2});
+        if(q.tipo === "pistola") Object.assign(q, {tanque: 400, faja: 1, vel: 2, presion: 5});
         if(mm === "terrestre") Object.assign(q, {tanque: 3000, n_pastillas: 54, espaciado: 50, pastilla_tipo: "ai", pastilla_iso: "025", angulo: 110, presion: 3, vel: 16, altura: 50, eficiencia: 60}); if(mm === "drone"){ Object.assign(q, {tanque: 40, faja: 7, vel: 6, alt: 2.5, caudal_max: 12, atom: "centrifugo", n_atom: 2, gota: 300}); } else if(mm === "avion"){ Object.assign(q, {tanque: 1893, faja: 28, vel: 210, alt: 4, atom: "rotativo", n_atom: 8, gota: 250}); } else if(mm === "mochila"){ Object.assign(q, {tanque: 20, faja: 1, vel: 2.4, presion: 2, pastilla_tipo: "std", pastilla_iso: "02"}); } draw(); }
       if(k === "modelo" && v && (m === "terrestre" || m === "mochila")){ const x = modelos.find(y => y.id === v); if(x){
         q.tanque = x.tanque; q.marca = x.nombre; if(!q.nombre) q.nombre = x.nombre; q.funciones = (x.fun || []).slice();

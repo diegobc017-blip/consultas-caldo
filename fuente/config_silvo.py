@@ -16,7 +16,14 @@ RESIDUAL_RAIZ = ["picloram", "tebutiuron", "hexazinona", "imazapir", "aminopiral
 TOTALES = ["glifosato", "paraquat", "diquat", "glufosinato", "glufosinato_p"]
 ESTIERCOL = ["picloram", "clopiralida", "aminopiralida"]
 
+SOLO_FILA = ["isoxaflutol", "sulfentrazona", "flumioxazin", "oxifluorfen", "simazina", "haloxifop"]
 REGLAS_SILVO = [
+ {"id": "SP06", "tipo": "fitotoxicidad", "severidad": "alta",
+  "titulo": "Preemergente forestal o graminicida en silvopastoril: mata la pastura",
+  "condiciones": {"presentes": [{"ai": SOLO_FILA}], "agua": {}, "caldo": {"rubro": {"==": "SP"}}},
+  "mecanismo": "Los preemergentes de eucalipto (isoxaflutol, sulfentrazona, flumioxazin, oxifluorfen, simazina) y los graminicidas controlan justamente los pastos: en silvopastoril la pastura es el cultivo.",
+  "recomendacion": "Usarlos solo en la fila de árboles, en la implantación y antes de sembrar la pastura, dirigidos; nunca en cobertura sobre el potrero.",
+  "confianza": "alta", "problemas": ["PR24"]},
  {"id": "SP01", "tipo": "fitotoxicidad", "severidad": "alta",
   "titulo": "Herbicida hormonal en silvopastoril: daña los árboles",
   "condiciones": {"presentes": [{"ai": AUXINICOS}], "agua": {}, "caldo": {"rubro": {"==": "SP"}}},
@@ -49,6 +56,7 @@ REGLAS_SILVO = [
   "confianza": "alta", "problemas": ["PR23"]},
 ]
 SEMAFORO_SILVO = {
+ "SP06": [None, 1, {"solofila": 1}],
  "SP01": [None, 1, {"dirigida": 1, "antideriva": 1}],
  "SP02": [None, 2, {"zonaraiz": 1}],
  "SP03": [None, 0, {"dirigida": 1, "antideriva": 1}],
@@ -56,6 +64,7 @@ SEMAFORO_SILVO = {
  "SP05": [1, 1, {}],
 }
 MEDIDAS_SILVO = {
+ "solofila": {"tipo": "practica", "nombre": "Solo en la fila de árboles, antes de sembrar la pastura", "detalle": "Dirigido a la línea de plantación en la implantación, cuando todavía no hay pastura sembrada; nunca en cobertura sobre el potrero."},
  "dirigida": {"tipo": "practica", "nombre": "Aplicación dirigida lejos de los árboles", "detalle": "Dirigida a las malezas con pantalla, mochila o barra corta, a más de 10 m de la fila de árboles y sin mojar hojas ni tallos de los árboles."},
  "zonaraiz": {"tipo": "practica", "nombre": "Fuera de la zona de raíces", "detalle": "No aplicar bajo la copa ni a menos de 1 a 2 veces la altura de los árboles."},
  "retiro": {"tipo": "practica", "nombre": "Animales fuera del potrero", "detalle": "Animales retirados antes de aplicar y reingreso según la etiqueta."},
