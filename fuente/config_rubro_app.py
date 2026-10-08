@@ -60,7 +60,7 @@ VOL_RUBRO = {
 # la misma formulación cuando la de Paraguay no está publicada). AG usa el caso práctico original de la app.
 EJEMPLOS = {
  "HO": {"items": [["2618", 3.0], ["4266", 0.09]], "vol": 600, "tanque": 600, "modo": "terrestre", "sup": 2,
-        "cult": {"actual": "hortalizas", "momento": "post", "siguiente": None},
+        "cult": {"actual": "tomate", "momento": "post", "siguiente": None},
         "caldo": {"horas_en_tanque": 1, "temperatura_ambiente_C": 24, "HR": 70, "viento_kmh": 6, "nubosidad": "Parcial"},
         "agua": {"pH": 7.2, "dureza_ppm_CaCO3": 120}},
  "FO": {"items": [["2979", 3.0], ["1501", 0.15]], "vol": 150, "tanque": 2000, "modo": "terrestre", "sup": 40,

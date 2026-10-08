@@ -19,6 +19,8 @@ App para preparar caldos fitosanitarios con los productos registrados en el SENA
   - Exporta Shapefile .zip, GeoJSON, KML, GPX y CSV de vértices en WGS 84, además del historial y un respaldo completo.
 - **Cultivos y carry-over:** se elige el cultivo actual, el momento (barbecho, preemergencia, sobre el cultivo o desecación) y el cultivo siguiente con su fecha de siembra. La app revisa si el cultivo tolera cada herbicida y cuántos días esperar para sembrar, también por residuos de aplicaciones anteriores del lote.
 - **Historial de aplicaciones por lote**, con productos, dosis, condiciones y semáforo.
+- **Tratamiento de semillas:** kg/ha por densidad (o valor cultural en pasturas), curasemillas, biológicos, micronutrientes e inoculante por cada 100 kg, por tanda y total; volumen máximo de caldo, orden de carga y alertas (inoculante con químicos, tiempo hasta la siembra, germinación). Registro por lote de semilla, vinculado a los lotes del campo, y directorio de empresas con sus curasemillas, biológicos e inoculantes.
+- **Dureza del agua por zona:** estimación de dureza, pH y conductividad según la zona de Paraguay (acuíferos Yrendá, Patiño y Guaraní) y la fuente del agua; se carga solo si el usuario lo pide y queda marcada como estimada. Las zonas se regeneran con `python3 fuente/make_zonas_agua.py` (requiere shapely).
 - **Rotación de modos de acción:**
   - Para qué se usa cada activo y qué grupos HRAC, IRAC y FRAC alternar para el mismo objetivo.
   - Avisos de rotación según el historial de cada lote.

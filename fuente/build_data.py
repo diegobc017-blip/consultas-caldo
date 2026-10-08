@@ -15,7 +15,13 @@ import config_problemas as PB
 import config_catalogo as CAT
 import config_limpieza as LP
 import config_rubro_app as RA
+import config_hort as HOR
+import config_semillas as SEMI
 import re
+
+HOR.aplicar(CULTIVOS, HOJA, CARRY, SELECT, LP.GRUPOS)
+RA.CULT_RUBRO["HO"] = HOR.CULT_HO
+RA.SIN_SELECT = []
 
 _AQUI = os.path.dirname(os.path.abspath(__file__))
 # Busca la base: variable BASE_QUIMICA, datos/ del repositorio, o la carpeta consultas (arriba del repositorio)
@@ -367,7 +373,13 @@ DB = {
               "lavado_nota": CL.LAVADO_NOTA, "pre": CL.PREEMERGENTES, "pre_momento": CL.PRE_SEGUN_MOMENTO, "activacion": CL.LLUVIA_ACTIVACION, "aux_vol": CL.AUXINICOS_VOLATILES,
               "t_vol": CL.T_VOLATILIDAD, "t_aceite": CL.T_ACEITE_AZUFRE, "inversion": CL.INVERSION, "rafaga": CL.RAFAGA_ALTA},
     "senales_mal_estado": SENALES_MAL_ESTADO, "prueba_calidad": PRUEBA_CALIDAD_CASERA,
+    "semillas": {"cultivos": SEMI.CULTIVOS_SEM, "clases": SEMI.CLASES_TS, "orden": SEMI.ORDEN_TS, "chequeos": SEMI.CHEQUEOS_TS,
+                 "seguridad": SEMI.SEGURIDAD_TS, "germinacion": SEMI.GERMINACION, "inoculantes": SEMI.INOCULANTES,
+                 "servicios": SEMI.SERVICIOS_TS, "fuentes": SEMI.FUENTES_TS},
+    "agua_zonas": json.load(open(os.path.join(_AQUI, "..", "datos", "zonas_agua.json"), encoding="utf-8")),
 }
+for _k, _c in SEMI.CULTIVOS_SEM.items():
+    assert set(_c["rub"].split()) <= set(RUBROS), _k
 # chequeos
 _ids = {a['id'] for a in activos}
 assert set(CARRY) <= _ids, set(CARRY) - _ids

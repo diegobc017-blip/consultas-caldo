@@ -128,6 +128,11 @@ main{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:18px 60px}
 label.f{display:flex;flex-direction:column;gap:3px;font-size:.8rem;color:var(--muted);min-width:0}
 label.f input,label.f select{border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:6px 8px;font-size:.92rem;color:var(--ink);width:100%;min-width:0}
 .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.sitem{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+tr.clk{cursor:pointer} tr.clk:hover td{background:var(--accent-soft)}
+.est-banner{background:var(--s1-bg);border:1px dashed var(--s1);border-radius:8px;padding:8px 12px;font-size:.86rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+input.est,select.est{border-style:dashed;border-color:var(--s1);background:var(--s1-bg)}
 details.box{border:1px solid var(--line);border-radius:8px;background:var(--panel)}
 details.box>summary{cursor:pointer;padding:10px 12px;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:8px;align-items:center}
 details.box>summary::-webkit-details-marker{display:none}
@@ -357,6 +362,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
       <button role="tab" data-v="campos" aria-selected="false">Campos y lotes</button>
       <button role="tab" data-v="equipos" aria-selected="false">Equipos y calibración</button>
       <button role="tab" data-v="historial" aria-selected="false">Historial</button>
+      <button role="tab" data-v="semillas" aria-selected="false">Semillas</button>
       <button role="tab" data-v="rotacion" aria-selected="false">Rotación</button>
       <button role="tab" data-v="caso" aria-selected="false">Caso práctico</button>
       <button role="tab" data-v="productos" aria-selected="false">Productos</button>
@@ -426,6 +432,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
         </div>
         <div class="panel" id="pAgua">
           <div class="panel-h"><h3>3 · Agua</h3><span class="note">Lo que falte queda “a verificar”.</span></div>
+          <div id="aguaEst"></div>
           <div class="fields">
             <label class="f">pH<input id="a_pH" type="number" step="0.1"></label>
             <label class="f">Dureza (ppm CaCO₃)<input id="a_dureza_ppm_CaCO3" type="number" step="1"></label>
@@ -474,6 +481,8 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
   <section class="view" id="v-equipos" hidden></section>
   <!-- HISTORIAL -->
   <section class="view" id="v-historial" hidden></section>
+  <!-- SEMILLAS -->
+  <section class="view" id="v-semillas" hidden></section>
   <!-- ROTACIÓN -->
   <section class="view" id="v-rotacion" hidden></section>
   <!-- CASO PRÁCTICO -->
@@ -855,6 +864,8 @@ const rubIcon = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 function renderRubros(){
   if(!D.rubros[RUBRO]) RUBRO = "AG";
   $("#rubroIco").innerHTML = rubIcon(RUBRO); $("#rubroNom").textContent = D.rubros[RUBRO].nombre;
+  const ts = $('#tabs [data-v="semillas"]'); if(ts) ts.hidden = RUBRO === "AL";
+  if(RUBRO === "AL" && typeof VIEW !== "undefined" && VIEW === "semillas") setView("caldo");
 }
 function elegirRubro(k){
   const antesAL = RUBRO === "AL", ahoraAL = k === "AL";
@@ -934,7 +945,7 @@ function bindInputs(){
   $("#portador").onchange=e=>{S.caldo.portador=e.target.value;upd()};
   $("#bolsas").onchange=e=>{S.caldo.bolsas_hidrosolubles=e.target.value==="true";upd()};
   $("#phfinal").oninput=e=>{S.caldo.pH_final=numOrNull(e.target.value);upd()};
-  AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.addEventListener(el.tagName==="SELECT"?"change":"input", e=>{ S.agua[k] = k==="turbidez" ? (e.target.value||null) : numOrNull(e.target.value); upd(); }); });
+  AGUA_KEYS.forEach(k=>{ const el=$("#a_"+k); el.addEventListener(el.tagName==="SELECT"?"change":"input", e=>{ S.agua[k] = k==="turbidez" ? (e.target.value||null) : numOrNull(e.target.value); if(S.aguaEst){ S.aguaEst.campos = S.aguaEst.campos.filter(x => x !== k); if(!S.aguaEst.campos.length) S.aguaEst = null; } upd(); }); });
   $("#btnVaciar").onclick=()=>{ S=migrar({items:[],vol:100,tanque:2000,agua:{},caldo:{},medidas:[],ejemplo:false}); save(); fillInputs(); renderCaldo(); };
 }
 function save(){ store("estado", S); }
@@ -1075,7 +1086,7 @@ function renderCaldo(){
   $("#fertLbl").parentElement.hidden = AL;
   $("#exTitulo").textContent = RUBRO === "AG" || !D.rubro_app.casos[RUBRO] ? "barbecho químico pre-siembra de soja" : D.rubro_app.casos[RUBRO].titulo.toLowerCase();
   $("#q").placeholder = "Principio activo o producto (ej.: " + ({AG: "glifosato, lambda, Tordon", HO: "mancozeb, abamectina, Coragen", FO: "isoxaflutol, glifosato, cebo hormiguicida", PA: "picloram, 2,4-D, metsulfurón", SP: "2,4-D, fluroxipir, metsulfurón", AL: "pirimifos, deltametrina, fosfina"}[RUBRO] || "glifosato") + ")";
-  $("#cuRow").hidden = AL;
+  $("#cuRow").hidden = AL; renderAguaEst();
   $("#supLbl").textContent = UB().area; $("#volLbl").textContent = AL ? "Caldo por tonelada (L/t)" : "Volumen (L/ha)";
   const vr = (D.rubro_app.vol[RUBRO] || {})[mo];
   $("#volHint").textContent = vr ? `Referencia en ${D.rubros[RUBRO].nombre}, ${MODOS[mo].toLowerCase()}: ${vr[2]}.${vr[1] && S.vol != null && (S.vol < vr[0] || S.vol > vr[1]) ? " El volumen cargado está fuera de ese rango." : ""}` : "";
@@ -2017,10 +2028,11 @@ const sinTildes = s => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300
 function cultCode(txt){
   const s = sinTildes(txt); if(!s) return null;
   if(D.cultivos[s]) return s;
-  const M = [["soja","soja"],["maiz","maiz"],["trigo","trigo"],["avena","trigo"],["cebada","trigo"],["arroz","arroz"],["sorgo","sorgo"],["girasol","girasol"],["canola","canola"],["colza","canola"],["algodon","algodon"],["poroto","poroto"],["frijol","poroto"],["sesamo","sesamo"],["chia","chia"],["cana","cana"],["mandioca","mandioca"],["hortal","hortalizas"],["tomate","hortalizas"],["papa","hortalizas"],["alfalfa","pastura_leg"],["legumin","pastura_leg"],["pastur","pastura_gram"],["brachiaria","pastura_gram"],["panicum","pastura_gram"],["eucal","eucalipto"],["pino","eucalipto"]];
+  const M = [["soja","soja"],["maiz","maiz"],["trigo","trigo"],["avena","trigo"],["cebada","trigo"],["arroz","arroz"],["sorgo","sorgo"],["girasol","girasol"],["canola","canola"],["colza","canola"],["algodon","algodon"],["poroto","poroto"],["frijol","poroto"],["sesamo","sesamo"],["chia","chia"],["cana","cana"],["mandioca","mandioca"],["tomate","tomate"],["locote","locote"],["pimiento","locote"],["morron","locote"],["papa","papa"],["cebolla","cebolla"],["ajo","cebolla"],["zanahoria","zanahoria"],["lechuga","lechuga"],["acelga","lechuga"],["repollo","cruciferas"],["brocoli","cruciferas"],["coliflor","cruciferas"],["sandia","cucurbitas"],["melon","cucurbitas"],["zapallo","cucurbitas"],["pepino","cucurbitas"],["frutilla","frutilla"],["citric","citricos"],["naranja","citricos"],["mandarina","citricos"],["limon","citricos"],["pomelo","citricos"],["durazno","frutales"],["uva","frutales"],["vid","frutales"],["mango","frutales"],["frutal","frutales"],["hortal","hortalizas"],["alfalfa","pastura_leg"],["legumin","pastura_leg"],["pastur","pastura_gram"],["brachiaria","pastura_gram"],["panicum","pastura_gram"],["eucal","eucalipto"],["pino","eucalipto"]];
   const m = M.find(([k]) => s.includes(k)); return m ? m[1] : null;
 }
 const nomCult = k => k ? D.cultivos[k] || k : "—";
+const PERENNES = ["citricos", "frutales"];
 function carryDias(aiId, crop){
   const c = D.carry[aiId]; if(!c) return null;
   let d = c[crop];
@@ -2049,9 +2061,15 @@ function chequeoSelect(aiId, crop, momento){
   if(D.rubro_app.sin_select.includes(crop)) return {level: 1, txt: `Sin datos de selectividad en ${nomCult(crop)}: solo dirigido entre filas y según la etiqueta`};
   const s = D.select[aiId];
   if(!s) return {level: 1, txt: "Sin dato de selectividad: ver la etiqueta"};
-  const lista = s[momento];
-  if(lista === "*") return {level: 0, txt: momento === "pre" ? "Desecante: aplicar antes de que emerja el cultivo" : "OK"};
-  if((lista || []).includes(crop)) return {level: 0, txt: `${nomCult(crop)} tolera la aplicación ${momento === "pre" ? "preemergente" : "sobre el cultivo"}`};
+  const lista = s[momento], perenne = PERENNES.includes(crop), dir = (s.dir || []).includes(crop);
+  if(perenne){
+    if(momento === "pre" && Array.isArray(lista) && lista.includes(crop)) return {level: 0, txt: `Residual al suelo bajo los árboles establecidos de ${nomCult(crop).toLowerCase()}, sin mojar hojas ni frutos${s.n ? ". " + s.n : ""}`};
+    if(Array.isArray(lista) && lista.includes(crop)) return {level: 0, txt: `${nomCult(crop)} tolera la aplicación`};
+    if(dir) return {level: 1, txt: `Solo dirigido a las malezas, sin mojar hojas, frutos ni tronco verde de ${nomCult(crop).toLowerCase()}`};
+    return {level: 3, txt: `${nomCult(crop)}: sin uso conocido sobre o bajo los árboles${s.n ? ". " + s.n : ""}`};
+  }
+  if(lista === "*") return {level: 0, txt: momento === "pre" ? "Desecante: aplicar antes de que emerja o se trasplante el cultivo" : "OK"};
+  if((lista || []).includes(crop)) return {level: 0, txt: `${nomCult(crop)} tolera la aplicación ${momento === "pre" ? "preemergente" : "sobre el cultivo"}${s.n && D.rubro_app.cult.HO.includes(crop) ? ". " + s.n : ""}`};
   if(s.tec && s.tec[crop]) return {level: 1, txt: `Solo en cultivares con tecnología ${s.tec[crop]}`};
   return {level: 3, txt: `${nomCult(crop)} no tolera esta aplicación ${momento === "pre" ? "preemergente" : "sobre el cultivo"}${s.n ? ". " + s.n : ""}`};
 }
@@ -2141,7 +2159,7 @@ function openRegistrar(){
     const rec = {id: uid("h"), fecha: $("#rFecha").value, campoId: c ? c.id : null, campoNombre: c ? c.nombre : "", loteIds, loteNombres: loteIds.map(id => findLote(c, id).nombre),
       ha: c ? Math.round(loteIds.reduce((s, id) => s + loteHa(findLote(c, id)), 0) * 10) / 10 : S.sup, objetivo: $("#rObj").value, operador: $("#rOper").value, obs: $("#rObs").value,
       vol: ev.inp.vol, tanque: S.tanque, modo: S.modo || "terrestre", equipo: (q => q ? {id: q.id, nombre: q.nombre, tipo: q.tipo} : null)(findEq(S.equipo)),
-      vuelo: ev.inp.aereo ? vueloDatos(ev) : null, items: reales.map(x => itemSnap(x.p.r, x.dosis)), medidas: [...ev.act], semaforo: ev.overall, alertas: ev.fired.map(f => f.r.id), amb, cult: clone(S.cult)};
+      vuelo: ev.inp.aereo ? vueloDatos(ev) : null, items: reales.map(x => itemSnap(x.p.r, x.dosis)), medidas: [...ev.act], semaforo: ev.overall, alertas: ev.fired.map(f => f.r.id), amb, cult: clone(S.cult), agua: clone(S.agua), agua_est: S.aguaEst ? S.aguaEst.zonaNombre || S.aguaEst.fuente : null};
     HIST.unshift(rec); saveHist();
     if(c){ loteIds.forEach(id => { const l = findLote(c, id); if(!l) return; if(S.cult.actual) l.cultivo = D.cultivos[S.cult.actual]; if(S.cult.siguiente) l.cultivo_sig = S.cult.siguiente; if(S.cult.siembra_sig) l.siembra_sig = S.cult.siembra_sig; }); saveCampos(); }
     openDrawer(`<div class="stack"><h2>Aplicación registrada</h2><p>${esc(fmtFH(rec.fecha))} · ${esc(rec.campoNombre)} ${esc(rec.loteNombres.join(", "))} · ${fmt(rec.ha, 1)} ha</p>
@@ -2209,7 +2227,7 @@ function kml(fc, nombre){
     return `<Placemark><name>${x(f.properties.lote || f.properties.nombre || "")}</name><ExtendedData>${Object.entries(f.properties).map(([k, v]) => `<Data name="${x(k)}"><value>${x(v)}</value></Data>`).join("")}</ExtendedData>${ps.length > 1 ? `<MultiGeometry>${ps.map(poly).join("")}</MultiGeometry>` : ps.map(poly).join("")}</Placemark>`; }).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(nombre)}</name>\n${pm}\n</Document></kml>`;
 }
-function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", []), rubros_corregidos: RUBOVR, equipos: EQUIPOS}; }
+function respaldo(){ return {app: "consultas-caldo", version: 1, fecha: new Date().toISOString(), campos: CAMPOS, historial: HIST, etiquetas: ETQ, guardados: load("guardados", []), rubros_corregidos: RUBOVR, equipos: EQUIPOS, semillas: SEMREG}; }
 function bajarBin(nombre, blob){
   if(enIframe){ toast("En esta vista no se pueden descargar archivos: usá la app publicada o instalada"); return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
@@ -2271,6 +2289,7 @@ const EXPORTS = {
   lotes_kml: () => bajar(`lotes_${hoyTxt()}.kml`, kml(lotesFC(CAMPOS), "Lotes"), "application/vnd.google-earth.kml+xml"),
   hist_csv: () => bajar(`historial_${hoyTxt()}.csv`, csv(histFilas(HIST).map(r => r.props)), "text/csv"),
   hist_geojson: () => bajar(`historial_${hoyTxt()}.geojson`, JSON.stringify({type: "FeatureCollection", name: "historial_aplicaciones", features: histFilas(HIST).filter(r => r.l && r.l.geom).map(r => ({type: "Feature", properties: r.props, geometry: r.l.geom}))}, null, 1), "application/geo+json"),
+  sem_csv: () => bajar(`tratamientos_semilla_${hoyTxt()}.csv`, csv(semFilas(SEMREG)), "text/csv"),
   respaldo: () => bajar(`respaldo_consultas_${hoyTxt()}.json`, JSON.stringify(respaldo()), "application/json"),
   lotes_shp: () => { const fc = lotesFC(CAMPOS); if(!fc.features.length){ toast("No hay lotes con mapa para exportar"); return; } bajarBin(`lotes_${hoyTxt()}.zip`, shapefileZip(fc, "lotes"), "application/zip"); },
   lotes_gpx: () => bajar(`lotes_${hoyTxt()}.gpx`, gpxDe(lotesFC(CAMPOS)), "application/gpx+xml"),
@@ -2549,15 +2568,16 @@ function previewImport(raw, fname){
 }
 function restaurar(j){
   openDrawer(`<div class="stack"><span class="eyebrow">Respaldo</span><h2>Restaurar respaldo</h2>
-    <p>Del ${esc(fmtFH(j.fecha))}: ${j.campos?.length || 0} campos, ${j.historial?.length || 0} aplicaciones, ${j.equipos?.length || 0} equipos, ${j.guardados?.length || 0} caldos guardados.</p>
+    <p>Del ${esc(fmtFH(j.fecha))}: ${j.campos?.length || 0} campos, ${j.historial?.length || 0} aplicaciones, ${j.semillas?.length || 0} tratamientos de semilla, ${j.equipos?.length || 0} equipos, ${j.guardados?.length || 0} caldos guardados.</p>
     <div class="row"><button class="btn pri" id="rsAdd">Agregar a lo que tengo</button><button class="btn" id="rsRep">Reemplazar todo</button></div>
     <p class="note">“Agregar” suma los campos y aplicaciones que no estén. “Reemplazar” borra lo de este dispositivo y deja solo el respaldo.</p></div>`);
-  const fin = () => { saveCampos(); saveHist(); saveEtq(); saveEquipos(); store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; closeDrawer(); toast("Respaldo restaurado"); renderAll(); };
+  const fin = () => { saveCampos(); saveHist(); saveSemReg(); saveEtq(); saveEquipos(); store("rubro_ovr", RUBOVR); aplicarOvr(); for(const k in CNT) delete CNT[k]; closeDrawer(); toast("Respaldo restaurado"); renderAll(); };
   $("#rsAdd").onclick = () => { const ids = new Set(CAMPOS.map(c => c.id)), hids = new Set(HIST.map(h => h.id));
     (j.campos || []).forEach(c => { if(!ids.has(c.id)) CAMPOS.push(c); }); (j.historial || []).forEach(h => { if(!hids.has(h.id)) HIST.push(h); });
+    const sids = new Set(SEMREG.map(r => r.id)); (j.semillas || []).forEach(r => { if(!sids.has(r.id)) SEMREG.push(r); });
     const eids = new Set(EQUIPOS.map(q => q.id)); (j.equipos || []).forEach(q => { if(!eids.has(q.id)) EQUIPOS.push(q); });
     ETQ = Object.assign({}, j.etiquetas || {}, ETQ); RUBOVR = Object.assign({}, j.rubros_corregidos || {}, RUBOVR); store("guardados", load("guardados", []).concat(j.guardados || [])); fin(); };
-  $("#rsRep").onclick = () => { CAMPOS = j.campos || []; HIST = j.historial || []; EQUIPOS = j.equipos || []; ETQ = j.etiquetas || {}; RUBOVR = j.rubros_corregidos || {}; store("guardados", j.guardados || []); fin(); };
+  $("#rsRep").onclick = () => { CAMPOS = j.campos || []; HIST = j.historial || []; SEMREG = j.semillas || []; EQUIPOS = j.equipos || []; ETQ = j.etiquetas || {}; RUBOVR = j.rubros_corregidos || {}; store("guardados", j.guardados || []); fin(); };
 }
 
 /* ---------- Rotación por lote ---------- */
@@ -2881,6 +2901,7 @@ function abrirLote(c, l){
     <div class="row"><button class="btn pri" id="lUsar">Usar en el caldo</button><button class="btn" id="lEdit">Editar</button>${l.geom ? `<button class="btn" id="lEditGeo">Editar límites</button><button class="btn" id="lDiv">Dividir</button>` : ""}<button class="btn" id="lRedraw">${l.geom ? "Redibujar" : "Dibujar"} en el mapa</button><button class="btn" id="lGps">Recorrer con GPS</button><button class="btn" id="lDel">Borrar lote</button></div>
     ${carryLoteHTML(l)}
     <div class="panel"><h4>Modos de acción usados en 12 meses</h4>${Object.keys(porClase).length ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Clase</th><th>Grupo</th><th style="text-align:right">Aplicaciones</th></tr></thead><tbody>${Object.entries(porClase).flatMap(([k, gs]) => Object.entries(gs).sort((a, b) => b[1].size - a[1].size).map(([g, s]) => `<tr><td>${esc(CLASES[k] || k)}</td><td><span class="mono">${esc(g)}</span> <span class="note">${esc(GRUPO_DESC[g] || "")}</span></td><td class="n">${s.size >= 3 ? pill(2, s.size + "") : s.size === 2 ? pill(1, s.size + "") : s.size}</td></tr>`)).join("")}</tbody></table></div>` : `<p class="note">Sin aplicaciones registradas.</p>`}</div>
+    ${semLoteHTML(l)}
     <h3>Historial del lote</h3>
     ${hs.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Productos</th><th>Objetivo</th><th>Condiciones</th></tr></thead><tbody>${hs.map(h => `<tr><td class="mono">${esc(fmtFecha(h.fecha))}</td><td>${h.items.map(i => `${esc(i.n)} <span class="note">${fmt(i.dosis, 3)} ${i.u}/ha</span>`).join("<br>")}</td><td>${esc(h.objetivo || "")}</td><td class="note">${ambTxt(h.amb)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="note">Todavía no hay aplicaciones. Registralas desde “Armar caldo”.</p>`}</div>`);
   $("#lUsar").onclick = () => { S.ap = {campo: c.id, lotes: [l.id]}; S.supManual = false; S.sup = loteHa(l); S.ejemplo = false; save(); fillInputs(); closeDrawer(); setView("caldo"); };
@@ -3024,13 +3045,15 @@ function helpHTML(){
 
   <div class="panel"><h3>Las demás pestañas</h3>
     <dl class="faq">
-      <dt>Organización por rubro</dt><dd>Cada rubro tiene lo suyo: sus productos, sus cultivos (en Hortícola, hortalizas, cítricos y frutales; en Silvopastoril, pasturas y eucalipto), sus modos de aplicación y tipos de equipo (turboatomizador para frutales y cítricos, manguera con pistola para aplicaciones localizadas en pasturas y forestal, aplicador de granos en cinta o rosca), un volumen de referencia junto al campo de volumen, y su propio caldo de ejemplo y caso práctico: tomate con mancozeb y clorantraniliprol, eucalipto antes de plantar, potrero con picloram + 2,4-D, silvopastoril con 2,4-D + fluroxipir dirigido, y maíz que entra al silo.</dd>
+      <dt>Organización por rubro</dt><dd>Cada rubro tiene lo suyo: sus productos, sus cultivos (en Hortícola, tomate, locote, papa, cebolla, zanahoria, lechuga, crucíferas, cucurbitáceas, frutilla, cítricos y frutales, cada uno con su selectividad de herbicidas; en Silvopastoril, pasturas y eucalipto), sus modos de aplicación y tipos de equipo (turboatomizador para frutales y cítricos, manguera con pistola para aplicaciones localizadas en pasturas y forestal, aplicador de granos en cinta o rosca), un volumen de referencia junto al campo de volumen, y su propio caldo de ejemplo y caso práctico: tomate con mancozeb y clorantraniliprol, eucalipto antes de plantar, potrero con picloram + 2,4-D, silvopastoril con 2,4-D + fluroxipir dirigido, y maíz que entra al silo.</dd>
       <dt>Granos almacenados</dt><dd>Trabaja por tonelada: las dosis van en mL o g por tonelada y el caldo en litros por tonelada, con el caudal para la cinta o la rosca según las toneladas por hora. En lugar del clima aparece el grano (tipo, humedad y temperatura) y se suman reglas propias: fosfina en el tanque, pirimifos-metil en soja, grano con más de 13 % de humedad y demasiado caldo por tonelada. Debajo del semáforo hay una guía de fumigación con fosfina (tabletas por m³ o por tonelada, tiempo mínimo según la temperatura del grano y seguridad), los protectores de granos y el tratamiento de silos vacíos. El caldo de granos se guarda aparte del caldo de campo.</dd>
       <dt>Pronóstico y mejor horario</dt><dd>En “4 · Condiciones ambientales”, el botón “Pronóstico y mejor horario” trae el pronóstico hora por hora de los próximos 4 días para la ubicación de los lotes elegidos (o del campo, o de tu GPS). Usa dos modelos, ECMWF (Centro Europeo) y GFS (NOAA), a través de Open-Meteo; cuando no coinciden, la app toma el peor de los dos. Cada hora se pinta con el color que tendría tu mezcla: viento y ráfagas (deriva), Delta T, inversión térmica (aire más caliente a 80 m que a 2 m según GFS, o calma con cielo despejado de noche, al amanecer y al atardecer), calor con hormonales (volatilización) o con aceites y azufre (quemado), y lluvia antes de las horas que necesita cada producto para no lavarse (glifosato y 2,4-D hasta 6 h, bentazona 8 h, mancozeb unas 4 h, paraquat 30 min; los preemergentes, y atrazina, metribuzina o flumioxazin aplicados en preemergencia, necesitan la lluvia para activarse). La app propone los mejores horarios y, al tocar uno, carga esas condiciones y el semáforo las usa. Necesita internet; sin conexión usa el último pronóstico guardado (hasta 3 h). Para alertas oficiales, ver la Dirección de Meteorología e Hidrología.</dd>
       <dt>Silvopastoril</dt><dd>Con el rubro Silvopastoril (o Pasturas) aparece un panel con los árboles (eucalipto, pino o nativos) y la altura, y si hay animales en el potrero. Avisa qué herbicidas dañan a los árboles por la raíz o por deriva (picloram, aminopiralida, triclopir, 2,4-D, residuales de suelo), cuándo aplicar dirigido o lejos de la zona de raíces, los días de reingreso de los animales y de corte para heno, y el estiércol con herbicidas que no se debe usar en huertas. El semáforo suma estas reglas (SP01 a SP05).</dd>
       <dt>Equipos y calibración</dt><dd>Cargá cada pulverizadora (autopropulsada, de arrastre o montada), mochila, drone o avión con sus medidas: tanque, barra, número y separación de pastillas, tipo y tamaño ISO (color), presión, velocidad, altura; en drones y aviones, faja, velocidad, altura de vuelo, caudal máximo y atomizadores. En Hortícola aparece el <b>turboatomizador</b>: calcula el volumen por el volumen de copa (TRV), el caudal por lado y por boquilla, y se calibra con el caudal total y la velocidad. En Granos almacenados, el <b>aplicador en cinta o rosca</b> con su caudal por toneladas por hora. Hay un <b>catálogo de modelos</b> (Jacto, Stara, John Deere, Case IH, New Holland, PLA, Metalfor; mochilas Jacto y Stihl; drones DJI y XAG; aviones Air Tractor, Embraer y Thrush) que carga los datos de fábrica. Marcá las <b>funciones</b> que tiene el equipo (computadora de caudal, corte de secciones, pico a pico, PWM, control de altura, piloto automático, agitador; en drones RTK, radar, seguimiento del terreno, atomizadores centrífugos; en mochilas válvula de caudal constante): la ficha explica para qué sirve cada una y qué tener en cuenta con las que faltan, por ejemplo entre qué velocidades no se sale de la presión de la pastilla, o que un drone sin agitador obliga a premezclar (y el semáforo lo marca). <b>Regulación:</b> para el volumen y la velocidad que buscás, el caudal por pastilla y la presión de cada tamaño ISO, en verde los que trabajan dentro de su rango. <b>Calibración a campo:</b> velocidad con el tiempo en 50 m, caudal de cada pastilla con jarra (marca en rojo las que se apartan más de 10 % del nominal, o 15 % si tiran menos de 1 L/min), coeficiente de variación y volumen real; con más de 5 % de error indica qué presión o velocidad usar. Para drones y aviones: caudal medido, faja verificada con tarjetas e impactos por cm². Las calibraciones quedan en el historial del equipo y el estado avisa cuando pasaron más de 180 días.</dd>
       <dt>Caldo para drone y avión</dt><dd>En “2 · Aplicación” elegí el equipo o el modo (Terrestre, Mochila, Drone, Avión). Con drone o avión aparece el <b>plan de vuelo</b>: caudal necesario frente al máximo del equipo, hectáreas por carga, cargas para la superficie, minutos por carga, baterías, gota recomendada según los productos, revisión del viento, la temperatura, la humedad y el Delta T, recomendaciones de vuelo, la lista de control antes de volar y la normativa (Ley 3742/09: franja de 200 m y aviso al SENAVE 24 h antes; DINAC R 1103 para drones). El semáforo suma reglas propias: el tanque del drone casi no agita, más de 2 productos a bajo volumen, polvos mojables y hormonales por aire.</dd>
       <dt>Campos y lotes</dt><dd>El mapa de tus campos. Cada lote es un polígono con la forma real del lote, con todos los puntos que haga falta. Se puede cargar de cuatro maneras: <b>dibujarlo</b> tocando el mapa en cada quiebre del límite; <b>recorrer el borde con GPS</b> desde el celular; <b>importarlo</b> desde QGIS (GeoPackage, Shapefile .zip, GeoJSON), Google Earth (KML o KMZ), un GPS (GPX) o un CSV de vértices, también arrastrando el archivo sobre el mapa; o cargarlo <b>sin mapa</b>, solo con nombre y hectáreas. El mapa es opcional: nada de la app se bloquea si un lote no tiene límites. En la ficha de cada lote: <b>Editar límites</b> (arrastrar puntos, agregar con +, borrar con doble toque), <b>Dividir</b> con una línea y su <b>historial de pulverizaciones</b> propio. En “Armar caldo” los lotes se marcan con botones o tocándolos en el mapa.</dd>
+      <dt>Tratamiento de semillas</dt><dd>En la pestaña “Semillas”: elegí el cultivo, cargá la germinación y el peso de mil semillas, y la app calcula los kg/ha (o el valor cultural en pasturas) y la semilla a tratar. Agregá curasemillas y biológicos del SENAVE, inoculantes, cobalto y molibdeno o polímero con su dosis (cada 100 kg, por bolsa de 50 kg, por unidad de semillas o por hectárea): ves la cantidad cada 100 kg, por tanda de la tratadora y total, el caldo total frente al máximo (soja: 600 mL cada 100 kg) y el orden de carga, con alertas si el inoculante va mezclado con los químicos, si pasa mucho tiempo hasta la siembra o si la germinación es baja. “Registrar tratamiento” lo guarda con el lote de semilla y los lotes del campo donde se sembró (se ve en la ficha del lote) y se exporta a Excel. En “Empresas y productos” están los curasemillas y biológicos vigentes de cada empresa y los inoculantes que publican.</dd>
+      <dt>Dureza del agua por zona</dt><dd>En “3 · Agua”, “Estimar por zona” muestra la dureza, el pH y la conductividad típicos de la zona de Paraguay donde están los lotes (o tu GPS) y de la fuente del agua (pozo, pozo profundo, tajamar, aljibe, río o red). No hay un mapa oficial: la estimación sale de los estudios de los acuíferos Yrendá (Chaco), Patiño (Central) y Guaraní (Región Oriental). Se carga solo si lo pedís, queda marcada como estimada y siempre conviene hacer el análisis.</dd>
       <dt>Historial</dt><dd>Todas las aplicaciones registradas, con filtros por campo, lote, clase y fecha. “Repetir” carga esa mezcla en el armador. Se exporta en CSV (Excel) y en GeoJSON con la forma de cada lote (QGIS).</dd>
       <dt>Rotación</dt><dd>Para qué se usa cada principio activo, su grupo de modo de acción (HRAC, IRAC o FRAC), las resistencias conocidas en la región y qué grupos alternar para el mismo objetivo, siempre dentro del rubro elegido.</dd>
       <dt>Caso práctico</dt><dd>Un ejemplo agrícola completo: la mezcla tal como se planeó, qué medidas se aplicaron y cómo quedó. Se puede abrir en el armador para probarlo.</dd>
@@ -3057,7 +3080,7 @@ function helpHTML(){
       <dt>¿Reemplaza a la etiqueta o a la prueba de jarra?</dt><dd>No. La etiqueta del producto prevalece siempre y la prueba de jarra con el agua y las dosis reales es la confirmación final.</dd>
       <dt>¿Cómo empiezo de cero?</dt><dd>En “Armar caldo”, botón “Empezar de cero”. Para volver al ejemplo, abrí el caso práctico y tocá “Abrir este caso en el armador”.</dd>
       <dt>¿Qué es el campo de ejemplo y cómo lo elimino?</dt><dd>La app trae una “Estancia Ejemplo” de 500 ha con 8 lotes y un año de aplicaciones hipotéticas, para ver el mapa, el historial y los avisos de rotación. Se elimina con el botón de abajo o en “Campos y lotes” → “Eliminar ejemplo”; tus datos no se tocan. Se puede volver a cargar cuando quieras.</dd>
-      <dt>¿Cómo paso mis datos a otro celular o a la PC?</dt><dd>En “Campos y lotes” → “Respaldo completo” se descarga un archivo con campos, historial, equipos y calibraciones, dosis de etiqueta y caldos guardados. En el otro equipo: “Restaurar respaldo”.</dd>
+      <dt>¿Cómo paso mis datos a otro celular o a la PC?</dt><dd>En “Campos y lotes” → “Respaldo completo” se descarga un archivo con campos, historial, tratamientos de semilla, equipos y calibraciones, dosis de etiqueta y caldos guardados. En el otro equipo: “Restaurar respaldo”.</dd>
       <dt>¿Cómo lo abro en QGIS?</dt><dd>Exportá “Lotes · GeoJSON” o “Historial con lotes · GeoJSON” y arrastralo a QGIS (sistema de coordenadas WGS 84, EPSG:4326). El historial trae una fila por aplicación y lote, con fecha, productos, grupos, condiciones y semáforo.</dd>
       <dt>¿Qué es el Delta T?</dt><dd>La diferencia entre la temperatura del aire y la de bulbo húmedo; mide qué tan rápido se evaporan las gotas. Entre 2 y 8 es ideal; por encima de 10 no conviene aplicar.</dd>
     </dl>
@@ -3076,51 +3099,58 @@ $("#btnHelp").onclick=openHelp;
 /* ---------- Recorrido guiado ---------- */
 const TOUR = [
   {v:"caldo", sel:"#rubroBtn", t:"Tu rubro", d:"Agrícola, Hortícola y frutícola, Forestal, Pasturas, Silvopastoril o Granos almacenados. Se elige al entrar y se cambia con este botón. Define qué productos aparecen en el buscador y en el listado, y qué opciones de rotación ves."},
-  {v:"caldo", sel:"#pProductos", t:"Productos del caldo", d:"Empezá a escribir: primero se completan los principios activos y después los nombres comerciales. Tocá el producto para agregarlo y cargá la dosis por hectárea. Cada producto muestra su presentación (soluble, sólido, suspensión u oleoso) y su paso de carga."},
-  {v:"caldo", sel:"#pAplic", t:"Dónde y cómo se aplica", d:"Elegí el campo y los lotes (la superficie se suma sola), el volumen por hectárea, el tanque y cuántas horas va a esperar el caldo."},
-  {v:"caldo", sel:"#apEqRow", t:"Equipo y modo de aplicación", d:"Elegí tu pulverizadora, mochila, drone o avión: la app toma su tanque, su calibración y sus funciones (por ejemplo, un drone sin agitador obliga a premezclar). Con drone o avión aparece el plan de vuelo con caudal, cargas, gota, clima y normativa."},
+  {v:"caldo", sel:"#pProductos", t:"Productos del caldo", d:() => `Empezá a escribir: primero se completan los principios activos y después los nombres comerciales. Tocá el producto para agregarlo y cargá la dosis ${esAL() ? "por tonelada de grano (mL o g por tonelada)" : "por hectárea"}. Cada producto muestra su presentación (soluble, sólido, suspensión u oleoso) y su paso de carga.`},
+  {v:"caldo", sel:"#pAplic", t:"Dónde y cómo se aplica", d:() => esAL() ? "Cuántas toneladas vas a tratar, los litros de caldo por tonelada, el tanque del aplicador y cuántas horas va a esperar el caldo." : "Elegí el campo y los lotes (la superficie se suma sola), el volumen por hectárea, el tanque y cuántas horas va a esperar el caldo."},
+  {v:"caldo", sel:"#apEqRow", t:"Equipo y modo de aplicación", d:() => esAL() ? "Elegí el aplicador de granos (en cinta o en rosca) o la mochila para estructuras vacías: la app toma su caudal y su calibración." : "Elegí tu pulverizadora, turboatomizador, mochila, drone o avión: la app toma su tanque, su calibración y sus funciones (por ejemplo, un drone sin agitador obliga a premezclar). Con drone o avión aparece el plan de vuelo con caudal, cargas, gota, clima y normativa."},
   {v:"caldo", sel:"#pAgua", t:"El agua", d:"pH, dureza, temperatura y turbidez son los datos que más cambian el resultado. Si no los tenés, las alertas que dependen de ellos quedan “a verificar”."},
-  {v:"caldo", sel:"#pAmb", t:"Condiciones y pronóstico", d:"Temperatura, humedad, viento y lluvia prevista, a mano o desde “Pronóstico y mejor horario”, que trae el pronóstico de la ubicación de los lotes, pinta cada hora con el color de tu mezcla y propone los mejores horarios. Suma alertas de deriva, inversión, lavado por lluvia y calor."},
+  {v:"caldo", sel:"#btnAguaZona", t:"Dureza estimada por zona", d:"Sin análisis, la app estima la dureza, el pH y la conductividad según la zona de Paraguay (por la ubicación de los lotes o el GPS) y la fuente del agua: pozo, tajamar, aljibe, río o red. Los valores quedan marcados como estimados hasta que cargues el análisis."},
+  {v:"caldo", sel:"#pGrano", when:() => esAL(), t:"El grano", d:"El grano que vas a tratar, su humedad y su temperatura: con más de 13 % de humedad o grano caliente, primero secar y enfriar."},
+  {v:"caldo", sel:"#pAmb", when:() => !esAL(), t:"Condiciones y pronóstico", d:"Temperatura, humedad, viento y lluvia prevista, a mano o desde “Pronóstico y mejor horario”, que trae el pronóstico de la ubicación de los lotes, pinta cada hora con el color de tu mezcla y propone los mejores horarios. Suma alertas de deriva, inversión, lavado por lluvia y calor."},
   {v:"caldo", sel:"#pSemaforo", t:"El semáforo de la mezcla", d:"Verde: problema leve. Amarillo: precaución. Naranja: riesgo alto, solo con correcciones. Rojo: no mezclar. El color general es el de la peor alerta."},
   {v:"caldo", sel:"#pAlertas .al", t:"Cada alerta", d:"Explica qué problema puede aparecer, por qué pasa y qué hacer. El color de la izquierda es el riesgo actual."},
   {v:"caldo", sel:"#pAlertas .meds", t:"Medidas para bajar el color", d:"Tocá una medida para aplicarla. Después de la flecha ves cómo quedaría la alerta; si la medida activa otra regla, también lo avisa."},
-  {v:"caldo", sel:"#cuAct", up:true, t:"Cultivo actual y siguiente", d:"Elegí el cultivo actual, el momento de la aplicación y el cultivo siguiente con su fecha de siembra. Con eso la app revisa selectividad y carry-over."},
-  {v:"caldo", sel:"#pCarry", t:"Cultivos y carry-over", d:"Si el cultivo actual tolera cada herbicida, cuántos días esperar para sembrar el siguiente y qué residuos dejan las aplicaciones anteriores del lote."},
+  {v:"caldo", sel:"#cuAct", up:true, when:() => !esAL(), t:"Cultivo actual y siguiente", d:"Elegí el cultivo actual, el momento de la aplicación y el cultivo siguiente con su fecha de siembra. Con eso la app revisa selectividad y carry-over."},
+  {v:"caldo", sel:"#pFumig", when:() => esAL(), t:"Fumigación con fosfina", d:"Dosis por tonelada o por metro cúbico, días de exposición según la temperatura y la seguridad para volver a entrar al silo."},
+  {v:"caldo", sel:"#pCarry", when:() => !esAL(), t:"Cultivos y carry-over", d:"Si el cultivo actual tolera cada herbicida, cuántos días esperar para sembrar el siguiente y qué residuos dejan las aplicaciones anteriores del lote."},
   {v:"caldo", sel:"#pRot", t:"Rotación de modos de acción", d:"Cada activo con su grupo (HRAC, IRAC o FRAC). Si ese grupo ya se usó en los lotes elegidos, avisa y propone alternativas con otro modo de acción."},
-  {v:"caldo", sel:"#pDosis", t:"Dosis y cantidades", d:"Dosis de etiqueta y dosis a aplicar, total para la superficie, cantidad por tanque y último tanque parcial."},
+  {v:"caldo", sel:"#pDosis", t:"Dosis y cantidades", d:() => `Dosis de etiqueta y dosis a aplicar, total para ${esAL() ? "las toneladas" : "la superficie"}, cantidad por tanque y último tanque parcial.`},
   {v:"caldo", sel:"#pProblemas", t:`Los ${D.catalogo_problemas.length} problemas`, d:"El estado de cada problema posible, en el tanque y durante la aplicación (queso, cristales, espuma, antagonismo, deriva, inversión térmica, lavado, abejas…). Tocá uno para ver cómo se ve, cómo se previene y qué hacer si ya ocurrió."},
   {v:"caldo", sel:"#pOrden", t:"Orden de carga", d:"El orden en que van los productos según su presentación, cómo cargar cada uno y cuánto va por tanque."},
   {v:"caldo", sel:"#pJarra", t:"Prueba de jarra", d:"Elegí el tamaño del recipiente (de 250 mL a un balde de 20 L, u otro) y la app calcula cuánto poner de cada producto, en orden, para probar la mezcla antes de cargar el tanque."},
   {v:"caldo", sel:"#pLimpieza", t:"Limpieza del equipo", d:"Qué restos deja el caldo, qué limpiador usar y cuánto para tu tanque, y el triple enjuague paso a paso."},
   {v:"caldo", sel:"#btnRegistrar", t:"Registrar la aplicación", d:"Después de aplicar, guardá fecha, lotes, productos, dosis y condiciones en el historial. “Guardar este caldo” guarda solo la receta para reusarla."},
-  {v:"campos", sel:"#map", t:"Campos y lotes en el mapa", d:"Cada lote es un polígono con su forma real. Tocá un lote para ver su historial de pulverizaciones, editar sus límites o dividirlo. El color muestra la rotación, la última aplicación o el cultivo."},
-  {v:"campos", sel:"#mTools", t:"Marcar los límites", d:"“Dibujar lote”: tocá el mapa en cada quiebre del borde. “Recorrer el borde con GPS”: caminá o andá en vehículo por el límite con el celular. “Mi ubicación” e “Ir a coordenadas” te llevan al lugar. Es opcional: un lote también puede cargarse sin mapa."},
-  {v:"campos", sel:'label[for="cFile"]', t:"Importar desde QGIS, Google Earth o GPS", d:"GeoPackage, Shapefile .zip, GeoJSON, KML, KMZ, GPX o CSV de vértices. También podés arrastrar el archivo sobre el mapa. Si está en UTM, la app lo convierte."},
-  {v:"campos", sel:"#cTop", t:"Campo de ejemplo", d:"El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan."},
+  {v:"campos", sel:"#map", when:() => !esAL(), t:"Campos y lotes en el mapa", d:"Cada lote es un polígono con su forma real. Tocá un lote para ver su historial de pulverizaciones, editar sus límites o dividirlo. El color muestra la rotación, la última aplicación o el cultivo."},
+  {v:"campos", sel:"#mTools", when:() => !esAL(), t:"Marcar los límites", d:"“Dibujar lote”: tocá el mapa en cada quiebre del borde. “Recorrer el borde con GPS”: caminá o andá en vehículo por el límite con el celular. “Mi ubicación” e “Ir a coordenadas” te llevan al lugar. Es opcional: un lote también puede cargarse sin mapa."},
+  {v:"campos", sel:'label[for="cFile"]', when:() => !esAL(), t:"Importar desde QGIS, Google Earth o GPS", d:"GeoPackage, Shapefile .zip, GeoJSON, KML, KMZ, GPX o CSV de vértices. También podés arrastrar el archivo sobre el mapa. Si está en UTM, la app lo convierte."},
+  {v:"campos", sel:"#cTop", when:() => !esAL(), t:"Campo de ejemplo", d:"El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan."},
   {v:"caldo", sel:'#tabs [data-v="equipos"]', t:"Equipos y calibración", d:"Cargá las medidas de cada equipo, calculá pastilla y presión, y hacé la calibración a campo: velocidad, caudal por pastilla, volumen real e inspección."},
   {v:"caldo", sel:'#tabs [data-v="historial"]', t:"Historial", d:"Todas las aplicaciones registradas, con filtros y exportación a Excel (CSV) y QGIS (GeoJSON)."},
+  {v:"caldo", sel:'#tabs [data-v="semillas"]', when:() => !esAL(), t:"Tratamiento de semillas", d:"Calculá el curasemillas, el inoculante y los micronutrientes por cada 100 kg, con el orden de carga y el volumen máximo, y registrá cada lote de semilla con su germinación y los lotes donde se sembró. También está el directorio de empresas con sus curasemillas, biológicos e inoculantes."},
   {v:"caldo", sel:'#tabs [data-v="rotacion"]', t:"Rotación", d:"Para qué se usa cada activo, su grupo de modo de acción y qué grupos alternar para el mismo objetivo."},
-  {v:"caldo", sel:'#tabs [data-v="caso"]', t:"Caso práctico", d:"Un barbecho químico de soja paso a paso: cómo pasa de naranja a amarillo y qué conviene separar."},
+  {v:"caldo", sel:'#tabs [data-v="caso"]', t:"Caso práctico", d:() => RUBRO === "AG" || !D.rubro_app.casos[RUBRO] ? "Un barbecho químico de soja paso a paso: cómo pasa de naranja a amarillo y qué conviene separar." : `${D.rubro_app.casos[RUBRO].titulo}: el caso de ${D.rubros[RUBRO].nombre} paso a paso, con lo que hay que cuidar.`},
   {v:"caldo", sel:'#tabs [data-v="productos"]', t:"Productos", d:"El listado del SENAVE con la ficha de cada producto, sus activos, su formulación e inertes, y otras marcas con el mismo activo."},
   {v:"caldo", sel:'#tabs [data-v="inertes"]', t:"Formulaciones e inertes", d:"Qué lleva cada formulación además del activo, la calidad que debe cumplir y cómo detectar un producto en mal estado."},
   {v:"caldo", sel:'#tabs [data-v="diag"]', t:"Diagnóstico", d:"Si el caldo ya muestra grumos, cristales, espuma o capas, elegí el síntoma y la app te dice las causas probables."},
   {v:"caldo", sel:"#btnHelp", t:"Ayuda", d:"Volvé acá cuando quieras: está la explicación completa y las preguntas frecuentes."},
 ];
-let TI = -1;
-function startTour(){ if(VIEW!=="caldo") setView("caldo"); TI=0; showTour(); }
+let TI = -1, TOURA = [];
+function startTour(){ if(VIEW!=="caldo") setView("caldo"); TOURA = TOUR.filter(st => !st.when || st.when()); TI=0; showTour(); }
 function endTour(){ TI=-1; document.querySelectorAll(".tour-spot,.tour-card,.tour-block").forEach(e=>e.remove()); }
 function showTour(){
   document.querySelectorAll(".tour-spot,.tour-card,.tour-block").forEach(e=>e.remove());
-  const st = TOUR[TI]; if(!st){ endTour(); return; }
+  const st = TOURA[TI]; if(!st){ endTour(); return; }
   if(VIEW!==st.v) setView(st.v);
-  let el = document.querySelector(st.sel); if(el && st.up) el = el.closest(".fields") || el; if(!el){ TI++; showTour(); return; }
-  el.scrollIntoView({block:"center", behavior:"instant"});
+  let el = document.querySelector(st.sel); if(el && st.up) el = el.closest(".fields") || el;
+  const visible = el && el.getClientRects().length && !el.closest("[hidden]");
+  if(!visible){ TOURA.splice(TI, 1); showTour(); return; }   // si no está en pantalla, se saca el paso (la numeración sigue correlativa)
+  if(el.closest("#tabs")) el.scrollIntoView({block: "nearest", inline: "center", behavior: "instant"});
+  const rr = el.getBoundingClientRect(); window.scrollTo({top: Math.max(0, scrollY + rr.top - Math.max(70, (innerHeight - Math.min(rr.height, innerHeight * .6)) / 2)), behavior: "instant"});
   const block=document.createElement("div"); block.className="tour-block"; block.onclick=endTour;
   const spot=document.createElement("div"); spot.className="tour-spot";
   const card=document.createElement("div"); card.className="tour-card"; card.setAttribute("role","dialog");
-  card.innerHTML = `<div class="tour-bar"><i style="width:${(TI+1)/TOUR.length*100}%"></i></div>
-    <span class="eyebrow">Paso ${TI+1} de ${TOUR.length}</span><h3>${esc(st.t)}</h3><p>${esc(st.d)}</p>
-    <div class="row" style="justify-content:space-between"><button class="btn sm" id="tSalir">Salir</button><span class="row" style="gap:6px"><button class="btn sm" id="tAnt" ${TI===0?"disabled":""}>Anterior</button><button class="btn pri sm" id="tSig">${TI===TOUR.length-1?"Terminar":"Siguiente"}</button></span></div>`;
+  card.innerHTML = `<div class="tour-bar"><i style="width:${(TI+1)/TOURA.length*100}%"></i></div>
+    <span class="eyebrow">Paso ${TI+1} de ${TOURA.length}</span><h3>${esc(st.t)}</h3><p>${esc(typeof st.d === "function" ? st.d() : st.d)}</p>
+    <div class="row" style="justify-content:space-between"><button class="btn sm" id="tSalir">Salir</button><span class="row" style="gap:6px"><button class="btn sm" id="tAnt" ${TI===0?"disabled":""}>Anterior</button><button class="btn pri sm" id="tSig">${TI===TOURA.length-1?"Terminar":"Siguiente"}</button></span></div>`;
   document.body.append(block, spot, card);
   const place=()=>{
     const r=el.getBoundingClientRect(), vh=innerHeight, vw=innerWidth, pad=6;
@@ -4053,6 +4083,436 @@ function refrescarClima(){ if(!CLIMA.abierto || !CLIMA.data) return; clearTimeou
   const l = climaLoc(); if(l && CLIMA.loc && locKey(l) !== locKey(CLIMA.loc)) cargarClima(false); else renderClima(); }, 250); }
 function toggleClima(){ CLIMA.abierto = !CLIMA.abierto; $("#btnClima").setAttribute("aria-pressed", String(CLIMA.abierto)); if(CLIMA.abierto) cargarClima(false); else renderClima(); }
 
+/* ---------- Agua: estimación por zona de Paraguay ---------- */
+const AZ = D.agua_zonas;
+function enAnillo(x, y, r){ let d = false; for(let i = 0, j = r.length - 1; i < r.length; j = i++){ const [xi, yi] = r[i], [xj, yj] = r[j]; if((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) d = !d; } return d; }
+function zonaAgua(lat, lon){
+  for(const f of AZ.geo.features){ const g = f.geometry; const ps = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+    if(ps.some(p => enAnillo(lon, lat, p[0]) && !p.slice(1).some(h => enAnillo(lon, lat, h)))) return f.properties.id; }
+  return null;
+}
+// valores para una zona y una fuente de agua: {dureza, pH, ce, na, turbidez, cloro, txt, conf}
+function aguaValores(zid, fuente){
+  const z = AZ.zonas[zid] || null, fu = AZ.fuentes[fuente] || AZ.fuentes.pozo;
+  if(fuente !== "pozo" && fuente !== "pozo_profundo") return {dureza: fu.dureza, pH: fu.pH, ce: fu.ce, na: null, turbidez: fu.turbidez || null, cloro: fu.cloro ?? null, txt: fu.txt, conf: "media", gen: true};
+  if(!z) return null;
+  const v = fuente === "pozo_profundo" && z.pp ? z.pp : z;
+  return {dureza: v.dureza, pH: v.pH, ce: v.ce, na: v.na || null, turbidez: null, cloro: null, txt: fuente === "pozo_profundo" && z.pp ? z.pp.txt : z.txt, conf: z.conf, pp: fuente === "pozo_profundo" && !z.pp};
+}
+const claseDureza = d => d == null ? "sin dato" : d < 60 ? "blanda" : d < 150 ? "moderadamente dura" : d < 300 ? "dura" : "muy dura";
+const nivDureza = d => d == null ? null : d < 60 ? 0 : d < 150 ? 1 : d < 300 ? 2 : 3;
+let AGUA_EST = {fuente: "pozo", zona: null, loc: null};
+function abrirAguaEstimar(){
+  const loc = climaLoc();
+  if(loc && !AGUA_EST.zonaManual){ AGUA_EST.loc = loc; AGUA_EST.zona = zonaAgua(loc.lat, loc.lon); }
+  if(S.aguaEst && !AGUA_EST.zona){ AGUA_EST.zona = S.aguaEst.zona; AGUA_EST.fuente = S.aguaEst.fuente || "pozo"; }
+  renderAguaEstimar();
+}
+function renderAguaEstimar(){
+  const st = AGUA_EST, z = st.zona ? AZ.zonas[st.zona] : null, v = st.zona || !["pozo", "pozo_profundo"].includes(st.fuente) ? aguaValores(st.zona, st.fuente) : null;
+  const rango = (a, u, d = 0) => a ? `${a[0] != null ? fmt(a[0], d) : "?"} a ${a[2] != null ? fmt(a[2], d) : "?"}${u}` : "—";
+  const tipico = (a, d = 0) => a && a[1] != null ? fmt(a[1], d) : "—";
+  const conf = v ? (v.gen ? "general" : v.conf) : null;
+  const tieneDatos = AGUA_KEYS.some(k => S.agua[k] != null && S.agua[k] !== "");
+  openDrawer(`<div class="stack"><span class="eyebrow">Agua</span><h2>Dureza y calidad del agua por zona</h2>
+    <p class="lead">No hay un mapa oficial de dureza del agua de Paraguay. Esta estimación junta los estudios de los acuíferos (Yrendá en el Chaco, Patiño en Central y Guaraní en la Región Oriental) y la fuente de agua que usás. <b>Sirve para orientarte, no reemplaza el análisis.</b></p>
+    <div class="panel stack" style="gap:8px">
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+        <label class="f">Zona<select id="azZona"><option value="">— elegí o usá la ubicación —</option>${["Chaco", "Oriental"].map(r => `<optgroup label="${r === "Chaco" ? "Chaco" : "Región Oriental"}">${Object.entries(AZ.zonas).filter(([, x]) => x.reg === r).map(([k, x]) => `<option value="${k}"${k === st.zona ? " selected" : ""}>${esc(x.n)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+        <label class="f">¿De dónde sale el agua?<select id="azFuente">${Object.entries(AZ.fuentes).map(([k, x]) => `<option value="${k}"${k === st.fuente ? " selected" : ""}>${esc(x.n)}</option>`).join("")}</select></label>
+      </div>
+      <div class="row" style="gap:6px"><button class="btn sm" id="azGps">Usar mi ubicación</button><button class="btn sm" id="azLote"${climaLoc() ? "" : " disabled"}>Usar la ubicación de los lotes</button>
+        <span class="note">${st.loc ? `Ubicación: ${esc(st.loc.txt || "")} (${st.loc.lat.toFixed(3)}, ${st.loc.lon.toFixed(3)})${st.zona ? "" : " — fuera de las zonas: elegí la zona a mano"}` : "Sin ubicación: elegí la zona a mano o usá el GPS."}</span></div>
+    </div>
+    <div id="azMap" class="map" style="height:280px"></div>
+    <div class="row" style="gap:6px;margin-top:-4px">${[[0, "Blanda (menos de 60)"], [1, "Moderada (60–150)"], [2, "Dura (150–300)"], [3, "Muy dura o salada (más de 300)"]].map(([l, t]) => pill(l, t)).join("")}${pill(null, "Sin datos")}<span class="note">mg/L de CaCO₃, agua de pozo. Tocá una zona para verla.</span></div>
+    ${v ? `<div class="panel stack" style="gap:8px">
+      <div class="row" style="justify-content:space-between"><h3>${esc(z ? z.n : AZ.fuentes[st.fuente].n)}</h3><span class="row" style="gap:6px">${pill(nivDureza(v.dureza[1]), v.dureza[1] != null ? "Agua " + claseDureza(v.dureza[1]) : "Sin dato")}<span class="tag">Confianza ${esc(conf)}</span></span></div>
+      ${z ? `<p class="note">${esc(z.acu)}</p>` : ""}
+      <p>${esc(v.txt)}</p>${v.pp ? `<p class="note">No hay datos de pozos profundos para esta zona: se muestran los del pozo común.</p>` : ""}
+      <div class="tw"><table><thead><tr><th>Dato</th><th style="text-align:right">Típico</th><th>Rango</th></tr></thead><tbody>
+        <tr><td>Dureza (mg/L de CaCO₃)</td><td class="n">${tipico(v.dureza)}</td><td class="note">${rango(v.dureza, "")}</td></tr>
+        <tr><td>pH</td><td class="n">${tipico(v.pH, 1)}</td><td class="note">${rango(v.pH, "", 1)}</td></tr>
+        <tr><td>Conductividad (µS/cm)</td><td class="n">${tipico(v.ce)}</td><td class="note">${rango(v.ce, "")}</td></tr>
+        ${v.na ? `<tr><td>Sodio (mg/L)</td><td class="n">${tipico(v.na)}</td><td class="note">${rango(v.na, "")}</td></tr>` : ""}
+        ${v.turbidez ? `<tr><td>Turbidez</td><td class="n">${esc(v.turbidez)}</td><td></td></tr>` : ""}${v.cloro != null ? `<tr><td>Cloro (mg/L)</td><td class="n">${fmt(v.cloro, 1)}</td><td></td></tr>` : ""}
+      </tbody></table></div>
+      ${z && !v.gen ? `<p class="note"><b>Para pulverizar:</b> ${esc(z.uso)}</p>` : ""}
+      ${v.dureza[1] != null ? `<div class="row" style="gap:6px"><button class="btn pri" id="azVacios">Cargar en los campos vacíos</button>${tieneDatos ? `<button class="btn" id="azTodo">Reemplazar los datos del agua</button>` : ""}</div>
+        <p class="note">Se carga el valor típico y queda marcado como estimado en el panel del agua hasta que cargues el análisis.</p>` : `<p class="rnote">Sin datos suficientes para cargar automáticamente: hacé el análisis.</p>`}
+    </div>` : `<div class="panel"><p class="note">Elegí la zona o usá la ubicación para ver la estimación.</p></div>`}
+    <div class="panel"><h3>Hacé el análisis del agua</h3><ul class="clean" style="margin-top:8px">
+      <li>La dureza puede cambiar mucho entre dos pozos vecinos, con la profundidad y con la época (los tajamares se concentran en la seca).</li>
+      <li>Pedí: pH, dureza total, calcio, magnesio, sodio, bicarbonatos, conductividad, hierro y turbidez. Con eso la app calcula el sulfato de amonio o el secuestrante.</li>
+      <li>Para controlar seguido: un medidor de pH y un conductímetro de bolsillo, o tiras reactivas de dureza. Medí cada fuente que uses y repetí al menos una vez por campaña.</li>
+      <li>Tomá la muestra en botella limpia, enjuagada con la misma agua, dejando correr el pozo unos minutos; llevala al laboratorio dentro de las 24 horas.</li>
+    </ul></div>
+    <p class="note">Fuentes: ${Object.values(AZ.refs).map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}.</p></div>`);
+  const m = $("#azMap");
+  if(window.L && m){ const mp = L.map(m, {zoomControl: true, attributionControl: false}).setView([-23.4, -58.4], 5);
+    const b = baseLayer(load("mapa_base", "sat") === "none" ? "none" : "osm"); if(b) b.addTo(mp);
+    const col = id => { const t = AZ.zonas[id].dureza[1]; return t == null ? cssVar("--s-off") : cssVar("--s" + nivDureza(t)); };
+    L.geoJSON(AZ.geo, {style: f => ({color: f.properties.id === st.zona ? "#111" : "#fff", weight: f.properties.id === st.zona ? 3 : 1, fillColor: col(f.properties.id), fillOpacity: .55}),
+      onEachFeature: (f, ly) => { ly.bindTooltip(AZ.zonas[f.properties.id].n + " · " + claseDureza(AZ.zonas[f.properties.id].dureza[1]), {sticky: true}); ly.on("click", () => { st.zona = f.properties.id; st.zonaManual = true; renderAguaEstimar(); }); }}).addTo(mp);
+    if(st.loc) L.circleMarker([st.loc.lat, st.loc.lon], {radius: 7, color: "#111", weight: 2, fillColor: "#fff", fillOpacity: 1}).addTo(mp);
+    setTimeout(() => { mp.invalidateSize(); mp.fitBounds([[-27.6, -62.7], [-19.3, -54.3]], {padding: [6, 6]}); }, 50); }
+  $("#azZona").onchange = e => { st.zona = e.target.value || null; st.zonaManual = true; renderAguaEstimar(); };
+  $("#azFuente").onchange = e => { st.fuente = e.target.value; renderAguaEstimar(); };
+  $("#azLote").onclick = () => { const l = climaLoc(); if(!l) return; st.loc = l; st.zona = zonaAgua(l.lat, l.lon); st.zonaManual = false; renderAguaEstimar(); };
+  $("#azGps").onclick = () => { if(!navigator.geolocation){ toast("Este dispositivo no da la ubicación"); return; } toast("Buscando tu ubicación…");
+    navigator.geolocation.getCurrentPosition(p => { st.loc = {lat: p.coords.latitude, lon: p.coords.longitude, txt: "Mi ubicación"}; st.zona = zonaAgua(st.loc.lat, st.loc.lon); st.zonaManual = false; renderAguaEstimar(); },
+      () => toast("No se pudo obtener la ubicación"), {enableHighAccuracy: true, timeout: 15000}); };
+  const cargar = todo => {
+    const vals = {pH: v.pH[1], dureza_ppm_CaCO3: v.dureza[1], conductividad_uS_cm: v.ce[1]};
+    if(v.na && v.na[1] != null) vals.Na = v.na[1]; if(v.turbidez) vals.turbidez = v.turbidez; if(v.cloro != null) vals.cloro_mg_L = v.cloro;
+    const puestos = [];
+    Object.entries(vals).forEach(([k, x]) => { if(x == null) return; if(todo || S.agua[k] == null || S.agua[k] === ""){ S.agua[k] = x; puestos.push(k); } });
+    if(todo) AGUA_KEYS.filter(k => !(k in vals)).forEach(k => { if(["Ca", "Mg", "K", "Fe_mg_L", "HCO3_mg_L"].includes(k)) S.agua[k] = null; });
+    if(!puestos.length){ toast("Esos datos ya estaban cargados"); return; }
+    S.aguaEst = {zona: st.zona, zonaNombre: z ? z.n : "", fuente: st.fuente, campos: puestos, fecha: ymdLocal(new Date()), conf};
+    S.ejemplo = false; save(); fillInputs(); closeDrawer(); renderCaldo(); toast("Datos estimados cargados: hacé el análisis para confirmarlos");
+  };
+  if($("#azVacios")) $("#azVacios").onclick = () => cargar(false);
+  if($("#azTodo")) $("#azTodo").onclick = () => cargar(true);
+}
+function aguaEstHTML(){
+  const e = S.aguaEst; const vivos = e ? e.campos.filter(k => S.agua[k] != null && S.agua[k] !== "") : [];
+  if(!e || !vivos.length){
+    const vacio = S.agua.dureza_ppm_CaCO3 == null;
+    return `<div class="row" style="gap:6px;margin-bottom:8px"><button class="btn sm" id="btnAguaZona" type="button">Estimar por zona</button><span class="note">${vacio ? "¿Sin análisis? La app estima la dureza según dónde estás y de dónde sale el agua." : "Dureza aproximada de cada zona de Paraguay."}</span></div>`;
+  }
+  const nom = {pH: "pH", dureza_ppm_CaCO3: "dureza", conductividad_uS_cm: "conductividad", Na: "sodio", turbidez: "turbidez", cloro_mg_L: "cloro"};
+  return `<div class="est-banner"><span><b>Valores estimados</b> (${esc(vivos.map(k => nom[k] || k).join(", "))}) para ${esc(e.zonaNombre || AZ.fuentes[e.fuente].n)}${e.zonaNombre ? " · " + esc(AZ.fuentes[e.fuente].n.toLowerCase()) : ""}, confianza ${esc(e.conf || "baja")}. Hacé el análisis del agua y reemplazalos.</span>
+    <span class="row" style="gap:6px"><button class="btn sm" id="btnAguaZona" type="button">Ver detalle</button><button class="btn sm" id="btnAguaBorrar" type="button">Quitar estimación</button></span></div>`;
+}
+function renderAguaEst(){
+  const w = $("#aguaEst"); if(!w) return;
+  w.innerHTML = aguaEstHTML();
+  $("#btnAguaZona").onclick = abrirAguaEstimar;
+  if($("#btnAguaBorrar")) $("#btnAguaBorrar").onclick = () => { (S.aguaEst.campos || []).forEach(k => { S.agua[k] = null; }); S.aguaEst = null; save(); fillInputs(); renderCaldo(); };
+  AGUA_KEYS.forEach(k => { const el = $("#a_" + k); if(el) el.classList.toggle("est", !!(S.aguaEst && S.aguaEst.campos.includes(k) && S.agua[k] != null && S.agua[k] !== "")); });
+}
+
+/* ---------- Tratamiento de semillas ---------- */
+const SD = D.semillas;
+const SEM_CL = Object.fromEntries(SD.clases.map(c => [c.id, c]));
+const SEM_U = {"mL/100kg": "mL cada 100 kg", "g/100kg": "g cada 100 kg", "mL/50kg": "mL por bolsa de 50 kg", "mL/u": "mL por unidad de semillas", "g/u": "g por unidad de semillas", "mL/ha": "mL por hectárea", "g/ha": "g por hectárea", "dosis/ha": "dosis por hectárea"};
+const NEONIC = ["imidacloprid", "tiametoxam", "clotianidina", "acetamiprid", "fipronil"];
+let SEMREG = load("semillas", []);
+const saveSemReg = () => store("semillas", SEMREG);
+const SEMV = {tab: "tratar", q: "", tipo: "", rq: "", rc: "", rcampo: ""};
+const semCults = () => Object.keys(SD.cultivos);
+const semCultDef = () => ({HO: "hortalizas", PA: "pastura_gram", SP: "pastura_gram", FO: "eucalipto"})[RUBRO] || "soja";
+function semNuevo(){ const c = semCultDef(); return {cult: c, cultivar: "", lote: "", origen: "propia", proveedor: "", germ: null, pureza: null, pms: null, ha: null, kgha: null, kg: null, est: 90, pl: null, esp: null, spv: null, unidad: null, tsi: false, metodo: "campo", tanda: 50, vol_obj: null, inoc_aparte: true, items: [], fecha_trat: isoLocal(new Date()), fecha_inoc: "", fecha_siembra: "", campo: "", lotes: [], operador: load("operador", ""), equipo: "", obs: "", ejemplo: false}; }
+let SB = Object.assign(semNuevo(), load("sem_borrador", {}) || {});
+const saveSB = () => store("sem_borrador", SB);
+const semC = () => SD.cultivos[SB.cult] || SD.cultivos.soja;
+function semEjemplo(){
+  const b = semNuevo(); Object.assign(b, {cult: "soja", cultivar: "Ejemplo", lote: "L-01", origen: "propia", germ: 85, pms: 165, ha: 20, est: 90, esp: 45, tanda: 50, fecha_inoc: "", ejemplo: true,
+    items: [{r: "2427", n: PROD["2427"] ? PROD["2427"].n : "Fungicida", clase: "fungicida", dosis: 100, u: "mL/100kg"},
+            {r: "2627", n: PROD["2627"] ? PROD["2627"].n : "Insecticida", clase: "insecticida", dosis: 200, u: "mL/100kg"},
+            {inoc: "Rizoliq Top II", n: "Rizoliq Top II", clase: "inoculante", dosis: 200, u: "mL/100kg"}]});
+  return b;
+}
+// kg de semilla por hectárea según densidad, peso de mil semillas, germinación y establecimiento
+function semDensidad(b){
+  const c = SD.cultivos[b.cult] || {}; const g = b.germ ?? c.germ;
+  if(c.spv != null && !c.pl){ const vc = b.pureza != null && g != null ? b.pureza * g / 100 : null; const spv = b.spv ?? c.spv;
+    return {modo: "vc", vc, spv, kgha: vc ? spv / (vc / 100) : null}; }
+  const pl = b.pl ?? c.pl, pms = b.pms ?? c.pms, est = b.est ?? 90;
+  if(!pl || !pms || !g) return {modo: "pl", pl, pms, kgha: null};
+  const kgha = pl * pms / 1e6 / (g / 100 * est / 100);
+  const esp = b.esp; const smetro = esp ? pl / (10000 / (esp / 100)) / (g / 100 * est / 100) : null;
+  return {modo: "pl", pl, pms, g, est, kgha, smetro};
+}
+function semCalc(b){
+  const c = SD.cultivos[b.cult] || {}, den = semDensidad(b);
+  const kgha = b.kgha ?? (den.kgha ? Math.round(den.kgha * 10) / 10 : null);
+  const kg = b.kg ?? (b.ha && kgha ? Math.round(b.ha * kgha) : null);
+  const ha = b.ha ?? (kg && kgha ? kg / kgha : null);
+  const pms = b.pms ?? c.pms, nU = b.unidad || c.unidad || 60000, kgU = pms ? nU * pms / 1e6 : null;
+  const items = b.items.map(it => {
+    const v = it.dosis; let per100 = null, base = it.u.startsWith("g") ? "g" : it.u.startsWith("dosis") ? "dosis" : "mL", falta = "";
+    if(v == null) falta = "Falta la dosis";
+    else if(it.u === "mL/100kg" || it.u === "g/100kg") per100 = v;
+    else if(it.u === "mL/50kg") per100 = v * 2;
+    else if(it.u === "mL/u" || it.u === "g/u"){ if(kgU) per100 = v * 100 / kgU; else falta = "Falta el peso de mil semillas"; }
+    else { if(kgha) per100 = v * 100 / kgha; else falta = "Faltan los kg/ha de siembra"; }
+    const tot = per100 != null && kg ? per100 * kg / 100 : null, tanda = per100 != null && b.tanda ? per100 * b.tanda / 100 : null;
+    return Object.assign({}, it, {per100, base, tot, tanda, falta});
+  });
+  const liq = items.filter(x => x.base === "mL" && x.per100 != null).reduce((s, x) => s + x.per100, 0);
+  const agua = b.vol_obj ? Math.max(0, b.vol_obj - liq) : 0;
+  const vol = liq + agua;
+  // chequeos
+  const chk = []; const add = id => chk.push(Object.assign({id}, SD.chequeos[id]));
+  const has = cl => items.some(x => x.clase === cl);
+  const quim = has("fungicida") || has("insecticida");
+  if(c.vmax && vol > c.vmax) add("vol_alto");
+  if(has("inoculante") && quim && !b.inoc_aparte) add("inoc_mezcla");
+  const inoc = items.find(x => x.clase === "inoculante");
+  if(inoc && b.fecha_inoc && b.fecha_siembra){
+    const hs = (new Date(b.fecha_siembra) - new Date(b.fecha_inoc)) / 36e5; const pre = SD.inoculantes.find(i => i.n === inoc.inoc && i.dias);
+    const lim = pre ? pre.dias * 24 : 24;
+    if(hs > lim) add("inoc_espera");
+  }
+  if(inoc && items.some(x => x.clase === "nutriente" && /co|mo|cobalt|molib/i.test(x.n))) add("como_inoc");
+  const gref = c.germ;
+  if(b.germ == null){ if(gref) add("sin_germ"); }
+  else if(gref && b.germ < gref - 10) add("germ_muy_baja");
+  else if(gref && b.germ < gref) add("germ_baja");
+  if(items.some(x => x.r && PROD[x.r] && PROD[x.r].k.some(k => NEONIC.includes(k[1])))) add("neonic");
+  if(c.leg && !inoc && !items.some(x => x.clase === "otro" && /inoc|rizo|brady/i.test(x.n))) add("leg_sin_inoc");
+  if(b.tsi && items.length) add("tsi");
+  const nivel = chk.length ? Math.max(...chk.map(x => x.nivel)) : (items.length ? 0 : null);
+  return {c, den, kgha, kg, ha, kgU, nU, items, liq, agua, vol, chk, nivel};
+}
+// candidatos para agregar: curasemillas y biológicos del SENAVE, inoculantes y genéricos
+function semCandidatos(q){
+  const n = t => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const qq = n(q).trim(); if(qq.length < 2) return [];
+  const out = [];
+  const clDe = p => p.k.some(k => k[0] === "bio") ? "biologico" : p.cl.includes("fungicida") ? "fungicida" : (p.cl.includes("insecticida") || p.cl.includes("nematicida")) ? "insecticida" : "otro";
+  D.productos.filter(p => !p.m && (p.u === "tratamiento_semillas" || p.k.some(k => k[0] === "bio"))).forEach(p => {
+    const txt = n(p.n + " " + p.pa + " " + p.e); if(!txt.includes(qq)) return;
+    out.push({r: p.r, n: p.n, clase: clDe(p), sub: `${p.u === "tratamiento_semillas" ? "Curasemillas" : "Biológico"} · ${p.pa} · ${p.f} · ${p.e}`, sc: n(p.n).startsWith(qq) ? 2 : p.u === "tratamiento_semillas" ? 1 : 0});
+  });
+  SD.inoculantes.forEach(i => { if(!n(i.n + " " + i.org + " " + i.e).includes(qq)) return;
+    out.push({inoc: i.n, n: i.n, clase: ["inoculante", "preinoculante", "surco"].includes(i.tipo) ? "inoculante" : i.tipo === "nutriente" ? "nutriente" : i.tipo === "protector" || i.tipo === "bioinductor" ? "otro" : "biologico", sub: `${i.tipo} · ${i.org} · ${i.e}`, sc: 3}); });
+  [["Cobalto y molibdeno (CoMo)", "nutriente"], ["Polímero o colorante", "polimero"], ["Talco o grafito", "polimero"], ["Inoculante (otra marca)", "inoculante"]].forEach(([nm, cl]) => { if(n(nm).includes(qq)) out.push({n: nm, clase: cl, sub: "Genérico", sc: 1}); });
+  out.push({n: q.trim(), clase: "otro", sub: "Agregar como otro producto", sc: -1, libre: true});
+  return out.sort((a, b) => b.sc - a.sc).slice(0, 14);
+}
+function semResultadoHTML(k){
+  const b = SB, c = k.c;
+  const filas = k.items.map((x, i) => `<tr><td>${esc(x.n)}<br><span class="note">${esc(SEM_CL[x.clase] ? SEM_CL[x.clase].n : x.clase)}</span></td>
+      <td class="n">${x.dosis != null ? fmt(x.dosis, 2) + " " + esc(x.u.replace("100kg", "100 kg").replace("50kg", "50 kg").replace("/u", "/unidad")) : "—"}</td>
+      <td class="n">${x.per100 != null ? fmt(x.per100, 1) + " " + x.base : `<span class="note">${esc(x.falta)}</span>`}</td>
+      <td class="n">${x.tanda != null ? fmt(x.tanda, 1) + " " + x.base : "—"}</td>
+      <td class="n">${x.tot != null ? (x.tot >= 1000 && x.base !== "dosis" ? fmt(x.tot / 1000, 2) + (x.base === "g" ? " kg" : " L") : fmt(x.tot, 0) + " " + x.base) : "—"}</td></tr>`).join("");
+  const orden = k.items.slice().sort((a, b) => (SEM_CL[a.clase] || {orden: 4}).orden - (SEM_CL[b.clase] || {orden: 4}).orden);
+  return `<div class="panel" id="sRes"><div class="panel-h"><h3>Resultado</h3>${pill(k.nivel, k.nivel == null ? "Agregá productos" : null)}</div>
+    ${k.chk.length ? k.chk.sort((a, b) => b.nivel - a.nivel).map(x => `<article class="al l${x.nivel}"><div class="al-h"><h4>${esc(x.t)}</h4>${pill(x.nivel)}</div><p>${esc(x.d)}</p><ul class="clean note">${x.m.map(m => `<li>${esc(m)}</li>`).join("")}</ul></article>`).join("") : k.items.length ? `<p class="note">Sin alertas con los datos cargados.</p>` : ""}
+    ${k.items.length ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Producto</th><th style="text-align:right">Dosis</th><th style="text-align:right">Cada 100 kg</th><th style="text-align:right">Por tanda de ${fmt(b.tanda || 0, 0)} kg</th><th style="text-align:right">Total ${k.kg ? fmt(k.kg, 0) + " kg" : ""}</th></tr></thead><tbody>${filas}
+      ${b.vol_obj ? `<tr><td>Agua para completar</td><td></td><td class="n">${fmt(k.agua, 0)} mL</td><td class="n">${b.tanda ? fmt(k.agua * b.tanda / 100, 0) + " mL" : "—"}</td><td class="n">${k.kg ? fmt(k.agua * k.kg / 100 / 1000, 2) + " L" : "—"}</td></tr>` : ""}
+      <tr><td><b>Caldo total</b></td><td></td><td class="n"><b>${fmt(k.vol, 0)} mL</b></td><td class="n">${b.tanda ? fmt(k.vol * b.tanda / 100, 0) + " mL" : "—"}</td><td class="n">${k.kg ? fmt(k.vol * k.kg / 100 / 1000, 2) + " L" : "—"}</td></tr></tbody></table></div>
+      <p class="note">${c.vmax ? `Máximo de referencia para ${esc(c.n.toLowerCase())}: ${fmt(c.vmax, 0)} mL de caldo cada 100 kg (Embrapa).` : "Para este cultivo usá el volumen total de caldo que indique la etiqueta."} Los productos en gramos no suman volumen.</p>
+      <h4 style="margin-top:10px">Orden de carga</h4><ol class="steps" style="margin-top:6px">${orden.map(x => `<li><b>${esc(x.n)}</b> <span class="note">${esc(SEM_CL[x.clase] ? SEM_CL[x.clase].n : "")}</span>${x.clase === "inoculante" ? `<br><span class="note">${b.inoc_aparte ? "Aparte, cuando los químicos ya secaron, a la sombra y justo antes de sembrar." : "En la misma pasada que los químicos: sembrar enseguida."}</span>` : ""}</li>`).join("")}</ol>` : ""}
+  </div>`;
+}
+function renderSemillas(){
+  const el = $("#v-semillas"); if(!el) return;
+  const tabs = [["tratar", "Tratar y registrar"], ["registro", `Registro (${SEMREG.length})`], ["empresas", "Empresas y productos"], ["guia", "Guía"]];
+  el.innerHTML = `<div><h2>Tratamiento de semillas</h2><p class="lead">Calculá el tratamiento antes de sembrar (curasemillas, biológicos, micronutrientes e inoculante), revisá el orden y el volumen, y dejá registrado cada lote de semilla con sus productos, su germinación y los lotes del campo donde se sembró.</p></div>
+    <div class="row" role="tablist" id="sTabs" style="gap:6px">${tabs.map(([k, t]) => `<button class="chip" data-t="${k}" aria-pressed="${SEMV.tab === k}">${esc(t)}</button>`).join("")}</div>
+    <div id="sBody"></div>`;
+  el.querySelectorAll("#sTabs [data-t]").forEach(b => b.onclick = () => { SEMV.tab = b.dataset.t; renderSemillas(); });
+  ({tratar: semTratar, registro: semRegistro, empresas: semEmpresas, guia: semGuia})[SEMV.tab]();
+}
+function semTratar(){
+  const b = SB, k = semCalc(b), c = k.c, den = k.den;
+  const propios = semCults().filter(x => SD.cultivos[x].rub.split(" ").includes(RUBRO));
+  const opt = x => `<option value="${x}"${x === b.cult ? " selected" : ""}>${esc(SD.cultivos[x].n)}</option>`;
+  const nv = v => v == null ? "" : v;
+  const c0 = findCampo(b.campo);
+  $("#sBody").innerHTML = `${b.ejemplo ? `<div class="ex-banner"><span><b>Ejemplo:</b> soja con fungicida, insecticida e inoculante. Las dosis son ilustrativas: usá las de la etiqueta de cada producto.</span><button class="btn sm" id="sVaciar">Empezar de cero</button></div>` : ""}
+   <div class="grid2"><div class="stack">
+    <div class="panel"><div class="panel-h"><h3>1 · Semilla</h3><span class="row" style="gap:6px">${!b.items.length && !b.ejemplo ? `<button class="btn sm" id="sEj">Ver un ejemplo</button>` : ""}<button class="btn sm" id="sNuevo">Nuevo</button></span></div>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+        <label class="f">Cultivo<select id="sCult">${propios.map(opt).join("")}<optgroup label="Otros rubros">${semCults().filter(x => !propios.includes(x)).map(opt).join("")}</optgroup></select></label>
+        <label class="f">Cultivar o híbrido<input id="sCultivar" value="${esc(b.cultivar)}"></label>
+        <label class="f">Lote de semilla<input id="sLote" value="${esc(b.lote)}" placeholder="Nº de lote o bolsa"></label>
+        <label class="f">Origen<select id="sOrigen">${[["propia", "Propia (de uso propio)"], ["certificada", "Certificada"], ["comprada", "Comprada sin certificar"]].map(([v, t]) => `<option value="${v}"${v === b.origen ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+        <label class="f">Proveedor o semillera<input id="sProv" value="${esc(b.proveedor)}"></label>
+        <label class="f">Germinación (%)<input id="sGerm" type="number" min="0" max="100" step="1" value="${nv(b.germ)}" placeholder="ref. ${c.germ ?? "—"}"></label>
+        ${c.spv != null && !c.pl ? `<label class="f">Pureza (%)<input id="sPur" type="number" min="0" max="100" step="1" value="${nv(b.pureza)}"></label>` : `<label class="f">Peso de mil semillas (g)<input id="sPms" type="number" min="0" step="0.1" value="${nv(b.pms)}" placeholder="ref. ${c.pms ?? "—"}"></label>`}
+        <label class="f">¿Ya viene tratada (TSI)?<select id="sTsi"><option value="false">No</option><option value="true"${b.tsi ? " selected" : ""}>Sí, de fábrica</option></select></label>
+      </div>
+      ${c.n2 ? `<p class="note" style="margin-top:8px">${esc(c.n2)}</p>` : ""}
+    </div>
+    <div class="panel"><div class="panel-h"><h3>2 · Cuánta semilla</h3></div>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+        ${den.modo === "vc" ? `<label class="f">Semilla pura viable (kg/ha)<input id="sSpv" type="number" min="0" step="0.1" value="${nv(b.spv)}" placeholder="ref. ${c.spv}"></label>`
+          : `<label class="f">Plantas por hectárea<input id="sPl" type="number" min="0" step="1000" value="${nv(b.pl)}" placeholder="ref. ${c.pl ? c.pl.toLocaleString("es-PY") : "—"}"></label>
+             <label class="f">Establecimiento a campo (%)<input id="sEst" type="number" min="1" max="100" step="1" value="${nv(b.est)}"></label>
+             <label class="f">Distancia entre hileras (cm)<input id="sEsp" type="number" min="0" step="1" value="${nv(b.esp)}"></label>`}
+        <label class="f">Kg de semilla por ha<input id="sKgha" type="number" min="0" step="0.1" value="${nv(b.kgha)}" placeholder="${den.kgha ? fmt(den.kgha, 1) : ""}"></label>
+        <label class="f">Hectáreas a sembrar<input id="sHa" type="number" min="0" step="0.5" value="${nv(b.ha)}"></label>
+        <label class="f">Kg de semilla a tratar<input id="sKg" type="number" min="0" step="1" value="${nv(b.kg)}" placeholder="${k.kg && b.kg == null ? fmt(k.kg, 0) : ""}"></label>
+        <label class="f">Tanda de la tratadora (kg)<input id="sTanda" type="number" min="1" step="1" value="${nv(b.tanda)}"></label>
+      </div>
+      <p class="note" style="margin-top:8px">${den.modo === "vc" ? (den.vc ? `Valor cultural ${fmt(den.vc, 0)} % → <b>${fmt(den.kgha, 1)} kg/ha</b> para ${fmt(den.spv, 1)} kg de semilla pura viable.` : "Cargá pureza y germinación para calcular el valor cultural.")
+        : den.kgha ? `Con ${fmt(den.pl, 0)} plantas/ha, ${fmt(den.pms, 0)} g por mil semillas, ${fmt(den.g, 0)} % de germinación y ${fmt(den.est, 0)} % de establecimiento: <b>${fmt(den.kgha, 1)} kg/ha</b>${den.smetro ? ` · ${fmt(den.smetro, 1)} semillas por metro de surco` : ""}.` : "Cargá germinación y peso de mil semillas para calcular los kg/ha."}
+        ${k.kg ? ` Semilla a tratar: <b>${fmt(k.kg, 0)} kg</b>${k.ha ? ` para ${fmt(k.ha, 1)} ha` : ""}.` : ""}</p>
+    </div>
+    <div class="panel"><div class="panel-h"><h3>3 · Productos</h3><span class="note">Curasemillas y biológicos del SENAVE, inoculantes y otros</span></div>
+      <div class="search"><input id="sQ" type="search" placeholder="Producto, activo, organismo o empresa (ej.: fludioxonil, Bradyrhizobium, Maxim)" autocomplete="off"><div class="sugg" id="sSugg" hidden></div></div>
+      <div class="stack" style="gap:8px;margin-top:10px">${b.items.map((it, i) => `<div class="sitem"><div class="row" style="justify-content:space-between;gap:6px"><b>${esc(it.n)}</b><span class="row" style="gap:4px">${it.r ? `<button class="btn sm" data-ver="${esc(it.r)}">Ficha</button>` : ""}<button class="btn sm" data-del="${i}">Quitar</button></span></div>
+        ${it.r && PROD[it.r] ? `<span class="note">${esc(PROD[it.r].pa)} · ${esc(PROD[it.r].f)}</span>` : ""}
+        <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-top:6px">
+          <label class="f">Tipo<select data-cl="${i}">${SD.clases.map(x => `<option value="${x.id}"${x.id === it.clase ? " selected" : ""}>${esc(x.n)}</option>`).join("")}</select></label>
+          <label class="f">Dosis<input data-dosis="${i}" type="number" min="0" step="any" value="${nv(it.dosis)}" placeholder="de la etiqueta"></label>
+          <label class="f">Unidad<select data-u="${i}">${Object.entries(SEM_U).map(([u, t]) => `<option value="${u}"${u === it.u ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
+        </div></div>`).join("") || `<p class="note">Todavía no hay productos. Buscalos arriba.</p>`}</div>
+      ${b.items.some(x => x.u === "mL/u" || x.u === "g/u") ? `<label class="f" style="max-width:240px;margin-top:8px">Semillas por unidad<input id="sUnidad" type="number" min="1" step="1000" value="${nv(b.unidad)}" placeholder="${(c.unidad || 60000).toLocaleString("es-PY")}"></label>` : ""}
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-top:10px">
+        <label class="f">Caldo total buscado (mL cada 100 kg)<input id="sVol" type="number" min="0" step="10" value="${nv(b.vol_obj)}" placeholder="${c.vmax ? "hasta " + c.vmax : "según etiqueta"}"></label>
+        <label class="f">Inoculante<select id="sInocA"><option value="true">Aparte, después de secar los químicos</option><option value="false"${b.inoc_aparte ? "" : " selected"}>En la misma mezcla</option></select></label>
+        <label class="f">Método<select id="sMet">${[["campo", "En el campo (tambor u hormigonera)"], ["tratadora", "Tratadora on farm"], ["industrial", "Industrial (TSI) por la empresa"]].map(([v, t]) => `<option value="${v}"${v === b.metodo ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-h"><h3>4 · Registro</h3></div>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+        <label class="f">Tratamiento<input id="sFT" type="datetime-local" value="${esc(b.fecha_trat)}"></label>
+        <label class="f">Inoculación<input id="sFI" type="datetime-local" value="${esc(b.fecha_inoc)}"></label>
+        <label class="f">Siembra<input id="sFS" type="datetime-local" value="${esc(b.fecha_siembra)}"></label>
+        <label class="f">Campo<select id="sCampo"><option value="">— sin campo —</option>${CAMPOS.map(x => `<option value="${esc(x.id)}"${x.id === b.campo ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}</select></label>
+        <label class="f">Operador<input id="sOper" value="${esc(b.operador)}"></label>
+        <label class="f">Tratadora o equipo<input id="sEq" value="${esc(b.equipo)}"></label>
+      </div>
+      ${c0 ? `<div class="row" id="sLotes" style="gap:6px;margin-top:8px">${c0.lotes.map(l => `<label class="chk"><input type="checkbox" value="${esc(l.id)}"${b.lotes.includes(l.id) ? " checked" : ""}> ${esc(l.nombre)} <span class="note">${fmt(loteHa(l), 1)} ha</span></label>`).join("") || `<span class="note">Este campo no tiene lotes.</span>`}</div>` : ""}
+      <label class="f" style="margin-top:8px">Observaciones<textarea id="sObs" rows="2">${esc(b.obs)}</textarea></label>
+      <div class="row" style="margin-top:10px"><button class="btn pri" id="sGuardar">Registrar tratamiento</button><span class="note">Queda en el registro de semillas y en el historial de los lotes marcados.</span></div>
+    </div>
+   </div>
+   <div class="stack">${semResultadoHTML(k)}
+    <div class="panel"><h3>Seguridad</h3><ul class="clean note" style="margin-top:6px">${SD.seguridad.slice(0, 4).map(x => `<li>${esc(x)}</li>`).join("")}</ul><button class="btn sm" id="sVerGuia" style="margin-top:6px">Ver la guía completa</button></div>
+   </div></div>`;
+  const upd = () => { saveSB(); semTratar(); };
+  const num = v => v === "" ? null : Number(v);
+  const bindV = (id, key, f = x => x) => { const e = $(id); if(e) e.onchange = ev => { SB[key] = f(ev.target.value); SB.ejemplo = SB.ejemplo && key !== "items"; upd(); }; };
+  bindV("#sCult", "cult"); bindV("#sCultivar", "cultivar"); bindV("#sLote", "lote"); bindV("#sOrigen", "origen"); bindV("#sProv", "proveedor");
+  bindV("#sGerm", "germ", num); bindV("#sPur", "pureza", num); bindV("#sPms", "pms", num); bindV("#sTsi", "tsi", v => v === "true");
+  bindV("#sSpv", "spv", num); bindV("#sPl", "pl", num); bindV("#sEst", "est", num); bindV("#sEsp", "esp", num); bindV("#sKgha", "kgha", num); bindV("#sHa", "ha", num);
+  bindV("#sKg", "kg", num); bindV("#sTanda", "tanda", num); bindV("#sVol", "vol_obj", num); bindV("#sInocA", "inoc_aparte", v => v === "true"); bindV("#sMet", "metodo");
+  bindV("#sUnidad", "unidad", num); bindV("#sFT", "fecha_trat"); bindV("#sFI", "fecha_inoc"); bindV("#sFS", "fecha_siembra"); bindV("#sOper", "operador"); bindV("#sEq", "equipo"); bindV("#sObs", "obs");
+  $("#sCampo").onchange = e => { SB.campo = e.target.value; SB.lotes = []; upd(); };
+  document.querySelectorAll("#sLotes input").forEach(i => i.onchange = () => { SB.lotes = [...document.querySelectorAll("#sLotes input:checked")].map(x => x.value); saveSB(); });
+  document.querySelectorAll("[data-del]").forEach(x => x.onclick = () => { SB.items.splice(+x.dataset.del, 1); upd(); });
+  document.querySelectorAll("[data-ver]").forEach(x => x.onclick = () => openProduct(x.dataset.ver));
+  document.querySelectorAll("[data-cl]").forEach(x => x.onchange = e => { SB.items[+x.dataset.cl].clase = e.target.value; upd(); });
+  document.querySelectorAll("[data-dosis]").forEach(x => x.onchange = e => { SB.items[+x.dataset.dosis].dosis = num(e.target.value); upd(); });
+  document.querySelectorAll("[data-u]").forEach(x => x.onchange = e => { SB.items[+x.dataset.u].u = e.target.value; upd(); });
+  if($("#sEj")) $("#sEj").onclick = () => { SB = semEjemplo(); upd(); };
+  if($("#sVaciar")) $("#sVaciar").onclick = () => { SB = semNuevo(); upd(); };
+  $("#sNuevo").onclick = () => { SB = semNuevo(); upd(); };
+  $("#sVerGuia").onclick = () => { SEMV.tab = "guia"; renderSemillas(); };
+  const q = $("#sQ"), sg = $("#sSugg"); let cand = [];
+  q.oninput = () => { cand = semCandidatos(q.value); sg.hidden = !cand.length;
+    sg.innerHTML = cand.map((x, i) => `<button type="button" class="sg-p" data-i="${i}"><b>${esc(x.n)}</b><span class="note">${esc(x.sub)}</span></button>`).join("");
+    sg.querySelectorAll("[data-i]").forEach(bt => bt.onclick = () => { const x = cand[+bt.dataset.i];
+      SB.items.push({r: x.r || null, inoc: x.inoc || null, n: x.n, clase: x.clase, dosis: null, u: x.clase === "inoculante" ? "mL/50kg" : "mL/100kg"}); SB.ejemplo = false; upd(); }); };
+  $("#sGuardar").onclick = () => {
+    if(!SB.items.length){ toast("Agregá al menos un producto"); return; }
+    const kk = semCalc(SB), c1 = findCampo(SB.campo);
+    store("operador", SB.operador);
+    const rec = {id: uid("ts"), fecha: SB.fecha_trat || isoLocal(new Date()), cult: SB.cult, cultivo: SD.cultivos[SB.cult].n, cultivar: SB.cultivar, lote: SB.lote, origen: SB.origen, proveedor: SB.proveedor,
+      germ: SB.germ, pureza: SB.pureza, pms: SB.pms ?? kk.c.pms ?? null, tsi: SB.tsi, metodo: SB.metodo, kg: kk.kg, kgha: kk.kgha, ha: kk.ha ? Math.round(kk.ha * 10) / 10 : null,
+      items: kk.items.map(x => ({r: x.r || null, inoc: x.inoc || null, n: x.n, clase: x.clase, dosis: x.dosis, u: x.u, per100: x.per100 != null ? Math.round(x.per100 * 10) / 10 : null, base: x.base, tot: x.tot != null ? Math.round(x.tot * 10) / 10 : null,
+        ais: x.r && PROD[x.r] ? PROD[x.r].k.filter(k => k[0] === "ai" || k[0] === "bio").map(k => k[1]) : []})),
+      vol100: Math.round(kk.vol), inoc_aparte: SB.inoc_aparte, fecha_inoc: SB.fecha_inoc, fecha_siembra: SB.fecha_siembra, campoId: c1 ? c1.id : null, campoNombre: c1 ? c1.nombre : "",
+      loteIds: c1 ? SB.lotes.slice() : [], loteNombres: c1 ? SB.lotes.map(id => (findLote(c1, id) || {}).nombre).filter(Boolean) : [], operador: SB.operador, equipo: SB.equipo, obs: SB.obs,
+      nivel: kk.nivel, alertas: kk.chk.map(x => x.id), ejemplo: !!SB.ejemplo};
+    SEMREG.unshift(rec); saveSemReg();
+    toast("Tratamiento registrado"); SEMV.tab = "registro"; renderSemillas();
+  };
+}
+function semFilas(lista){
+  return lista.map(r => ({fecha: r.fecha, cultivo: r.cultivo, cultivar: r.cultivar, lote_semilla: r.lote, origen: r.origen, proveedor: r.proveedor, germinacion: r.germ, pms_g: r.pms, ya_tratada: r.tsi ? "sí" : "no", metodo: r.metodo,
+    kg_tratados: r.kg, kg_ha: r.kgha, ha: r.ha, productos: r.items.map(x => `${x.n} ${x.dosis ?? "—"} ${x.u}`).join(" | "), caldo_mL_100kg: r.vol100, inoculacion: r.fecha_inoc, siembra: r.fecha_siembra,
+    campo: r.campoNombre, lotes: r.loteNombres.join(", "), operador: r.operador, equipo: r.equipo, semaforo: r.nivel == null ? "" : NIV[r.nivel].nombre, observaciones: r.obs}));
+}
+function semRegistro(){
+  const n = t => (t || "").toLowerCase();
+  const lista = SEMREG.filter(r => (!SEMV.rc || r.cult === SEMV.rc) && (!SEMV.rcampo || r.campoId === SEMV.rcampo) && (!SEMV.rq || n(JSON.stringify([r.cultivar, r.lote, r.proveedor, r.items.map(x => x.n), r.obs, r.operador])).includes(n(SEMV.rq))));
+  const kg = lista.reduce((s, r) => s + (r.kg || 0), 0);
+  $("#sBody").innerHTML = `<div class="panel"><div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+      <label class="f">Cultivo<select id="srC"><option value="">Todos</option>${[...new Set(SEMREG.map(r => r.cult))].map(k => `<option value="${k}"${k === SEMV.rc ? " selected" : ""}>${esc(SD.cultivos[k] ? SD.cultivos[k].n : k)}</option>`).join("")}</select></label>
+      <label class="f">Campo<select id="srCampo"><option value="">Todos</option>${CAMPOS.map(x => `<option value="${esc(x.id)}"${x.id === SEMV.rcampo ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}</select></label>
+      <label class="f">Buscar<input id="srQ" type="search" value="${esc(SEMV.rq)}" placeholder="Cultivar, lote, producto"></label></div>
+      <div class="row" style="gap:6px;margin-top:8px"><button class="btn sm" id="srCsv">Exportar CSV (Excel)</button><button class="btn sm" data-x="respaldo">Respaldo completo</button></div></div>
+    <p class="note">${lista.length} tratamientos · ${fmt(kg, 0)} kg de semilla</p>
+    ${lista.length ? `<div class="tw"><table><thead><tr><th>Fecha</th><th>Semilla</th><th>Cantidad</th><th>Productos (cada 100 kg)</th><th>Campo · lotes</th><th>Semáforo</th><th></th></tr></thead><tbody>${lista.map(r => `<tr>
+      <td class="mono">${esc(fmtFH(r.fecha))}${r.ejemplo ? `<br><span class="tag">ejemplo</span>` : ""}</td>
+      <td>${esc(r.cultivo)}${r.cultivar ? " · " + esc(r.cultivar) : ""}<br><span class="note">Lote ${esc(r.lote || "—")} · germ. ${r.germ != null ? fmt(r.germ, 0) + " %" : "—"}${r.tsi ? " · TSI" : ""}</span></td>
+      <td class="note">${r.kg ? fmt(r.kg, 0) + " kg" : "—"}${r.ha ? "<br>" + fmt(r.ha, 1) + " ha" : ""}${r.kgha ? " · " + fmt(r.kgha, 1) + " kg/ha" : ""}</td>
+      <td>${r.items.map(x => `${esc(x.n)} <span class="note">${x.per100 != null ? fmt(x.per100, 1) + " " + x.base : "—"}</span>`).join("<br>")}</td>
+      <td class="note">${esc(r.campoNombre || "—")}${r.loteNombres.length ? "<br>" + esc(r.loteNombres.join(", ")) : ""}${r.fecha_siembra ? "<br>Siembra " + esc(fmtFH(r.fecha_siembra)) : ""}</td>
+      <td>${pill(r.nivel, r.nivel == null ? "—" : null)}</td>
+      <td><span class="row" style="gap:4px;flex-wrap:nowrap"><button class="btn sm" data-a="usar" data-id="${esc(r.id)}">Repetir</button><button class="btn sm" data-a="del" data-id="${esc(r.id)}">Borrar</button></span></td></tr>`).join("")}</tbody></table></div>`
+    : `<div class="panel"><p class="note">${SEMREG.length ? "No hay tratamientos con esos filtros." : "Todavía no registraste tratamientos de semilla. Armalo en “Tratar y registrar” y tocá “Registrar tratamiento”."}</p></div>`}`;
+  $("#srC").onchange = e => { SEMV.rc = e.target.value; semRegistro(); };
+  $("#srCampo").onchange = e => { SEMV.rcampo = e.target.value; semRegistro(); };
+  $("#srQ").onchange = e => { SEMV.rq = e.target.value; semRegistro(); };
+  $("#srCsv").onclick = () => EXPORTS.sem_csv();
+  document.querySelectorAll("#sBody [data-x]").forEach(b => b.onclick = () => EXPORTS[b.dataset.x]());
+  document.querySelectorAll("#sBody [data-a]").forEach(b => b.onclick = () => { const r = SEMREG.find(x => x.id === b.dataset.id); if(!r) return;
+    if(b.dataset.a === "del"){ if(!b.dataset.ok){ b.dataset.ok = 1; b.textContent = "¿Seguro?"; return; } SEMREG = SEMREG.filter(x => x !== r); saveSemReg(); renderSemillas(); }
+    else { SB = Object.assign(semNuevo(), {cult: r.cult, cultivar: r.cultivar, lote: r.lote, origen: r.origen, proveedor: r.proveedor, germ: r.germ, pureza: r.pureza, pms: r.pms, tsi: r.tsi, metodo: r.metodo, kgha: r.kgha,
+      inoc_aparte: r.inoc_aparte, campo: r.campoId || "", items: r.items.map(x => ({r: x.r, inoc: x.inoc, n: x.n, clase: x.clase, dosis: x.dosis, u: x.u}))}); saveSB(); SEMV.tab = "tratar"; renderSemillas(); toast("Tratamiento cargado: cambiá la fecha, los kilos y los lotes"); } });
+}
+const normEmp = s => (s || "").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\([^)]*\)/g, " ").replace(/[^A-Z0-9 ]/g, " ").split(/\s+/).filter(w => w && !["SA", "S", "A", "SRL", "R", "L", "SAIC", "SACI", "EAS", "UNIPERSONAL", "SOCIEDAD", "ANONIMA", "LTDA", "DE", "DEL"].includes(w)).join(" ");
+function semEmpresas(){
+  const bioOrg = p => [...new Set(p.k.filter(k => k[0] === "bio").map(k => (BIO[k[1]] || {}).nombre || k[4]))].join(", ");
+  const emp = {};
+  const add = (e, tipo, x) => { const k = normEmp(e); (emp[k] = emp[k] || {e, ts: [], bio: [], inoc: []})[tipo].push(x); };
+  D.productos.filter(p => !p.m && p.u === "tratamiento_semillas").forEach(p => add(p.e, p.k.some(k => k[0] === "bio") ? "bio" : "ts", p));
+  D.productos.filter(p => !p.m && p.u !== "tratamiento_semillas" && p.k.some(k => k[0] === "bio")).forEach(p => add(p.e, "bio", p));
+  SD.inoculantes.forEach(i => add(i.e, "inoc", i));
+  const n = t => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const q = n(SEMV.q), T = SEMV.tipo;
+  const okP = p => !q || n(p.n + " " + p.pa + " " + p.e + " " + (p.k ? bioOrg(p) : "")).includes(q);
+  const okI = i => !q || n(i.n + " " + i.org + " " + i.e + " " + i.cult).includes(q);
+  const lista = Object.values(emp).map(x => ({x, ts: (!T || T === "ts") ? x.ts.filter(okP) : [], bio: (!T || T === "bio") ? x.bio.filter(okP) : [], inoc: (!T || T === "inoc") ? x.inoc.filter(okI) : []}))
+    .filter(y => y.ts.length + y.bio.length + y.inoc.length).sort((a, b) => (b.ts.length + b.bio.length + b.inoc.length) - (a.ts.length + a.bio.length + a.inoc.length));
+  const tot = {ts: D.productos.filter(p => !p.m && p.u === "tratamiento_semillas" && !p.k.some(k => k[0] === "bio")).length, bio: D.productos.filter(p => !p.m && p.k.some(k => k[0] === "bio")).length, inoc: SD.inoculantes.length};
+  const tablaP = (arr, bio) => `<div class="tw"><table><thead><tr><th>Producto</th><th>${bio ? "Organismo" : "Activos"}</th><th>Form.</th><th>Uso</th><th>Reg.</th></tr></thead><tbody>${arr.sort((a, b) => a.n.localeCompare(b.n)).map(p => `<tr data-r="${esc(p.r)}" class="clk"><td><b>${esc(p.n)}</b></td><td class="note">${esc(bio ? bioOrg(p) : p.pa)}</td><td class="mono">${esc(p.f)}</td><td class="note">${p.u === "tratamiento_semillas" ? "Semilla" : "Pulverización"} · ${esc((p.cl || []).join(", "))}</td><td class="mono note">${esc(p.r)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("#sBody").innerHTML = `<div class="panel stack" style="gap:8px">
+      <p class="note">Del listado del SENAVE (vigentes con mantenimiento al día): <b>${tot.ts}</b> curasemillas químicos y <b>${tot.bio}</b> biológicos (Bacillus, Trichoderma, hongos entomopatógenos, Bt, virus). Los inoculantes no están en ese listado: el SENAVE los registra como fertilizantes y biofertilizantes (Res. 564/10); acá figuran los que publican las empresas en Paraguay.</p>
+      <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+        <label class="f">Buscar<input id="seQ" type="search" value="${esc(SEMV.q)}" placeholder="Empresa, producto, activo u organismo"></label>
+        <label class="f">Tipo<select id="seT"><option value="">Todo</option><option value="ts"${T === "ts" ? " selected" : ""}>Curasemillas químicos</option><option value="bio"${T === "bio" ? " selected" : ""}>Biológicos</option><option value="inoc"${T === "inoc" ? " selected" : ""}>Inoculantes y otros para la semilla</option></select></label>
+      </div></div>
+    <p class="note">${lista.length} empresas</p>
+    <div class="stack" style="gap:8px">${lista.map(y => `<details class="box"><summary><b>${esc(y.x.e)}</b> <span class="note">${[y.ts.length ? y.ts.length + " curasemillas" : "", y.bio.length ? y.bio.length + " biológicos" : "", y.inoc.length ? y.inoc.length + " inoculantes y otros" : ""].filter(Boolean).join(" · ")}</span></summary>
+      <div class="stack" style="gap:8px;padding:0 12px 12px">
+        ${y.ts.length ? `<h4>Curasemillas</h4>${tablaP(y.ts, false)}` : ""}
+        ${y.bio.length ? `<h4>Biológicos</h4>${tablaP(y.bio, true)}` : ""}
+        ${y.inoc.length ? `<h4>Inoculantes y otros para la semilla</h4><div class="tw"><table><thead><tr><th>Producto</th><th>Organismo o tipo</th><th>Cultivo</th><th>Nota</th></tr></thead><tbody>${y.inoc.map(i => `<tr><td><b>${esc(i.n)}</b><br><span class="note">${esc(i.tipo)}</span></td><td class="note">${esc(i.org)}</td><td class="note">${esc(i.cult)}</td><td class="note">${esc(i.nota || "")}</td></tr>`).join("")}</tbody></table></div>` : ""}
+      </div></details>`).join("")}</div>
+    <div class="panel"><h3>Tratamiento industrial y servicios</h3><ul class="clean" style="margin-top:6px">${SD.servicios.map(s => `<li><b>${esc(s.e)}</b>: ${esc(s.n)} · <a href="${esc(s.url)}" target="_blank" rel="noopener">ver</a></li>`).join("")}</ul>
+      <p class="note" style="margin-top:6px">Las grandes semilleras entregan maíz, girasol y canola ya tratados (TSI): revisá la etiqueta de la bolsa antes de agregar otro producto.</p></div>`;
+  $("#seQ").onchange = e => { SEMV.q = e.target.value; semEmpresas(); };
+  $("#seT").onchange = e => { SEMV.tipo = e.target.value; semEmpresas(); };
+  document.querySelectorAll("#sBody tr[data-r]").forEach(t => t.onclick = () => openProduct(t.dataset.r));
+}
+function semGuia(){
+  $("#sBody").innerHTML = `<div class="grid2"><div class="stack">
+    <div class="panel"><h3>Orden de carga en la semilla</h3><ol class="steps" style="margin-top:8px">${SD.orden.map(([t, d]) => `<li><b>${esc(t)}</b><br><span class="note">${esc(d)}</span></li>`).join("")}</ol></div>
+    <div class="panel"><h3>Inoculación de soja (Embrapa)</h3><ul class="clean" style="margin-top:8px">
+      <li>Al menos 1,2 millones de bacterias por semilla: 1 dosis/ha en la semilla, o 2,5 a 3 dosis/ha en el surco. Aumentar la dosis en lotes nuevos o que hace años no tienen soja.</li>
+      <li>El inoculante es la última operación antes de sembrar y nunca se mezcla en el mismo caldo con los curasemillas químicos. Para evitar el contacto: inocular en el surco con un tanque propio.</li>
+      <li>Coinoculación con Azospirillum: 1 dosis/ha en la semilla o 2 en el surco; esa dosis no se aumenta.</li>
+      <li>Preinoculación (productos de larga vida): a la siembra deben quedar 80 000 a 100 000 bacterias por semilla; guardar la semilla por debajo de 20 °C.</li>
+      <li>Cobalto y molibdeno: 2–3 g de Co y 12–25 g de Mo por hectárea, mejor por vía foliar en V3–V5 cuando se inocula en la semilla.</li>
+      <li>No sembrar en suelo seco (“en el polvo”) con semilla inoculada y tratada.</li>
+      <li>El inoculante se guarda a la sombra, por debajo de 30 °C y dentro de su vencimiento.</li></ul></div>
+  </div><div class="stack">
+    <div class="panel"><h3>Prueba de germinación</h3><ol class="steps" style="margin-top:8px">${SD.germinacion.pasos.map(p => `<li>${esc(p)}</li>`).join("")}</ol>
+      <p class="note" style="margin-top:6px">${esc(SD.germinacion.nota)}</p>
+      <div class="tw" style="margin-top:8px"><table><thead><tr><th>Cultivo</th><th style="text-align:right">Conteos (días)</th><th style="text-align:right">Germinación de referencia</th></tr></thead><tbody>${Object.values(SD.cultivos).filter(c => c.conteo).map(c => `<tr><td>${esc(c.n)}</td><td class="n">${c.conteo.join(" y ")}</td><td class="n">${c.germ != null ? c.germ + " %" : "—"}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note" style="margin-top:6px">Referencias orientativas; para semilla certificada vale el mínimo de la norma del INASE para cada especie.</p></div>
+    <div class="panel"><h3>Seguridad</h3><ul class="clean" style="margin-top:8px">${SD.seguridad.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+    <p class="note">Fuentes: ${SD.fuentes.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}.</p>
+  </div></div>`;
+}
+// tratamientos de semilla de un lote (para la ficha del lote)
+function semLoteHTML(l){
+  const rs = SEMREG.filter(r => r.loteIds.includes(l.id));
+  if(!rs.length) return "";
+  return `<h3>Semilla sembrada</h3><div class="tw"><table><thead><tr><th>Fecha</th><th>Semilla</th><th>Productos (cada 100 kg)</th></tr></thead><tbody>${rs.map(r => `<tr><td class="mono">${esc(fmtFecha(r.fecha_siembra || r.fecha))}</td><td>${esc(r.cultivo)}${r.cultivar ? " · " + esc(r.cultivar) : ""}<br><span class="note">Lote ${esc(r.lote || "—")}${r.germ != null ? " · germ. " + fmt(r.germ, 0) + " %" : ""}${r.kgha ? " · " + fmt(r.kgha, 1) + " kg/ha" : ""}</span></td><td>${r.items.map(x => `${esc(x.n)} <span class="note">${x.per100 != null ? fmt(x.per100, 1) + " " + x.base : "—"}</span>`).join("<br>")}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
 /* ---------- Render general ---------- */
 function renderAll(){
   if(VIEW==="caldo") renderCaldo();
@@ -4060,6 +4520,7 @@ function renderAll(){
   else if(VIEW==="campos") renderCampos();
   else if(VIEW==="equipos") renderEquipos();
   else if(VIEW==="historial") renderHistorial();
+  else if(VIEW==="semillas") renderSemillas();
   else if(VIEW==="rotacion") renderRotacion();
   else if(VIEW==="productos") renderProductos();
   else if(VIEW==="inertes") renderInertes();
@@ -4067,6 +4528,6 @@ function renderAll(){
   else if(VIEW==="problemas") renderProblemas();
 }
 renderRubros(); fillInputs(); bindInputs(); bindSearch(); initProductFilters();
-const h = (location.hash||"").slice(1); if(["caldo","campos","equipos","historial","rotacion","caso","productos","inertes","diag","problemas"].includes(h)) setView(h); else renderAll();
+const h = (location.hash||"").slice(1); if(["caldo","campos","equipos","historial","semillas","rotacion","caso","productos","inertes","diag","problemas"].includes(h)) setView(h); else renderAll();
 if(!load("rubro_fijo", false) && !/[?&]sinrubro/.test(location.search)) abrirGate(true);
 </script>
