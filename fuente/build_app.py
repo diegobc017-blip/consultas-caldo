@@ -92,8 +92,10 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 }
 </script>
 """
+# data.js con la versión en la dirección: al actualizar, la página nueva nunca toma los datos viejos guardados
+data_v = hashlib.sha1(data_js.encode()).hexdigest()[:10]
 index = documento(pwa_head, sw_reg, fonts_css=fontface(False), leaflet_css_txt="",
-                  libs='<script src="vendor/leaflet.js"></script>\n<script src="vendor/shp.min.js"></script>\n<script src="vendor/proj4.js"></script>', data_tag='<script src="data.js"></script>')
+                  libs='<script src="vendor/leaflet.js"></script>\n<script src="vendor/shp.min.js"></script>\n<script src="vendor/proj4.js"></script>', data_tag=f'<script src="data.js?v={data_v}"></script>')
 open(os.path.join(REPO, "index.html"), "w", encoding="utf-8").write(index)
 
 manifest = {
@@ -109,7 +111,7 @@ manifest = {
 }
 open(os.path.join(REPO, "manifest.webmanifest"), "w", encoding="utf-8").write(json.dumps(manifest, ensure_ascii=False, indent=1))
 
-assets = ["./", "index.html", "data.js", "manifest.webmanifest", "vendor/leaflet.js", "vendor/leaflet.css", "vendor/shp.min.js", "vendor/proj4.js", "vendor/sql-wasm.js", "vendor/sql-wasm.wasm"] + \
+assets = ["./", "index.html", f"data.js?v={data_v}", "manifest.webmanifest", "vendor/leaflet.js", "vendor/leaflet.css", "vendor/shp.min.js", "vendor/proj4.js", "vendor/sql-wasm.js", "vendor/sql-wasm.wasm"] + \
     [f"icons/{f}" for f in sorted(os.listdir(os.path.join(REPO, "icons")))] + \
     [f"fonts/{f}" for f in sorted(os.listdir(os.path.join(REPO, "fonts")))]
 version = hashlib.sha1((index + data_js).encode()).hexdigest()[:10]

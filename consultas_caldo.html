@@ -1005,6 +1005,7 @@ textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid 
 .inline-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .inline-form input{flex:1 1 200px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:var(--paper);min-width:0}
 @media (max-width:640px){.top{position:static}.brand small{display:none}}
+@media (max-height:500px){.top{position:static}.tour-card{width:min(560px,calc(100vw - 32px));padding:10px 12px;gap:5px;font-size:.88rem}.tour-card h3{font-size:1rem}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -4009,7 +4010,7 @@ const TOUR = [
   {v:"campos", sel:"#map", when:() => !esAL(), t:"Campos y lotes en el mapa", d:"Cada lote es un polígono con su forma real. Tocá un lote para ver su historial de pulverizaciones, editar sus límites o dividirlo. El color muestra la rotación, la última aplicación o el cultivo."},
   {v:"campos", sel:"#mTools", when:() => !esAL(), t:"Marcar los límites", d:"“Dibujar lote”: tocá el mapa en cada quiebre del borde. “Recorrer el borde con GPS”: caminá o andá en vehículo por el límite con el celular. “Mi ubicación” e “Ir a coordenadas” te llevan al lugar. Es opcional: un lote también puede cargarse sin mapa."},
   {v:"campos", sel:'label[for="cFile"]', when:() => !esAL(), t:"Importar desde QGIS, Google Earth o GPS", d:"GeoPackage, Shapefile .zip, GeoJSON, KML, KMZ, GPX o CSV de vértices. También podés arrastrar el archivo sobre el mapa. Si está en UTM, la app lo convierte."},
-  {v:"campos", sel:"#cTop", when:() => !esAL(), t:"Campo de ejemplo", d:"El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan."},
+  {v:"campos", sel:"#cTop", when:() => !esAL(), t:"Campo de ejemplo", d:() => hayEjemplo() ? "El ejemplo de 500 ha se elimina con “Eliminar ejemplo”. Tus campos y datos no se tocan." : (CAMPOS || []).length ? "Elegí acá el campo para ver sus lotes. Si querés probar con datos, “Cargar ejemplo” trae un campo de 500 ha que después se elimina sin tocar lo tuyo." : "Todavía no hay campos: creá uno, importalo, o tocá “Cargar ejemplo” para probar con un campo de 500 ha que después se elimina."},
   {v:"caldo", sel:'#tabs [data-v="equipos"]', t:"Equipos y calibración", d:"Cargá las medidas de cada equipo, calculá pastilla y presión, y hacé la calibración a campo: velocidad, caudal por pastilla, volumen real e inspección."},
   {v:"caldo", sel:'#tabs [data-v="historial"]', t:"Historial", d:"Todas las aplicaciones registradas, con filtros y exportación a Excel (CSV) y QGIS (GeoJSON)."},
   {v:"caldo", sel:'#tabs [data-v="semillas"]', when:() => !esAL(), t:"Tratamiento de semillas", d:"Calculá el curasemillas, el inoculante y los micronutrientes por cada 100 kg, con el orden de carga y el volumen máximo, y registrá cada lote de semilla con su germinación y los lotes donde se sembró. También está el directorio de empresas con sus curasemillas, biológicos e inoculantes."},
@@ -4031,7 +4032,13 @@ function showTour(){
   const visible = el && el.getClientRects().length && !el.closest("[hidden]");
   if(!visible){ TOURA.splice(TI, 1); showTour(); return; }   // si no está en pantalla, se saca el paso (la numeración sigue correlativa)
   if(el.closest("#tabs")) el.scrollIntoView({block: "nearest", inline: "center", behavior: "instant"});
-  const rr = el.getBoundingClientRect(); window.scrollTo({top: Math.max(0, scrollY + rr.top - Math.max(70, (innerHeight - Math.min(rr.height, innerHeight * .6)) / 2)), behavior: "instant"});
+  // encuadre: debajo del encabezado si está fijo; los paneles altos arrancan arriba y los chicos van al centro
+  const hdr = document.querySelector("header.top"), fijo = hdr && getComputedStyle(hdr).position === "sticky" ? hdr.offsetHeight : 0;
+  if(!(fijo && el.closest("header"))){
+    const rr = el.getBoundingClientRect(), libre = innerHeight - fijo;
+    const off = rr.height > libre * .55 || innerHeight < 600 ? fijo + 10 : fijo + Math.max(10, (libre - rr.height) / 2 - 60);
+    window.scrollTo({top: Math.max(0, scrollY + rr.top - off), behavior: "instant"});
+  }
   const block=document.createElement("div"); block.className="tour-block"; block.onclick=endTour;
   const spot=document.createElement("div"); spot.className="tour-spot";
   const card=document.createElement("div"); card.className="tour-card"; card.setAttribute("role","dialog");
@@ -4044,8 +4051,12 @@ function showTour(){
     const top=Math.max(4,r.top-pad), h=Math.min(r.height+pad*2, vh-8);
     Object.assign(spot.style,{left:(r.left-pad)+"px",top:top+"px",width:(r.width+pad*2)+"px",height:h+"px"});
     const ch=card.offsetHeight, cw=card.offsetWidth;
-    let ct = r.bottom+14; if(ct+ch>vh-8) ct = r.top-ch-14; if(ct<8) ct = vh-ch-12;
-    let cl = Math.min(Math.max(8, r.left), vw-cw-8);
+    let ct = r.bottom+14, cl = Math.min(Math.max(8, r.left), vw-cw-8);
+    if(ct+ch>vh-8) ct = r.top-ch-14;
+    if(ct<8){   // no entra arriba ni abajo: al costado si hay lugar, si no abajo de todo
+      ct = Math.min(Math.max(8, r.top), vh-ch-8);
+      if(r.right+14+cw <= vw-8) cl = r.right+14; else if(r.left-14-cw >= 8) cl = r.left-14-cw; else ct = vh-ch-12;
+    }
     card.style.top=ct+"px"; card.style.left=cl+"px";
   };
   requestAnimationFrame(place); card._place=place;
